@@ -38,7 +38,7 @@ qemu_version=3.0.0
 # libvirt - https://libvirt.org/sources/
 libvirt_version=4.7.0
 # virt-manager - https://virt-manager.org/download/sources/virt-manager/
-virt_manager_version=1.5.0
+virt_manager_version=1.5.1
 
 # autofilled
 OS=""
@@ -47,19 +47,18 @@ function usage() {
 cat << EndOfHelp
     Usage: $0 <func_name> <args>
     Commands - are case insensitive:
-        All - Execs QEMU/SeaBios/KVM/cuckoo
+        All - Execs QEMU/SeaBios/KVM
         QEMU - Install QEMU from source
         SeaBios - Install SeaBios and repalce QEMU bios file
         KVM - this will install intel-HAXM if you on Mac
         HAXM - Mac Hardware Accelerated Execution Manager
-        Clone - <VM_NAME> <path_to_hdd> <start_from_number> <#vm_to_create> <path_where_to_store>
-                * Example Win7x64 /VMs/Win7x64.qcow2 0 5 /var/lib/libvirt/images/
+        Clone - <VM_NAME> <path_to_hdd> <start_from_number> <#vm_to_create> <path_where_to_store> <network_range_base>
+                * Example Win7x64 /VMs/Win7x64.qcow2 0 5 /var/lib/libvirt/images/ 192.168.1
                 https://wiki.qemu.org/Documentation/CreateSnapshot
         Libvirt - install libvirt
         Replace_qemu - only fix antivms in QEMU source
         Replace_seabios <path> - only fix antivms in SeaBios source
         Issues - will give you error - solution list
-        Cuckoo - add cuckoo user to libvirt(d) group
 EndOfHelp
 }
 
@@ -93,10 +92,15 @@ function install_libvirt() {
     tar xf libvirt-$libvirt_version.tar.xz
     cd libvirt-$libvirt_version || return 
     if [ "$OS" = "Linux" ]; then
-        #sudo apt-get build-dep libvirt
-        ./autogen.sh --system --prefix=/usr --localstatedir=/var --sysconfdir=/etc --with-qemu=yes --with-dtrace --with-numad --with-storage-rbd  --disable-nls --with-openvz=no --with-vmware=no --with-phyp=no --with-xenapi=no --with-libxl=no  --with-vbox=no --with-lxc=no --with-vz=no   --with-esx=no --with-hyperv=no --with-yajl=yes --with-secdriver-apparmor=yes --with-apparmor-profiles --with-apparmor-profiles
+        apt-get install python-libxml2 ebtables libosinfo-1.0-dev libnl-3-dev libnl-route-3-dev libyajl-dev xsltproc libapparmor-dev libdevmapper-dev libpciaccess-dev apparmor-utils -y
+        pip install ipaddr
+        # --prefix=/usr --localstatedir=/var --sysconfdir=/etc
+        if ! ./autogen.sh --system  --with-qemu=yes --with-dtrace --with-numad --with-storage-rbd  --disable-nls --with-openvz=no --with-vmware=no --with-phyp=no --with-xenapi=no --with-libxl=no  --with-vbox=no --with-lxc=no --with-vz=no   --with-esx=no --with-hyperv=no --with-yajl=yes --with-secdriver-apparmor=yes --with-apparmor-profiles --with-apparmor-profiles; then
+            echo "[-] Compilation failed, check previous output"
+            exit 1
+        fi
         make -j"$(getconf _NPROCESSORS_ONLN)"
-        checkinstall -D --pkgname=libvirt-$libvirt_version --nodoc --showinstall=no --default 
+        checkinstall -D --pkgname=libvirt-$libvirt_version --default 
         #make -j"$(getconf _NPROCESSORS_ONLN)" install
     elif [ "$OS" = "Darwin" ]; then
         ./autogen.sh --system --prefix=/usr/local/ --localstatedir=/var --sysconfdir=/etc --with-qemu=yes --with-dtrace --disable-nls --with-openvz=no --with-vmware=no --with-phyp=no --with-xenapi=no --with-libxl=no  --with-vbox=no --with-lxc=no --with-vz=no   --with-esx=no --with-hyperv=no --with-wireshark-dissector=no --with-yajl=yes
@@ -130,12 +134,10 @@ function install_libvirt() {
 }
 
 function install_kvm_linux_apt() {
-    sed -i 's/# deb-src/deb-src/g' /etc/apt/sources.list
+    #sed -i 's/# deb-src/deb-src/g' /etc/apt/sources.list
     sudo apt-get update
-    sudo apt-get install build-essential numad python-pip gcc pkg-config cpu-checker glib-2.0 libglib2.0-dev libsdl1.2-dev libaio-dev libcap-dev libattr1-dev libpixman-1-dev libgtk2.0-bin  libxml2-utils systemtap-sdt-dev -y
+    sudo apt-get install build-essential numad python-pip gcc pkg-config cpu-checker glib-2.0 libglib2.0-dev libsdl1.2-dev lvm2 intltool -y
     sudo apt-get install gtk-update-icon-cache -y
-    sudo apt-get install lvm2 -y
-    sudo apt-get install debhelper ibusb-1.0-0-dev libxen-dev uuid-dev xfslibs-dev libjpeg-dev libusbredirparser-dev device-tree-compiler texinfo libbluetooth-dev libbrlapi-dev libcap-ng-dev libcurl4-gnutls-dev libfdt-dev gnutls-dev libiscsi-dev libncurses5-dev libnuma-dev libcacard-dev librados-dev librbd-dev libsasl2-dev libseccomp-dev libspice-server-dev -y
     
     # WSL support
     sudo apt-get install gcc make gnutls-bin -y
@@ -161,10 +163,10 @@ function install_kvm_linux_apt() {
     systemctl enable virtlogd.socket
     systemctl restart virtlogd.socket
 
-    if [ ! -f "v$virt_manager_version.zip" ]; then
-        wget https://github.com/virt-manager/virt-manager/archive/v$virt_manager_version.zip
+    if [ ! -f "virt-manager-$virt_manager_version.tar.gz" ]; then
+        wget https://virt-manager.org/download/sources/virt-manager/virt-manager-$virt_manager_version.tar.gz
     fi
-    unzip "v$virt_manager_version"
+    tar xf "virt-manager-$virt_manager_version.tar.gz"
     cd "virt-manager-$virt_manager_version" || return
     sudo apt-get install intltool -y
     python setup.py install
@@ -178,7 +180,7 @@ function install_kvm_linux_apt() {
 }
 
 
-function replace_qemu_clues() {
+function replace_qemu_clues_public() {
     echo '[+] Patching QEMU clues'
     if ! sed -i 's/QEMU HARDDISK/<WOOT> HARDDISK/g' qemu*/hw/ide/core.c; then
         echo 'QEMU HARDDISK was not replaced in core.c'; fail=1
@@ -228,14 +230,12 @@ function replace_qemu_clues() {
     fi
 }
 
-
-function replace_seabios_clues() {
+function replace_seabios_clues_public() {
     echo "[+] deleting BOCHS APCI tables"
-    #rm src/fw/*.hex >/dev/null 2>&1
     echo "[+] Generating SeaBios Kconfig"
-    ./scripts/kconfig/merge_config.sh -o . >/dev/null 2>&1
-    sed -i 's/CONFIG_ACPI_DSDT=y/CONFIG_ACPI_DSDT=n/g' .config
-    sed -i 's/CONFIG_XEN=y/CONFIG_XEN=n/g' .config
+    #./scripts/kconfig/merge_config.sh -o . >/dev/null 2>&1
+    #sed -i 's/CONFIG_ACPI_DSDT=y/CONFIG_ACPI_DSDT=n/g' .config
+    #sed -i 's/CONFIG_XEN=y/CONFIG_XEN=n/g' .config
     echo "[+] Fixing SeaBios antivms"
     if ! sed -i 's/Bochs/<WOOT>/g' src/config.h; then
         echo 'Bochs was not replaced in src/config.h'; fail=1
@@ -342,6 +342,9 @@ function qemu_func() {
 
     if [ "$OS" = "Linux" ]; then
         sudo apt-get install checkinstall openbios-* libssh2-1-dev vde2 liblzo2-dev libghc-gtk3-dev libsnappy-dev libbz2-dev libxml2-dev google-perftools libgoogle-perftools-dev libvde-dev -y
+        sudo apt-get install debhelper ibusb-1.0-0-dev libxen-dev uuid-dev xfslibs-dev libjpeg-dev libusbredirparser-dev device-tree-compiler texinfo libbluetooth-dev libbrlapi-dev libcap-ng-dev libcurl4-gnutls-dev libfdt-dev gnutls-dev libiscsi-dev libncurses5-dev libnuma-dev libcacard-dev librados-dev librbd-dev libsasl2-dev libseccomp-dev libspice-server-dev \
+        libaio-dev libcap-dev libattr1-dev libpixman-1-dev libgtk2.0-bin  libxml2-utils systemtap-sdt-dev -y
+    
     elif [ "$OS" = "Darwin" ]; then
         _check_brew
         brew install pkg-config libtool jpeg gnutls glib ncurses pixman libpng vde gtk+3 libssh2 libssh2 libvirt snappy libcapn gperftools glib -y
@@ -349,7 +352,11 @@ function qemu_func() {
     # WOOT
     # some checks may be depricated, but keeping them for compatibility with old versions
     if [ $? -eq 0 ]; then
-        replace_qemu_clues
+        if declare -f -F "replace_qemu_clues"; then
+            replace_qemu_clues
+        else
+            replace_qemu_clues_public
+        fi
         if [ $fail -eq 0 ]; then
             echo '[+] Starting compile it'
             cd qemu-$qemu_version || return
@@ -405,7 +412,6 @@ function qemu_func() {
     fi
 }
 
-
 function seabios_func() {
     fail=0          
     echo '[+] Installing SeaBios dependencies'
@@ -415,32 +421,33 @@ function seabios_func() {
     fi
     if git clone https://github.com/coreboot/seabios.git; then
         cd seabios || return
-        if replace_seabios_clues; then
-            # sudo make help
-            # sudo make menuconfig -> BIOS tables -> disable Include default ACPI DSDT
-            if make -j "$(getconf _NPROCESSORS_ONLN)"; then
-                echo '[+] Replacing old bios.bin to new out/bios.bin'
-                bios=0
-                FILES=(
-                    "/usr/share/qemu/bios.bin"
-                    "/usr/share/qemu/bios-256k.bin" 
-                )
-                for file in "${FILES[@]}"; do 
-                    cp -vf out/bios.bin "$file"
-                    bios=1
-                done
-                if [ $bios -eq 1 ]; then
-                    echo '[+] Patched bios.bin placed correctly'
-                else
-                    echo '[-] Bios patching failed'
-                fi
-            else
-                echo '[-] Bios compilation failed'
-            fi
-            cd - || return
+        if declare -f -F "replace_seabios_clues"; then
+            replace_seabios_clues
         else
-            echo '[-] check previous errors'
+            replace_seabios_clues_public
         fi
+        # sudo make help
+        # sudo make menuconfig -> BIOS tables -> disable Include default ACPI DSDT
+        if make -j "$(getconf _NPROCESSORS_ONLN)"; then
+            echo '[+] Replacing old bios.bin to new out/bios.bin'
+            bios=0
+            FILES=(
+                "/usr/share/qemu/bios.bin"
+                "/usr/share/qemu/bios-256k.bin" 
+            )
+            for file in "${FILES[@]}"; do 
+                cp -vf out/bios.bin "$file"
+                bios=1
+            done
+            if [ $bios -eq 1 ]; then
+                echo '[+] Patched bios.bin placed correctly'
+            else
+                echo '[-] Bios patching failed'
+            fi
+        else
+            echo '[-] Bios compilation failed'
+        fi
+        cd - || return
     else
         echo '[-] Check if git installed or network connection is OK'
     fi
@@ -483,50 +490,69 @@ cat << EndOfHelp
         error : virPidFileAcquirePath:422 : Failed to acquire pid file '/var/run/libvirtd.pid': Resource temporarily unavailable
     * Solution
         ps aux | grep libvirtd
+
+    # Fixes from http://ask.xmodulo.com/compile-virt-manager-debian-ubuntu.html
+    1. ImportError: No module named libvirt
+    $ sudo apt-get install python-libvirt
+
+    2. ImportError: No module named libxml2
+    $ sudo apt-get install python-libxml2
+
+    3. ImportError: No module named requests
+    $ sudo apt-get install python-requests
+
+    4. Error launching details: Namespace GtkVnc not available
+    $ sudo apt-get install gir1.2-gtk-vnc-2.0
+
+    5. Error launching details: Namespace SpiceClientGtk not available
+    $ sudo apt-get install gir1.2-spice-client-gtk-3.0
+
+    6. ValueError: Namespace LibvirtGLib not available
+    $ sudo apt-get install libvirt-glib-1.0
+
+    7. ValueError: Namespace Libosinfo not available
+    $ sudo apt-get install libosinfo-1.0
+
+    8. ImportError: No module named ipaddr
+    $ sudo apt-get install python-ipaddr
+
+    9. Namespace Gtk not available: Could not open display: localhost:10.0
+    $ sudo apt-get install libgtk-3-dev
+
+    10. ImportError: cannot import name Vte
+    $ sudo apt-get install gir1.2-vte-2.90
     
 EndOfHelp
 }
 
-function cuckoo_user() {
-    groupname=""
-    if grep -q -E '^libvirtd:' /etc/group; then
-        groupname="libvirtd"
-    elif grep -q -E '^libvirt:' /etc/group; then
-        groupname="libvirt"
-    else
-        # create group if missed
-        groupname="libvirt"
-        sudo groupadd libvirt
-    fi
-    usermod -G $groupname -a cuckoo
-}
-
 function cloning() {
     if [ $# -lt 5 ]; then
-        echo '[-] You must provide <VM_NAME> <path_to_hdd> <start_from_number> <#vm_to_create> <path_where_to_store>'
+        echo '[-] You must provide <VM_NAME> <path_to_hdd> <start_from_number> <#vm_to_create> <path_where_to_store> <network_base>'
         exit 1
     fi
-    echo $1
-    for i in `seq $3 $4`; do
+    for i in $(seq "$3" "$4"); do
         worked=1
         # bad macaddress can be generated
         while [ $worked -eq 1 ]; do
-            macaddr=$(dd if=/dev/urandom bs=1024 count=1 2>/dev/null|md5sum|sed 's/^\(..\)\(..\)\(..\)\(..\)\(..\)\(..\).*$/\1:\2:\3:\4:\5:\6/') 2>/dev/null
-            echo $5/$1_$i.qcow2
-            qemu-img create -f qcow2 -b "$2" $5/$1_$i.qcow2 --check all=off
-            if virt-clone -n $1_$i -o $1 -m "$macaddr" -f $5/$1_$i.qcow2; then
+            macaddr=$(hexdump -n 6 -ve '1/1 "%.2x "' /dev/random | awk -v a="2,6,a,e" -v r="$RANDOM" 'BEGIN{srand(r);}NR==1{split(a,b,",");r=int(rand()*4+1);printf "%s%s:%s:%s:%s:%s:%s\n",substr($1,0,1),b[r],$2,$3,$4,$5,$6}') 2>/dev/null
+            #virt-clone --print-xml -n $1_$i -o $1 -m "$macaddr" 
+            if [ ! -f "${5}/${1}_${i}.qcow2" ]; then
+                qemu-img create -f qcow2 -b "$2" "$5/$1_$i.qcow2"
+            fi
+            if virt-clone --print-xml -n "$1_$i" -o "$1" -m "$macaddr" 2>/dev/null|sed "s|<driver name=\"qemu\" type=\"qcow2\"/>|<driver name=\"qemu\" type=\"qcow2\" cache=\"none\" io=\"native\"/>\\n      <source file=\"${5}/${1}_${i}.qcow2\"/>|" > "$5/$1_$i.xml"; then
+                virsh define "$5/$1_$i.xml"
                 worked=0
             fi
         done
-        echo "<host mac='$macaddr' name='$FILENAME_$i' ip='192.168.2.$(($i+1))'/>"
+        echo "<host mac='$macaddr' name='$1_$i' ip='$6.$(($i+1))'/>"
     done
 
-    echo "[+] You need to replace path of HDD manually in each new VM, will be scripted in future"
+    echo "[+] Enjoy"
 
 }
 
 # Doesn't work ${$1,,}
-COMMAND=$(echo $1|tr '[A-Z]' '[a-z]')
+COMMAND=$(echo "$1"|tr "[A-Z]" "[a-z]")
 
 case $COMMAND in
     '-h')
@@ -556,7 +582,7 @@ case $COMMAND in
     elif [ "$OS" = "Darwin" ]; then
         install_haxm_mac
     fi
-    cuckoo_user;;
+    ;;
 'qemu')
     qemu_func;;
 'seabios')
@@ -566,20 +592,27 @@ case $COMMAND in
 'haxm')
     install_haxm_mac;;
 'replace_qemu')
-    replace_qemu_clues;;
+    if declare -f -F "replace_qemu_clues"; then
+        replace_qemu_clues
+    else
+        replace_qemu_clues_public
+    fi
+    ;;
 'libvirt')
     install_libvirt;;
-'cuckoo')
-    cuckoo_user;;
 'clone')
-    cloning $2 $3 $4 $5 $6;;
+    cloning "$2" "$3" "$4" "$5" "$6" "$7";;
 'replace_seabios')
     if [ ! -d "$2" ]; then
         echo "[-] Pass the path to SeaBios folder"
         exit 1
     fi
     cd "$2" || exit 1
-    replace_seabios_clues
+    if declare -f -F "replace_seabios_clues"; then
+        replace_seabios_clues
+    else
+        replace_seabios_clues_public
+    fi
     cd - || exit 0
     ;;
 *)
