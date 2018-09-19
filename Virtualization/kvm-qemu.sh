@@ -224,10 +224,6 @@ function replace_qemu_clues_public() {
     if ! sed -i 's/Bochs Pseudo/Intel RealTime/g' qemu*/roms/ipxe/src/drivers/net/pnic.c; then
         echo 'Bochs Pseudo was not replaced in roms/ipxe/src/drivers/net/pnic.c'; fail=1
     fi
-    # by Tim Shelton (redsand) @ HAWK (hawk.io)
-    if ! sed -i 's/Bochs\/Plex86/<WOOT>\/FIRM64/g' qemu*/roms/vgabios/vbe.c; then
-        echo 'BOCHS was not replaced in roms/vgabios/vbe.c'; fail=1
-    fi
 }
 
 function replace_seabios_clues_public() {
