@@ -337,7 +337,9 @@ function qemu_func() {
     if [ ! -f qemu-$qemu_version.tar.xz ]; then 
         wget https://download.qemu.org/qemu-$qemu_version.tar.xz
     fi
-    tar xJf qemu-$qemu_version.tar.xz
+    if [ ! tar xf qemu-$qemu_version.tar.xz ]; then
+         exit "[-] Failed to extract, check if download was correct"
+    fi
     fail=0
 
     if [ "$OS" = "Linux" ]; then
