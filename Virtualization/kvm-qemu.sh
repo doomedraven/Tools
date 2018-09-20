@@ -38,7 +38,8 @@ qemu_version=3.0.0
 # libvirt - https://libvirt.org/sources/
 libvirt_version=4.7.0
 # virt-manager - https://virt-manager.org/download/sources/virt-manager/
-virt_manager_version=1.5.1
+# https://github.com/virt-manager/virt-manager/releases on oficial web is 1.5.1 but it breaks deps
+virt_manager_version=1.5.0
 
 # autofilled
 OS=""
@@ -123,6 +124,8 @@ function install_libvirt() {
     sed -i 's/#security_driver = "selinux"/security_driver = "apparmor"/g' /etc/libvirt/qemu.conf
     aa-complain /usr/sbin/libvirtd
 
+    #pip install libvirt-python
+    #pip3 install libvirt-python
     cd /tmp || return
     if [ ! -f v$libvirt_version.zip ]; then
         wget https://github.com/libvirt/libvirt-python/archive/v$libvirt_version.zip
@@ -131,12 +134,28 @@ function install_libvirt() {
     cd libvirt-python* || return 
     python setup.py build
     sudo python setup.py install
+
+    if [ "$OS" = "Linux" ]; then
+        # https://github.com/libvirt/libvirt/commit/e94979e901517af9fdde358d7b7c92cc055dd50c
+        groupname=""
+        if grep -q -E '^libvirtd:' /etc/group; then
+            groupname="libvirtd"
+        elif grep -q -E '^libvirt:' /etc/group; then
+            groupname="libvirt"
+        else
+            # create group if missed
+            groupname="libvirt"
+            sudo groupadd libvirt
+        fi
+        usermod -G $groupname -a "$(whoami)"
+        echo "[+] You should logout and login "
+    fi
 }
 
 function install_kvm_linux_apt() {
     #sed -i 's/# deb-src/deb-src/g' /etc/apt/sources.list
     sudo apt-get update
-    sudo apt-get install build-essential numad python-pip gcc pkg-config cpu-checker glib-2.0 libglib2.0-dev libsdl1.2-dev lvm2 intltool -y
+    sudo apt-get install build-essential  python-pip gcc pkg-config cpu-checker  intltool -y
     sudo apt-get install gtk-update-icon-cache -y
     
     # WSL support
@@ -145,30 +164,67 @@ function install_kvm_linux_apt() {
     sudo apt-get purge libvirt0 libvirt-bin -y
     install_libvirt
 
-    # https://github.com/libvirt/libvirt/commit/e94979e901517af9fdde358d7b7c92cc055dd50c
-    groupname=""
-    if grep -q -E '^libvirtd:' /etc/group; then
-        groupname="libvirtd"
-    elif grep -q -E '^libvirt:' /etc/group; then
-        groupname="libvirt"
-    else
-        # create group if missed
-        groupname="libvirt"
-        sudo groupadd libvirt
-    fi
-    usermod -G $groupname -a "$(whoami)"
-
     systemctl enable libvirtd.service
     systemctl restart libvirtd.service
     systemctl enable virtlogd.socket
     systemctl restart virtlogd.socket
 
-    if [ ! -f "virt-manager-$virt_manager_version.tar.gz" ]; then
-        wget https://virt-manager.org/download/sources/virt-manager/virt-manager-$virt_manager_version.tar.gz
+    # from build-dep
+    sudo apt install libgirepository1.0-dev gtk-doc-tools python-pip python3-pip gir1.2-govirt-1.0 libgovirt-dev \
+    libgovirt-common libgovirt2 gir1.2-rest-0.7 unzip intltool augeas-doc ifupdown wodim cdrkit-doc indicator-application \
+    augeas-tools radvd auditd systemtap nfs-common zfsutils pm-utils python-openssl-doc python-socks python-ntlm samba ovmf \
+    debootstrap sharutils-doc ssh-askpass gnome-keyring python-requests python-six python-urllib3 python2.7 python2.7-minimal \
+    sharutils spice-client-glib-usb-acl-helper ubuntu-mono x11-common python-cryptography python-dbus python-enum34 python-gi \
+    python-gi-cairo python-idna python-ipaddr python-ipaddress  python-libxml2 python-minimal python-openssl python-pkg-resources \
+    libxml2-utils libxrandr2 libxrender1 libxshmfence1 libxtst6 libxv1 libyajl2 msr-tools osinfo-db python python-asn1crypto \
+    python-cairo python-certifi python-cffi-backend python-chardet libxcb-present0 libxcb-render0 libxcb-shm0 libxcb-sync1 \
+    libxcb-xfixes0 libxcomposite1 libxcursor1 libxdamage1 libxen-4.9 libxenstore3.0 libxfixes3 libxft2 libxi6 libxinerama1 \
+    libxkbcommon0 libusbredirhost1 libusbredirparser1 libv4l-0 libv4lconvert0 libvisual-0.4-0 libvorbis0a libvorbisenc2 libvpx5 \
+    libvte-2.91-0 libvte-2.91-common libwavpack1 libwayland-client0 libwayland-cursor0 libwayland-egl1-mesa libwayland-server0 \
+    libx11-xcb1 libxcb-dri2-0 libxcb-dri3-0 libsoup-gnome2.4-1 libsoup2.4-1 libspeex1 libspice-client-glib-2.0-8 \
+    libspice-client-gtk-3.0-5 libspice-server1 libtag1v5 libtag1v5-vanilla libthai-data libthai0 libtheora0 libtiff5 \
+    libtwolame0 libpython2.7 libpython2.7-minimal libpython2.7-stdlib librados2 libraw1394-11 librbd1 librdmacm1 librest-0.7-0 \
+    librsvg2-2 librsvg2-common libsamplerate0 libsdl1.2debian libshout3 libsndfile1 libpango-1.0-0 libpangocairo-1.0-0 \
+    libpangoft2-1.0-0 libpangoxft-1.0-0 libpciaccess0 libphodav-2.0-0 libphodav-2.0-common libpixman-1-0 libproxy1v5 \
+    libpulse-mainloop-glib0 libpulse0 libpython-stdlib libgstreamer1.0-0 libgtk-3-0 libgtk-3-bin libgtk-3-common libgtk-vnc-2.0-0 \
+    libgudev-1.0-0 libgvnc-1.0-0 libharfbuzz0b libibverbs1 libiec61883-0 libindicator3-7 libiscsi7 libjack-jackd2-0 libjbig0 \
+    libjpeg-turbo8 libjpeg8 libjson-glib-1.0-0 libjson-glib-1.0-common liblcms2-2 libmp3lame0 libmpg123-0 libnetcf1 libnl-route-3-200 \
+    libnspr4 libnss3 libogg0 libopus0 liborc-0.4-0 libosinfo-1.0-0 libcairo-gobject2 libcairo2 libcdparanoia0 libcolord2 libcroco3 \
+    libcups2 libdatrie1 libdbusmenu-glib4 libdbusmenu-gtk3-4 libdconf1 libdv4 libegl-mesa0 libegl1 libepoxy0 libfdt1 libflac8 \
+    libfontconfig1 libgbm1 libgdk-pixbuf2.0-0 libgdk-pixbuf2.0-bin libgdk-pixbuf2.0-common libglapi-mesa libglvnd0  libgraphite2-3 \
+    libgstreamer-plugins-base1.0-0 libgstreamer-plugins-good1.0-0 gtk-update-icon-cache hicolor-icon-theme humanity-icon-theme \
+    ibverbs-providers  libaa1 libaio1 libappindicator3-1 libasound2 libasound2-data libasyncns0 libatk-bridge2.0-0 libatk1.0-0 \
+    libatk1.0-data libatspi2.0-0 libaugeas0 libavahi-client3 libavahi-common-data libavahi-common3 libavc1394-0 libbluetooth3 \
+    libbrlapi0.6 libcaca0 libcacard0 gir1.2-atk-1.0 gir1.2-freedesktop gir1.2-gdkpixbuf-2.0 gir1.2-gtk-3.0 gir1.2-gtk-vnc-2.0 \
+    gir1.2-libosinfo-1.0  gir1.2-pango-1.0 gir1.2-spiceclientglib-2.0 gir1.2-spiceclientgtk-3.0 gir1.2-vte-2.91 glib-networking \
+    glib-networking-common glib-networking-services gsettings-desktop-schemas gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
+    gstreamer1.0-x adwaita-icon-theme at-spi2-core augeas-lenses bridge-utils cpu-checker dconf-gsettings-backend dconf-service \
+    fontconfig fontconfig-config fonts-dejavu-core genisoimage gir1.2-appindicator3-0.1 gir1.2-secret-1 -y
+    pip3 install pycairo PyGObject -U
+    pip install pycairo PyGObject -U
+
+    cd /tmp || return
+    if wget https://libvirt.org/sources/glib/libvirt-glib-1.0.0.tar.gz; then
+        tar xf libvirt-glib-1.0.0.tar.gz
+        cd libvirt-glib-1.0.0
+        aclocal && libtoolize --force
+        automake --add-missing
+        ./configure 
+        make -j"$(getconf _NPROCESSORS_ONLN)"
+        sudo checkinstall --pkgname=libvirt-glib-1.0-0 --default
+        #wget http://launchpadlibrarian.net/297448356/gir1.2-libvirt-glib-1.0_1.0.0-1_amd64.deb
+        #dpkg -i gir1.2-libvirt-glib-1.0_1.0.0-1_amd64.deb
+        sudo apt-get install gir1.2-libvirt-glib-1.0 -y
+
+        sudo /sbin/ldconfig
     fi
-    tar xf "virt-manager-$virt_manager_version.tar.gz"
-    cd "virt-manager-$virt_manager_version" || return
-    sudo apt-get install intltool -y
+    if [ ! -f "virt-manager" ]; then
+        git clone -b v1.5-maint https://github.com/virt-manager/virt-manager.git
+    fi
+    cd "virt-manager" || return
+    sudo apt-get install gobject-introspection intltool pkg-config python-lxml libxml2-dev libxslt-dev python-dev gir1.2-gtk-vnc-2.0 gir1.2-spiceclientgtk-3.0 libgtk-3-dev -y
+    #pip install libxml2 
+    python setup.py build
     python setup.py install
     if [ "$SHELL" = "/bin/zsh" ] || [ "$SHELL" = "/usr/bin/zsh" ] ; then
         echo "export LIBVIRT_DEFAULT_URI=qemu:///system" >> "$HOME/.zsh"
@@ -333,8 +389,9 @@ function qemu_func() {
     if [ ! -f qemu-$qemu_version.tar.xz ]; then 
         wget https://download.qemu.org/qemu-$qemu_version.tar.xz
     fi
-    if [ ! tar xf qemu-$qemu_version.tar.xz ]; then
-         exit "[-] Failed to extract, check if download was correct"
+    if [ $(tar xf qemu-$qemu_version.tar.xz) ]; then
+        echo "[-] Failed to extract, check if download was correct"
+        exit 1
     fi
     fail=0
 
@@ -393,6 +450,8 @@ function qemu_func() {
                 else
                     echo '[-] Install failed'
                 fi
+                sudo groupadd tss
+                sudo useradd -g tss tss
             else
                 echo '[-] Compilling failed'
             fi
@@ -404,14 +463,15 @@ function qemu_func() {
     else
         echo '[-] Download QEMU source was not possible'
     fi
-    if [ "$OS" = "linux" ]; then
-        dpkg --get-selections | grep "qemu" | xargs sudo apt-mark hold
-        #sudo apt-mark unhold qemu
-    fi
+    #if [ "$OS" = "linux" ]; then
+    #    dpkg --get-selections | grep "qemu" | xargs sudo apt-mark hold
+    #    #sudo apt-mark unhold qemu
+    #fi
 }
 
 function seabios_func() {
-    fail=0          
+    fail=0     
+    cd /tmp || return     
     echo '[+] Installing SeaBios dependencies'
     apt-get install git iasl -y
     if [ -d seabios ]; then
