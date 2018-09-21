@@ -3,7 +3,7 @@
 # https://www.doomedraven.com/2016/05/kvm.html
 
 # 11.09.2018 - code improvement
-# 09.09.2018 - ACPI fixes - huge thanks to @2sec4u for your patience and your time/help :P
+# 09.09.2018 - ACPI fixes - huge thanks to @2sec4u and @seifreed for your patience and your time/help :P
 # 05.09.2018 - libivrt 4.7 and virtlogd
 # 19.08.2018 - Intel HAXM notes
 # 14.08.2018 - QEMU 3 support tested on ubuntu 18.04
