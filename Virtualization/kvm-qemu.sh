@@ -470,8 +470,8 @@ function qemu_func() {
 }
 
 function seabios_func() {
-    fail=0     
-    cd /tmp || return     
+    cd /tmp || return
+    fail=0          
     echo '[+] Installing SeaBios dependencies'
     apt-get install git iasl -y
     if [ -d seabios ]; then
@@ -486,6 +486,10 @@ function seabios_func() {
         fi
         # sudo make help
         # sudo make menuconfig -> BIOS tables -> disable Include default ACPI DSDT
+        # get rid of this hack
+        make -j "$(getconf _NPROCESSORS_ONLN)" 2>/dev/null
+        sed -i 's/CONFIG_ACPI_DSDT=y/CONFIG_ACPI_DSDT=n/g' .config
+        sed -i 's/CONFIG_XEN=y/CONFIG_XEN=n/g' .config
         if make -j "$(getconf _NPROCESSORS_ONLN)"; then
             echo '[+] Replacing old bios.bin to new out/bios.bin'
             bios=0
