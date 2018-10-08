@@ -463,9 +463,10 @@ function qemu_func() {
     else
         echo '[-] Download QEMU source was not possible'
     fi
-    #if [ "$OS" = "linux" ]; then
-    #    dpkg --get-selections | grep "qemu" | xargs sudo apt-mark hold
-    #    #sudo apt-mark unhold qemu
+    if [ "$OS" = "linux" ]; then
+        dpkg --get-selections | grep "qemu" | xargs sudo apt-mark hold
+        dpkg --get-selections | grep "libvirt" | xargs sudo apt-mark hold
+        #sudo apt-mark unhold qemu
     #fi
 }
 
@@ -517,6 +518,9 @@ function seabios_func() {
 
 function issues(){
 cat << EndOfHelp
+
+### Links
+* https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/virtualization_deployment_and_administration_guide/sect-troubleshooting-common_libvirt_errors_and_troubleshooting
 ### Errors and Solutions
     * Error:
         required by /usr/lib/libvirt/storage-file/libvirt_storage_file_fs.so
