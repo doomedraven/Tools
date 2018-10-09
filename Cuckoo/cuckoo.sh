@@ -8,6 +8,8 @@
 #     # Django versions < 1.9
 #     from django.utils.importlib import import_module
 
+# If you are using Ubuntu Server 18.04 LTS, remember to have in source list universe and multiverse support
+
 # Static values
 # Where to place everything
 # for tor
