@@ -315,7 +315,7 @@ EOF
 }
 
 function install_CAPE() {
-    cd /opt || return
+    cd $CUCKOO_ROOT || return
     git clone https://github.com/ctxis/CAPE/ CAPE
 
     #chown -R root:cuckoo /usr/var/malheur/
