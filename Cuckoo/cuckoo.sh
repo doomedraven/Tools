@@ -139,8 +139,6 @@ EOF
     sudo aa-disable /usr/sbin/tcpdump
     # ToDo check if user exits
 
-    adduser cuckoo
-    usermod -G cuckoo -a cuckoo
     groupadd pcap
     usermod -a -G pcap cuckoo
     chgrp pcap /usr/sbin/tcpdump
