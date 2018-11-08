@@ -467,7 +467,7 @@ function qemu_func() {
         dpkg --get-selections | grep "qemu" | xargs sudo apt-mark hold
         dpkg --get-selections | grep "libvirt" | xargs sudo apt-mark hold
         #sudo apt-mark unhold qemu
-    #fi
+    fi
 }
 
 function seabios_func() {

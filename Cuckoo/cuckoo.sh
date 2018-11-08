@@ -32,6 +32,8 @@ cat << EndOfHelp
         Dependencies - Install all dependencies with performance tricks
         Supervisor - Install supervisor config for CAPE; for v2 use cuckoo --help ;)
 
+        Suricata - Install suricata
+
     Useful links - THEY CAN BE OUTDATED; RTFM!!!
         * https://cuckoo.sh/docs/introduction/index.html
         * https://medium.com/@seifreed/how-to-deploy-cuckoo-sandbox-431a6e65b848
@@ -39,6 +41,107 @@ cat << EndOfHelp
     Cuckoo V2 customizations neat howto
         * https://www.adlice.com/cuckoo-sandbox-customization-v2/
 EndOfHelp
+}
+
+function install_suricata(){
+
+    # https://doc.rust-lang.org/1.0.0/book/installing-rust.html
+    curl -f -L https://static.rust-lang.org/rustup.sh -O
+    sh rustup.sh
+    # Speedup suricata >= 3.1
+    # https://redmine.openinfosecfoundation.org/projects/suricata/wiki/Hyperscan
+    # https://github.com/01org/hyperscan
+    cd /tmp || return
+    git clone https://github.com/01org/hyperscan.git
+    cd hyperscan/ || return
+    mkdir builded
+    cd builded || return
+    sudo apt-get install cmake libboost-dev ragel libhtp2 -y
+    # doxygen sphinx-common libpcap-dev
+    cmake -DBUILD_STATIC_AND_SHARED=1 ../
+    # tests
+    #bin/unit-hyperscan
+    make -j"$(getconf _NPROCESSORS_ONLN)"
+    sudo checkinstall -D --pkgname=hyperscan --default
+
+    echo '[+] Configure Suricata'
+    mkdir /var/run/suricata
+    sudo chown cuckoo:cuckoo /var/run/suricata -R
+
+    # if we wan suricata with hyperscan:
+    sudo apt-get -y install libpcre3 libpcre3-dbg libpcre3-dev \
+    build-essential autoconf automake libtool libpcap-dev libnet1-dev \
+    libyaml-0-2 libyaml-dev zlib1g zlib1g-dev libcap-ng-dev libcap-ng0 \
+    make libmagic-dev libjansson-dev libjansson4 pkg-config liblz4-dev
+    sudo apt-get -y install libnetfilter-queue-dev libnetfilter-queue1 libnfnetlink-dev libnfnetlink0
+
+    sudo pip install pyyaml
+
+    echo "/usr/local/lib" | sudo tee --append /etc/ld.so.conf.d/usrlocal.conf
+    sudo ldconfig
+
+    #cd /tmp || return
+    #wget https://github.com/luigirizzo/netmap/archive/v11.4.zip
+    #unzip v11.4.zip
+    #cd netmap-* || return
+    #./configure
+    #make -j"$(getconf _NPROCESSORS_ONLN)"
+    # https://redmine.openinfosecfoundation.org/projects/suricata/wiki/Ubuntu_Installation
+    cd /tmp || return
+    wget "https://www.openinfosecfoundation.org/download/suricata-current.tar.gz"
+    tar -xzf "suricata-current.tar.gz"
+    rm "suricata-current.tar.gz"
+    cd suricata-* || return
+    #cd rust && CARGO_HOME=/root/.cargo CARGO_TARGET_DIR=/tmp/suricata*/rust/target /root/.cargo/bin/cargo build --release --frozen --features " "
+    #cd .. || return
+    ./configure --enable-nfqueue --prefix=/usr --sysconfdir=/etc --localstatedir=/var --with-libhs-includes=/usr/local/include/hs/ --with-libhs-libraries=/usr/local/lib/
+    make -j"$(getconf _NPROCESSORS_ONLN)"
+    #sudo checkinstall -D --pkgname=suricata --default
+    make install-full
+    suricata --build-info|grep Hyperscan
+
+    cd scripts/suricatasc || return
+    python setup.py install
+    touch /etc/suricata/threshold.config
+
+
+    """
+    You can now start suricata by running as root something like '/usr/bin/suricata -c /etc/suricata//suricata.yaml -i eth0'.
+
+    If a library like libhtp.so is not found, you can run suricata with:
+    LD_LIBRARY_PATH=/usr/lib /usr/bin/suricata -c /etc/suricata//suricata.yaml -i eth0
+
+    While rules are installed now, its highly recommended to use a rule manager for maintaining rules.
+    The two most common are Oinkmaster and Pulledpork. For a guide see:
+    https://redmine.openinfosecfoundation.org/projects/suricata/wiki/Rule_Management_with_Oinkmaster
+    """
+
+    # Download etupdate to update Emerging Threats Open IDS rules:
+    cd /tmp || return
+    git clone https://github.com/seanthegeek/etupdate.git
+    sudo cp etupdate/etupdate /usr/sbin
+    sudo /usr/sbin/etupdate -V
+
+    if ! grep -q "15 * * * * /usr/sbin/etupdate" $(crontab -l); then
+        crontab -l | { cat; echo "15 * * * * /usr/sbin/etupdate"; } | crontab -
+    fi
+    if ! grep -q "15 * * * * /usr/bin/suricatasc -c reload-rules" $(crontab -l); then
+        crontab -l | { cat; echo "15 * * * * /usr/bin/suricatasc -c reload-rules"; } | crontab -
+    fi
+    #change suricata yaml
+    sed -i 's/RUN=yes/RUN=no/g' /etc/default/suricata
+    sed -i 's/mpm-algo: ac/mpm-algo: hs/g' /etc/suricata/suricata.yaml
+    sed -i 's/mpm-algo: auto/mpm-algo: hs/g' /etc/suricata/suricata.yaml
+    sed -i 's/#run-as:/run-as:/g' /etc/suricata/suricata.yaml
+    sed -i 's/#  user: suri/   user: cuckoo/g' /etc/suricata/suricata.yaml
+    sed -i 's/#  user: suri/   group: cuckoo/g' /etc/suricata/suricata.yaml
+    sed -i 's/    depth: 1mb/    depth: 0/g' /etc/suricata/suricata.yaml
+    sed -i 's/request-body-limit: 100kb/request-body-limit: 0/g' /etc/suricata/suricata.yaml
+    sed -i 's/response-body-limit: 100kb/response-body-limit: 0/g' /etc/suricata/suricata.yaml
+    sed -i 's/EXTERNAL_NET: "!$HOME_NET"/EXTERNAL_NET: "ANY"/g' /etc/suricata/suricata.yaml
+    # enable eve-log
+    python -c "pa = '/etc/suricata/suricata.yaml';q=open(pa, 'rb').read().replace('eve-log:\n      enabled: no\n', 'eve-log:\n      enabled: yes\n');open(pa, 'wb').write(q);"
+
 }
 
 function dependencies() {
@@ -52,11 +155,11 @@ function dependencies() {
     #sudo canonical-livepatch enable APITOKEN
 
     # deps
-    apt-get install sqlite3 tmux net-tools checkinstall graphviz git numactl python python-dev python-pip python-m2crypto swig upx-ucl libssl-dev wget unzip p7zip-full geoip-database libgeoip-dev libjpeg-dev mono-utils ssdeep libfuzzy-dev exiftool checkinstall ssdeep uthash-dev libconfig-dev libarchive-dev libtool autoconf automake privoxy software-properties-common wkhtmltopdf xvfb xfonts-100dpi tcpdump libcap2-bin -y 
-    apt-get install supervisor python-pil subversion python-capstone uwsgi uwsgi-plugin-python -y 
+    apt-get install sqlite3 tmux net-tools checkinstall graphviz git numactl python python-dev python-pip python-m2crypto swig upx-ucl libssl-dev wget unzip p7zip-full geoip-database libgeoip-dev libjpeg-dev mono-utils ssdeep libfuzzy-dev exiftool checkinstall ssdeep uthash-dev libconfig-dev libarchive-dev libtool autoconf automake privoxy software-properties-common wkhtmltopdf xvfb xfonts-100dpi tcpdump libcap2-bin -y
+    apt-get install supervisor python-pil subversion python-capstone uwsgi uwsgi-plugin-python -y
     #clamav clamav-daemon clamav-freshclam
     # if broken sudo python -m pip uninstall pip && sudo apt install python-pip --reinstall
-    #pip install --upgrade pip 
+    #pip install --upgrade pip
     # /usr/bin/pip
     # from pip import __main__
     # if __name__ == '__main__':
@@ -73,10 +176,10 @@ function dependencies() {
     # 18.04
     if grep -q "DISTRIB_RELEASE=18.04" /etc/lsb-release; then
         echo "deb [ arch=amd64 ] https://repo.mongodb.org/apt/ubuntu bionic/mongodb-org/4.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb.list
-    # 16.04 
+    # 16.04
     else
         echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu xenial/mongodb-org/4.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb.list
-    fi 
+    fi
 
     sudo apt-get update
     sudo apt-get install -y mongodb-org-mongos mongodb-org-server mongodb-org-shell mongodb-org-tools
@@ -97,10 +200,12 @@ EOF
     systemctl enable mongodb.service
     systemctl restart mongodb.service
 
-    pip install sqlalchemy jinja2 markupsafe bottle django chardet pygal django-ratelimit rarfile jsbeautifier dpkt nose dnspython pytz requests python-magic geoip pillow java-random python-whois git+https://github.com/crackinglandia/pype32.git git+https://github.com/kbandla/pydeep.git flask flask-restful flask-sqlalchemy openjdk-11-jdk-headless openjdk-8-jdk-headless
+    pip install sqlalchemy jinja2 markupsafe bottle django chardet pygal django-ratelimit rarfile jsbeautifier dpkt nose dnspython pytz requests python-magic geoip pillow java-random python-whois git+https://github.com/crackinglandia/pype32.git git+https://github.com/kbandla/pydeep.git flask flask-restful flask-sqlalchemy
+    apt install openjdk-8-jdk-headless
+    # openjdk-11-jdk-headless
     pip install distorm3 openpyxl git+https://github.com/volatilityfoundation/volatility.git PyCrypto #git+https://github.com/buffer/pyv8
     # Postgresql
-    apt-get install postgresql libpq-dev -y 
+    apt-get install postgresql libpq-dev -y
     pip install psycopg2
 
     #sudo su - postgres
@@ -157,94 +262,7 @@ EOF
     dpkg -i malheur_0.6.0-1_amd64.deb
     '''
 
-    # Speedup suricata >= 3.1
-    # https://redmine.openinfosecfoundation.org/projects/suricata/wiki/Hyperscan
-    # https://github.com/01org/hyperscan
-    cd /tmp || return
-    git clone https://github.com/01org/hyperscan.git
-    cd hyperscan/ || return
-    mkdir builded
-    cd builded || return
-    sudo apt-get install cmake libboost-dev ragel libhtp2 -y
-    # doxygen sphinx-common libpcap-dev
-    cmake -DBUILD_STATIC_AND_SHARED=1 ../
-    # tests
-    #bin/unit-hyperscan
-    make -j"$(getconf _NPROCESSORS_ONLN)"
-    sudo checkinstall -D --pkgname=hyperscan --default
-
-    echo '[+] Configure Suricata'
-    mkdir /var/run/suricata
-    sudo chown cuckoo:cuckoo /var/run/suricata -R
-
-    # if we wan suricata with hyperscan:
-    sudo apt-get -y install libpcre3 libpcre3-dbg libpcre3-dev \
-    build-essential autoconf automake libtool libpcap-dev libnet1-dev \
-    libyaml-0-2 libyaml-dev zlib1g zlib1g-dev libcap-ng-dev libcap-ng0 \
-    make libmagic-dev libjansson-dev libjansson4 pkg-config
-    sudo apt-get -y install libnetfilter-queue-dev libnetfilter-queue1 libnfnetlink-dev libnfnetlink0
-
-
-    echo "/usr/local/lib" | sudo tee --append /etc/ld.so.conf.d/usrlocal.conf
-    sudo ldconfig
-
-    #cd /tmp || return
-    #wget https://github.com/luigirizzo/netmap/archive/v11.4.zip
-    #unzip v11.4.zip
-    #cd netmap-* || return
-    #./configure
-    #make -j"$(getconf _NPROCESSORS_ONLN)"
-    # https://redmine.openinfosecfoundation.org/projects/suricata/wiki/Ubuntu_Installation
-    cd /tmp || return
-    wget "https://www.openinfosecfoundation.org/download/suricata-current.tar.gz"
-    tar -xzf "suricata-current.tar.gz"
-    rm "suricata-current.tar.gz"
-    cd suricata-* || return
-    ./configure --enable-nfqueue --prefix=/usr --sysconfdir=/etc --localstatedir=/var --with-libhs-includes=/usr/local/include/hs/ --with-libhs-libraries=/usr/local/lib/ 
-    make -j"$(getconf _NPROCESSORS_ONLN)"
-    sudo checkinstall -D --pkgname=suricata --default
-    suricata --build-info|grep Hyperscan
-    make install-conf
-
-    cd scripts/suricatasc || return
-    python setup.py install
-    touch /etc/suricata/threshold.config
-
-
-    """
-    You can now start suricata by running as root something like '/usr/bin/suricata -c /etc/suricata//suricata.yaml -i eth0'.
-
-    If a library like libhtp.so is not found, you can run suricata with:
-    LD_LIBRARY_PATH=/usr/lib /usr/bin/suricata -c /etc/suricata//suricata.yaml -i eth0
-
-    While rules are installed now, its highly recommended to use a rule manager for maintaining rules.
-    The two most common are Oinkmaster and Pulledpork. For a guide see:
-    https://redmine.openinfosecfoundation.org/projects/suricata/wiki/Rule_Management_with_Oinkmaster
-    """
-
-    # Download etupdate to update Emerging Threats Open IDS rules:
-    cd /tmp || return
-    git clone https://github.com/seanthegeek/etupdate.git
-    sudo cp etupdate/etupdate /usr/sbin
-    sudo /usr/sbin/etupdate -V
-
-    crontab -l | { cat; echo "15 * * * * /usr/sbin/etupdate"; } | crontab -
-    crontab -l | { cat; echo "15 * * * * /usr/bin/suricatasc -c reload-rules"; } | crontab -
-
-    #change suricata yaml
-    sed -i 's/RUN=yes/RUN=no/g' /etc/default/suricata
-    sed -i 's/mpm-algo: ac/mpm-algo: hs/g' /etc/suricata/suricata.yaml
-    sed -i 's/mpm-algo: auto/mpm-algo: hs/g' /etc/suricata/suricata.yaml
-    sed -i 's/#run-as:/run-as:/g' /etc/suricata/suricata.yaml
-    sed -i 's/#  user: suri/   user: cuckoo/g' /etc/suricata/suricata.yaml
-    sed -i 's/#  user: suri/   group: cuckoo/g' /etc/suricata/suricata.yaml
-    sed -i 's/    depth: 1mb/    depth: 0/g' /etc/suricata/suricata.yaml
-    sed -i 's/request-body-limit: 100kb/request-body-limit: 0/g' /etc/suricata/suricata.yaml
-    sed -i 's/response-body-limit: 100kb/response-body-limit: 0/g' /etc/suricata/suricata.yaml
-    sed -i 's/EXTERNAL_NET: "!$HOME_NET"/EXTERNAL_NET: "ANY"/g' /etc/suricata/suricata.yaml
-    # enable eve-log
-    python -c "pa = '/etc/suricata/suricata.yaml';q=open(pa, 'rb').read().replace('eve-log:\n      enabled: no\n', 'eve-log:\n      enabled: yes\n');open(pa, 'wb').write(q);"
-
+    install_suricata
 
     # https://www.torproject.org/docs/debian.html.en
     echo "deb http://deb.torproject.org/torproject.org bionic main" >> /etc/apt/sources.list
@@ -284,7 +302,7 @@ EOF
     sudo sysctl -p
 
     ### PDNS
-    sudo apt-get install git binutils-dev libldns-dev libpcap-dev libdate-simple-perl libdatetime-perl libdbd-mysql-perl -y 
+    sudo apt-get install git binutils-dev libldns-dev libpcap-dev libdate-simple-perl libdatetime-perl libdbd-mysql-perl -y
     cd /tmp || return
     git clone git://github.com/gamelinux/passivedns.git
     cd passivedns/ || return
@@ -306,7 +324,7 @@ EOF
 
     cd /tmp || return
     git clone https://github.com/unicorn-engine/unicorn.git
-    sudo apt-get install libglib2.0-dev -y 
+    sudo apt-get install libglib2.0-dev -y
     cd unicorn || return
     ./make.sh
     sudo ./make.sh install
@@ -321,7 +339,7 @@ function install_CAPE() {
     #chown -R root:cuckoo /usr/var/malheur/
     #chmod -R =rwX,g=rwX,o=X /usr/var/malheur/
 
-    cd /tmp || return 
+    cd /tmp || return
     mkdir work
     git clone https://github.com/herumi/cybozulib
     git clone https://github.com/herumi/msoffice
@@ -468,6 +486,8 @@ EOF
     fi;;
 'dependencies')
     dependencies;;
+'suricata')
+    install_suricata;;
 *)
     usage;;
 esac
