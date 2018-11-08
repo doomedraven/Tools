@@ -24,7 +24,7 @@ function usage() {
 cat << EndOfHelp
     You need to edit CUCKOO_ROOT, IFACE_IP and PASSWD for correct install
 
-    Usage: $0 <cuckoo_version> <iface_ip>
+    Usage: $0 <command> <cuckoo_version> <iface_ip>
         Example: $0 cape 192.168.1.1
     Commands - are case insensitive:
         All - Installs dependencies, V2/CAPE, sets supervisor
