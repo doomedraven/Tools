@@ -33,13 +33,18 @@
 #      strs[4] = "prl hyperv  "; /* Parallels */
 #      strs[5] = "VBoxVBoxVBox"; /* VirtualBox */
 
+export LANGUAGE=en_US.UTF-8
+export LC_ALL=en_US.UTF-8
+export LANG=en_US.UTF-8
+export LC_TYPE=en_US.UTF-8
+
 #https://www.qemu.org/download/#source or https://download.qemu.org/
 qemu_version=3.0.0
 # libvirt - https://libvirt.org/sources/
 libvirt_version=4.7.0
 # virt-manager - https://virt-manager.org/download/sources/virt-manager/
 # https://github.com/virt-manager/virt-manager/releases on oficial web is 1.5.1 but it breaks deps
-virt_manager_version=1.5.0
+virt_manager_version=2.0.0
 
 # autofilled
 OS=""
