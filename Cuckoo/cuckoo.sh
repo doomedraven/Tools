@@ -359,7 +359,7 @@ function supervisor() {
     cat >> /etc/supervisor/conf.d/cuckoo.conf <<EOF
     [program:cuckoo]
     command=python cuckoo.py
-    directory=$CUCKOO_ROOT/
+    directory=$CUCKOO_ROOT/CAPE/
     user=cuckoo
     autostart=true
     autorestart=true
@@ -368,7 +368,7 @@ function supervisor() {
 
     [program:web]
     command=python manage.py runserver 0.0.0.0:8000
-    directory=$CUCKOO_ROOT/web
+    directory=$CUCKOO_ROOT/CAPE/web
     user=cuckoo
     autostart=true
     autorestart=true
@@ -378,7 +378,7 @@ function supervisor() {
     [program:process]
     command=python process.py -p7 auto
     user=cuckoo
-    directory=$CUCKOO_ROOT/utils
+    directory=$CUCKOO_ROOT/CAPE/utils
     autostart=true
     autorestart=true
     stderr_logfile=/var/log/supervisor/process.err.log
@@ -386,7 +386,7 @@ function supervisor() {
 
     [program:rooter]
     command=python rooter.py
-    directory=$CUCKOO_ROOT/utils
+    directory=$CUCKOO_ROOT/CAPE/utils
     user=root
     autostart=true
     autorestart=true
