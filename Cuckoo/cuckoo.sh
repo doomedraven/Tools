@@ -16,7 +16,7 @@
 IFACE_IP="192.168.1.1"
 # DB password
 PASSWD="SuperPuperCAPESecret"
-CUCKOO_ROOT=""
+CUCKOO_ROOT="/opt/"
 
 yara_version="3.8.1"
 
