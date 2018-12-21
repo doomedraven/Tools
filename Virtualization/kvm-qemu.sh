@@ -3,7 +3,7 @@
 # https://www.doomedraven.com/2016/05/kvm.html
 # Use Ubuntu 18.04 LTS
 
-# 14.12.2018 - QEMU 3.1, libvirt-2.10
+# 14.12.2018 - QEMU 3.1, libvirt-4.10
 # 10.11.2018 - Virt-manager 2, libivrt-4.9, fixes
 # 11.09.2018 - code improvement
 # 09.09.2018 - ACPI fixes - huge thanks to @2sec4u and @seifreed  for your patience and your time/help :P
