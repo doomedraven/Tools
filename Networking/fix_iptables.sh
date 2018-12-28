@@ -25,5 +25,4 @@ net.bridge.bridge-nf-call-arptables=0 >> /etc/sysctl.conf
 net.ipv4.conf.all.forwarding=1 >> /etc/sysctl.conf
 net.ipv4.ip_forward=1 >> /etc/sysctl.conf
 sysctl -p
-echo "iptables -A FORWARD -i br0 -o br0 -j ACCEPT" >> /etc/network/if-pre-up.d/kvm_bridge_iptables
-sysctl -p
+echo "iptables -A FORWARD -i virbr0 -o virbr0 -j ACCEPT" >> /etc/network/if-pre-up.d/kvm_bridge_iptables
