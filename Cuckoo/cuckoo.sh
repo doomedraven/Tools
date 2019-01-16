@@ -196,7 +196,7 @@ function dependencies() {
     [Install]
     WantedBy=multi-user.target
 EOF
-
+    systemctl unmask mongodb.service
     systemctl enable mongodb.service
     systemctl restart mongodb.service
 
