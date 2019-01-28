@@ -32,7 +32,7 @@ REM disable IExplorer Proxy
 reg add "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Internet Settings" /v ProxyEnable /t  REG_DWORD /d 00000000 /f
 REM disable netbios in TCP/IP
 wmic nicconfig where index=8 call SetTcpipNetbios 2
-REM disable netbios service0
+REM disable netbios service
 reg add "HKLM\SYSTEM\CurrentControlSet\services\Imhosts" /v Start /t REG_DWORD /d 4 /f
 REM disable LLMNR
 reg add "HKLM\Software\policies\Microsoft\Windows NT\DNSClient" /v "EnableMulticast" /t REG_DWORD /d 0 /f
