@@ -335,7 +335,7 @@ EOF
 function install_CAPE() {
     cd $CUCKOO_ROOT || return
     git clone https://github.com/ctxis/CAPE/ CAPE
-
+    pip install -r CAPE/requirements.txt
     #chown -R root:cuckoo /usr/var/malheur/
     #chmod -R =rwX,g=rwX,o=X /usr/var/malheur/
 
