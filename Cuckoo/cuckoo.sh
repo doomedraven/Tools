@@ -340,9 +340,15 @@ function install_CAPE() {
     #chmod -R =rwX,g=rwX,o=X /usr/var/malheur/
 
     cd /tmp || return
-    mkdir work
-    git clone https://github.com/herumi/cybozulib
-    git clone https://github.com/herumi/msoffice
+    if [ ! -d work ]; then
+        mkdir work
+    fi
+    if [ ! -d cybozulib ]; then
+        git clone https://github.com/herumi/cybozulib
+    fi
+    if [ ! -d msoffice ]; then
+        git clone https://github.com/herumi/msoffice
+    fi 
     cd msoffice || return
     make -j"$(getconf _NPROCESSORS_ONLN)" RELEASE=1
     mkdir -p "$CUCKOO_ROOT/data/msoffice/"
