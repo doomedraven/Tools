@@ -3,16 +3,6 @@
 # https://www.doomedraven.com/2016/05/kvm.html
 # Use Ubuntu 18.04 LTS
 
-# 14.12.2018 - QEMU 3.1, libvirt-4.10
-# 10.11.2018 - Virt-manager 2, libivrt-4.9, fixes
-# 11.09.2018 - code improvement
-# 09.09.2018 - ACPI fixes - huge thanks to @2sec4u and @seifreed  for your patience and your time/help :P
-# 05.09.2018 - libivrt 4.7 and virtlogd
-# 19.08.2018 - Intel HAXM notes
-# 14.08.2018 - QEMU 3 support tested on ubuntu 18.04
-# 03.08.2018 - More anti-anti by Tim Shelton (redsand) @ HAWK (hawk.io) and @http_error_418
-# 28.02.2018 - Support for qemu 2.12
-
 # https://github.com/dylanaraps/pure-bash-bible
 # https://www.shellcheck.net/
 
@@ -39,13 +29,30 @@
 #https://www.qemu.org/download/#source or https://download.qemu.org/
 qemu_version=3.1.0
 # libvirt - https://libvirt.org/sources/
-libvirt_version=4.10.0
+# changelog - https://libvirt.org/news.html
+libvirt_version=5.0.0
 # virt-manager - https://github.com/virt-manager/virt-manager/releases
 virt_manager_version=2.0.0
-
+# http://download.libguestfs.org/
+libguestfs_version=1.40.1
 # autofilled
 OS=""
 username=""
+
+function changelog() {
+cat << EndOfCL
+    # 30.01.2019 - Libvirt 5.0.0
+    # 27.12.2018 - libguestfs 1.38
+    # 10.11.2018 - Virt-manager 2, libivrt-4.10, fixes
+    # 11.09.2018 - code improvement
+    # 09.09.2018 - ACPI fixes - huge thanks to @2sec4u and @seifreed  for your patience and your time/help :P
+    # 05.09.2018 - libivrt 4.7 and virtlogd
+    # 19.08.2018 - Intel HAXM notes
+    # 14.08.2018 - QEMU 3 support tested on ubuntu 18.04
+    # 03.08.2018 - More anti-anti by Tim Shelton (redsand) @ HAWK (hawk.io) and @http_error_418
+    # 28.02.2018 - Support for qemu 2.12
+EndOfCL
+}
 
 function usage() {
 cat << EndOfHelp
@@ -85,6 +92,18 @@ function install_haxm_mac() {
     else
         echo "export LIBVIRT_DEFAULT_URI=qemu:///system" >> "$HOME/.bashrc"
     fi
+}
+
+function install_libguestfs() {
+    sudo apt install gperf flex bison libaugeas-dev libhivex-dev supermin ocaml-nox libhivex-ocaml genisoimage libhivex-ocaml-dev 2>/dev/null
+    cd /tmp || return
+    wget "http://download.libguestfs.org/1.40-stable/libguestfs-$libguestfs_version.tar.gz"
+    tar xf "libguestfs-$libguestfs_version.tar.gz"
+    cd libguestfs-$libguestfs_version
+    ./configure
+    make -j"$(getconf _NPROCESSORS_ONLN)"
+    REALLY_INSTALL=yes checkinstall -D --pkgname=libvirt-$libvirt_version --default
+    # ln -s /usr/local/lib/libguestfs.so.0 /lib/x86_64-linux-gnu/libguestfs.so.0
 }
 
 function install_libvirt() {
@@ -301,6 +320,7 @@ function replace_qemu_clues_public() {
     #fi
 }
 
+
 function replace_seabios_clues_public() {
     echo "[+] Generating SeaBios Kconfig"
     echo "[+] Fixing SeaBios antivms"
@@ -442,7 +462,8 @@ function qemu_func() {
 	        # add in future --enable-netmap https://sgros-students.blogspot.com/2016/05/installing-and-testing-netmap.html
             # remove --target-list=i386-softmmu,x86_64-softmmu,i386-linux-user,x86_64-linux-user  if you want all targets
             if [ "$OS" = "Linux" ]; then
-                ./configure --prefix=/usr --libexecdir=/usr/lib/qemu --localstatedir=/var --bindir=/usr/bin/  --enable-gnutls --enable-docs --enable-gtk --enable-vnc --enable-vnc-sasl --enable-vnc-png --enable-vnc-jpeg --enable-curl --enable-kvm  --enable-linux-aio --enable-cap-ng --enable-vhost-net --enable-vhost-crypto --enable-spice --enable-usb-redir --enable-lzo --enable-snappy --enable-bzip2 --enable-coroutine-pool --enable-libssh2 --enable-libxml2 --enable-tcmalloc --enable-replication --enable-tools --enable-capstone
+                # --target-list=i386-softmmu,x86_64-softmmu,i386-linux-user,x86_64-linux-user
+                ./configure --prefix=/usr --libexecdir=/usr/lib/qemu --localstatedir=/var --bindir=/usr/bin/ --enable-gnutls --enable-docs --enable-gtk --enable-vnc --enable-vnc-sasl --enable-vnc-png --enable-vnc-jpeg --enable-curl --enable-kvm  --enable-linux-aio --enable-cap-ng --enable-vhost-net --enable-vhost-crypto --enable-spice --enable-usb-redir --enable-lzo --enable-snappy --enable-bzip2 --enable-coroutine-pool --enable-libssh2 --enable-libxml2 --enable-tcmalloc --enable-replication --enable-tools --enable-capstone
             elif [ "$OS" = "Darwin" ]; then
                 # --enable-vhost-net --enable-vhost-crypto
                 ./configure --prefix=/usr --libexecdir=/usr/lib/qemu --localstatedir=/var --bindir=/usr/bin/ --enable-gnutls --enable-docs  --enable-vnc --enable-vnc-sasl --enable-vnc-png --enable-vnc-jpeg --enable-curl --enable-hax --enable-usb-redir --enable-lzo --enable-snappy --enable-bzip2 --enable-coroutine-pool  --enable-libxml2 --enable-tcmalloc --enable-replication --enable-tools --enable-capstone
@@ -687,6 +708,7 @@ case "$COMMAND" in
     seabios_func
     if [ "$OS" = "Linux" ]; then
         install_kvm_linux_apt
+        install_libguestfs
         # check if all features enabled
         virt-host-validate
         systemctl daemon-reload
@@ -703,6 +725,8 @@ case "$COMMAND" in
     install_kvm_linux_apt;;
 'haxm')
     install_haxm_mac;;
+'libguestfs')
+    install_libguestfs;;
 'replace_qemu')
     if declare -f -F "replace_qemu_clues"; then
         replace_qemu_clues
@@ -741,6 +765,8 @@ case "$COMMAND" in
     fi
     cd - || exit 0
     ;;
+'changelog')
+    changelog;;
 *)
     usage;;
 esac
