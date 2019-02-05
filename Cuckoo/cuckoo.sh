@@ -102,7 +102,7 @@ EOF
     apt-get install postgresql libpq-dev -y
     pip install psycopg2
 
-    #sudo su - postgres
+    # sudo su - postgres
     #psql
     sudo -u postgres -H sh -c "psql -c \"CREATE USER cuckoo WITH PASSWORD '$PASSWD'\"";
     sudo -u postgres -H sh -c "psql -c \"CREATE DATABASE cuckoo\"";
@@ -207,7 +207,8 @@ EOF
     suricata --build-info|grep Hyperscan
     make install-conf
 
-    cd scripts/suricatasc || return
+    cd python || return
+    pytohn setup.py build
     python setup.py install
     touch /etc/suricata/threshold.config
 
@@ -263,12 +264,13 @@ EOF
 
 
     cat >> /etc/tor/torrc <<EOF
-    TransPort $IFACE_IP:9040
-    DNSPort $IFACE_IP:5353
+TransPort $IFACE_IP:9040
+DNSPort $IFACE_IP:5353
 EOF
 
     #Then restart Tor:
-    service tor restart
+    sudo systemctl enable tor
+    sudo systemctl start tor
 
     #Edit the Privoxy configuration
     #sudo sed -i 's/R#        forward-socks5t             /     127.0.0.1:9050 ./        forward-socks5t             /     127.0.0.1:9050 ./g' /etc/privoxy/config
@@ -319,7 +321,7 @@ EOF
 function install_CAPE() {
     cd /opt || return
     git clone https://github.com/ctxis/CAPE/ CAPE
-
+    pip install -r CAPE/requirements.txt
     #chown -R root:cuckoo /usr/var/malheur/
     #chmod -R =rwX,g=rwX,o=X /usr/var/malheur/
 
@@ -382,13 +384,8 @@ stderr_logfile=/var/log/supervisor/suricata.err.log
 stdout_logfile=/var/log/supervisor/suricata.out.log
 EOF
 
-    sudo service supervisor start
-
-    sudo systemctl enable tor.service
-    #sudo systemctl enable elasticsearch.service
-    sudo systemctl enable supervisor.service
-    sudo systemctl enable supervisor
-    sudo systemctl start supervisor
+    sudo systemctl enable supervisord
+    sudo systemctl start supervisord
 
     #supervisord -c /etc/supervisor/supervisord.conf
     supervisorctl -c /etc/supervisor/supervisord.conf reload
