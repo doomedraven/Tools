@@ -95,14 +95,14 @@ function install_haxm_mac() {
 }
 
 function install_libguestfs() {
-    sudo apt install gperf flex bison libaugeas-dev libhivex-dev supermin ocaml-nox libhivex-ocaml genisoimage libhivex-ocaml-dev 2>/dev/null
+    sudo apt install gperf flex bison libaugeas-dev libhivex-dev supermin ocaml-nox libhivex-ocaml genisoimage libhivex-ocaml-dev libmagic-dev libjansson-dev -y 2>/dev/null
     cd /tmp || return
     wget "http://download.libguestfs.org/1.40-stable/libguestfs-$libguestfs_version.tar.gz"
     tar xf "libguestfs-$libguestfs_version.tar.gz"
     cd libguestfs-$libguestfs_version
     ./configure
     make -j"$(getconf _NPROCESSORS_ONLN)"
-    REALLY_INSTALL=yes checkinstall -D --pkgname=libvirt-$libvirt_version --default
+    REALLY_INSTALL=yes checkinstall -D --pkgname=libvirt-$libguestfs_version --default
     # ln -s /usr/local/lib/libguestfs.so.0 /lib/x86_64-linux-gnu/libguestfs.so.0
 }
 
@@ -111,7 +111,9 @@ function install_libvirt() {
     # http://ask.xmodulo.com/compile-virt-manager-debian-ubuntu.html
     #rm -r /usr/local/lib/python2.7/dist-packages/libvirt*
 
-    #apt-get install python-libvirt libgtk-3-dev libvirt-glib-1.0 gir1.2-gtk-vnc-2.0  libosinfo-1.0 python-ipaddr python-libxml2 python-requests qemu-kvm- qemu-system-common- qemu-system-x86- qemu-utils- seabios- ipxe-qemu- ipxe-qemu-256k-compat-efi-roms-
+    echo "[+] Checking/deleting old versions of Libvirt"
+    dpkg -l|grep "libvirt-[0-9]\{1,2\}\.[0-9]\{1,2\}\.[0-9]\{1,2\}"|cut -d " " -f 3|sudo xargs dpkg --purge --force-all 2>/dev/null
+
     cd /tmp || return
     if [ -f  libvirt-$libvirt_version.tar.xz ]; then
         rm -r libvirt-$libvirt_version
@@ -121,7 +123,7 @@ function install_libvirt() {
     tar xf libvirt-$libvirt_version.tar.xz
     cd libvirt-$libvirt_version || return
     if [ "$OS" = "Linux" ]; then
-        apt-get install unzip numad glib-2.0 libglib2.0-dev libsdl1.2-dev lvm2 python-pip python-libxml2 python3-libxml2 ebtables libosinfo-1.0-dev libnl-3-dev libnl-route-3-dev libyajl-dev xsltproc libapparmor-dev libdevmapper-dev libpciaccess-dev apparmor-utils -y 2>/dev/null
+        apt-get install python-dev python3-dev unzip numad glib-2.0 libglib2.0-dev libsdl1.2-dev lvm2 python-pip python-libxml2 python3-libxml2 ebtables libosinfo-1.0-dev libnl-3-dev libnl-route-3-dev libyajl-dev xsltproc libapparmor-dev libdevmapper-dev libpciaccess-dev apparmor-utils -y 2>/dev/null
         pip install ipaddr
         # --prefix=/usr --localstatedir=/var --sysconfdir=/etc
         ./autogen.sh --system  --with-qemu=yes --with-dtrace --with-numad --with-storage-rbd  --disable-nls --with-openvz=no --with-vmware=no --with-phyp=no --with-xenapi=no --with-libxl=no  --with-vbox=no --with-lxc=no --with-vz=no   --with-esx=no --with-hyperv=no --with-yajl=yes --with-secdriver-apparmor=yes --with-apparmor-profiles --with-apparmor-profiles
@@ -320,7 +322,6 @@ function replace_qemu_clues_public() {
     #fi
 }
 
-
 function replace_seabios_clues_public() {
     echo "[+] Generating SeaBios Kconfig"
     echo "[+] Fixing SeaBios antivms"
@@ -450,7 +451,7 @@ function qemu_func() {
     # WOOT
     # some checks may be depricated, but keeping them for compatibility with old versions
 
-    if [ $? -eq 0 ]; then
+    #if [ $? -eq 0 ]; then
         if declare -f -F "replace_qemu_clues"; then
             replace_qemu_clues
         else
@@ -505,9 +506,9 @@ function qemu_func() {
             exit
         fi
 
-    else
-        echo '[-] Download QEMU source was not possible'
-    fi
+    #else
+    #    echo '[-] Download QEMU source was not possible'
+    #fi
     if [ "$OS" = "linux" ]; then
         dpkg --get-selections | grep "qemu" | xargs apt-mark hold
         dpkg --get-selections | grep "libvirt" | xargs apt-mark hold
@@ -656,8 +657,9 @@ function cloning() {
             if [ ! -f "${5}/${1}_${i}.qcow2" ]; then
                 qemu-img create -f qcow2 -b "$2" "$5/$1_$i.qcow2"
             fi
-            if virt-clone --print-xml -n "$1_$i" -o "$1" -m "$macaddr" 2>/dev/null|sed "s|<driver name=\"qemu\" type=\"qcow2\"/>|<driver name=\"qemu\" type=\"qcow2\" cache=\"none\" io=\"native\"/>\\n      <source file=\"${5}/${1}_${i}.qcow2\"/>|" > "$5/$1_$i.xml"; then
-                sed -i "s|<domain type='kvm'>|<domain type='kvm' xmlns:qemu='http://libvirt.org/schemas/domain/qemu/1.0'>" "$5/$1_$i.xml"
+            #2>/dev/null
+            if virt-clone --print-xml -n "$1_$i" -o "$1" -m "$macaddr" |sed "s|<driver name=\"qemu\" type=\"qcow2\" cache=\"none\" io=\"native\"/>|<driver name=\"qemu\" type=\"qcow2\" cache=\"none\" io=\"native\"/>\\n      <source file=\"${5}/${1}_${i}.qcow2\"/>|g" > "$5/$1_$i.xml"; then
+                sed -i "s|<domain type='kvm'>|<domain type='kvm' xmlns:qemu='http://libvirt.org/schemas/domain/qemu/1.0'>|g" "$5/$1_$i.xml"
                 virsh define "$5/$1_$i.xml"
                 worked=0
             fi
