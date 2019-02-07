@@ -112,6 +112,7 @@ function install_libvirt() {
     #rm -r /usr/local/lib/python2.7/dist-packages/libvirt*
 
     echo "[+] Checking/deleting old versions of Libvirt"
+    apt-get purge libvirt0 libvirt-bin 2>/dev/null
     dpkg -l|grep "libvirt-[0-9]\{1,2\}\.[0-9]\{1,2\}\.[0-9]\{1,2\}"|cut -d " " -f 3|sudo xargs dpkg --purge --force-all 2>/dev/null
 
     cd /tmp || return
@@ -153,6 +154,7 @@ function install_libvirt() {
     aa-complain /usr/sbin/libvirtd
 
     cd /tmp || return
+
     if [ ! -f v$libvirt_version.zip ]; then
         wget https://github.com/libvirt/libvirt-python/archive/v$libvirt_version.zip
     fi
@@ -611,7 +613,7 @@ cat << EndOfHelp
 
     # Fixes from http://ask.xmodulo.com/compile-virt-manager-debian-ubuntu.html
     1. ImportError: No module named libvirt
-    $ apt-get install python-libvirt
+    $ $0 libvirt
 
     2. ImportError: No module named libxml2
     $ apt-get install python-libxml2 python3-libxml2
@@ -620,13 +622,13 @@ cat << EndOfHelp
     $ apt-get install python-requests
 
     4. Error launching details: Namespace GtkVnc not available
-    $ apt-get install gir1.2-gtk-vnc-2.0
+    $ $0 libvirt
 
     5. Error launching details: Namespace SpiceClientGtk not available
     $ apt-get install gir1.2-spice-client-gtk-3.0
 
     6. ValueError: Namespace LibvirtGLib not available
-    $ apt-get install libvirt-glib-1.0
+    $ $0 libvirt
 
     7. ValueError: Namespace Libosinfo not available
     $ apt-get install libosinfo-1.0
