@@ -32,7 +32,7 @@ qemu_version=3.1.0
 # changelog - https://libvirt.org/news.html
 libvirt_version=5.0.0
 # virt-manager - https://github.com/virt-manager/virt-manager/releases
-virt_manager_version=2.0.0
+virt_manager_version=2.1.0
 # http://download.libguestfs.org/
 libguestfs_version=1.40.1
 # autofilled
