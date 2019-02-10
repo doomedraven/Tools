@@ -69,13 +69,7 @@ function dependencies() {
 
     echo "[+] Installing MongoDB"
     sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 9DA31620334BD75D9DCB49F368818C72E52529D4
-    # 18.04
-    if grep -q "DISTRIB_RELEASE=18.04" /etc/lsb-release; then
-        echo "deb [ arch=amd64 ] https://repo.mongodb.org/apt/ubuntu bionic/mongodb-org/4.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb.list
-    # 16.04
-    else
-        echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu xenial/mongodb-org/4.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb.list
-    fi
+    echo "deb [ arch=amd64 ] https://repo.mongodb.org/apt/ubuntu $(lsb_release -cs)/mongodb-org/4.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb.list
 
     sudo apt-get update
     sudo apt-get install -y mongodb-org-mongos mongodb-org-server mongodb-org-shell mongodb-org-tools
@@ -249,8 +243,8 @@ EOF
 
 
     # https://www.torproject.org/docs/debian.html.en
-    echo "deb http://deb.torproject.org/torproject.org bionic main" >> /etc/apt/sources.list
-    echo "deb-src http://deb.torproject.org/torproject.org bionic main" >> /etc/apt/sources.list
+    echo "deb http://deb.torproject.org/torproject.org $(lsb_release -cs) main" >> /etc/apt/sources.list
+    echo "deb-src http://deb.torproject.org/torproject.org $(lsb_release -cs) main" >> /etc/apt/sources.list
     sudo apt-get install gnupg2 -y
     gpg --keyserver keys.gnupg.net --recv A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89
     #gpg2 --recv A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89
