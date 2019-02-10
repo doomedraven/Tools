@@ -107,9 +107,11 @@ function install_libguestfs() {
 }
 
 function install_libvirt() {
-    #dpkg —purge libivrt-4.7.0
     # http://ask.xmodulo.com/compile-virt-manager-debian-ubuntu.html
     #rm -r /usr/local/lib/python2.7/dist-packages/libvirt*
+
+    # set to hold to avoid side problems
+    apt-mark hold libvirt0 libvirt-bin
 
     echo "[+] Checking/deleting old versions of Libvirt"
     apt-get purge libvirt0 libvirt-bin 2>/dev/null
@@ -581,8 +583,12 @@ cat << EndOfHelp
         /libvirt.so.0: version LIBVIRT_PRIVATE_x.x.0' not found (required by /usr/sbin/libvirtd)
     * Solutions:
         1. apt-get purge libvirt0 libvirt-bin
-        2. ldd /usr/sbin/libvirtd
-        3. ls -lah /usr/lib/libvirt*
+        2. reboot
+        3. $0 libvirt
+
+        Can be extra help, but normally solved with first3 steps
+        1. ldd /usr/sbin/libvirtd
+        2. ls -lah /usr/lib/libvirt*
             * Make sure what all symlinks pointing to last version
 
     * Error:
