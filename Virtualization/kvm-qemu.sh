@@ -1,4 +1,12 @@
 #!/bin/bash
+#ToDo investigate
+#https://www.jamescoyle.net/how-to/1810-qcow2-disk-images-and-performance
+#when backing storage is attached to virtio_blk (vda, vdb, etc.) storage controller - performance from iSCSI client connecting to the iSCSI target was in my environment ~ 20 IOPS, with throughput (depending on IO size) ~ 2-3 MiB/s. I changed virtual disk controller within virtual machine to SCSI and I'm able to get 1000+ IOPS and throughput 100+ MiB/s from my iSCSI clients.
+
+#https://linux.die.net/man/1/qemu-img
+#"cluster_size"
+#Changes the qcow2 cluster size (must be between 512 and 2M). Smaller cluster sizes can improve the image file size whereas larger cluster sizes generally provide better performance.
+
 
 # https://www.doomedraven.com/2016/05/kvm.html
 # Use Ubuntu 18.04 LTS
@@ -71,6 +79,13 @@ cat << EndOfHelp
         Replace_seabios <path> - only fix antivms in SeaBios source
         Issues - will give you error - solution list
         noip - Install No-ip deamon and enable on boot
+
+    Tips:
+        * Latest kernels having some KVM features :)
+            * apt search linux-image
+        * QCOW2 allocations types performance
+            * https://www.jamescoyle.net/how-to/1810-qcow2-disk-images-and-performance
+            * https://www.jamescoyle.net/how-to/2060-qcow2-physical-size-with-different-preallocation-settings
 EndOfHelp
 }
 
@@ -326,6 +341,7 @@ function replace_qemu_clues_public() {
     #fi
 }
 
+
 function replace_seabios_clues_public() {
     echo "[+] Generating SeaBios Kconfig"
     echo "[+] Fixing SeaBios antivms"
@@ -416,6 +432,7 @@ function replace_seabios_clues_public() {
         fi
     done
 }
+
 
 function qemu_func() {
     cd /tmp || return
@@ -663,7 +680,9 @@ function cloning() {
             macaddr=$(hexdump -n 6 -ve '1/1 "%.2x "' /dev/random | awk -v a="2,6,a,e" -v r="$RANDOM" 'BEGIN{srand(r);}NR==1{split(a,b,",");r=int(rand()*4+1);printf "%s%s:%s:%s:%s:%s:%s\n",substr($1,0,1),b[r],$2,$3,$4,$5,$6}') 2>/dev/null
             #virt-clone --print-xml -n $1_$i -o $1 -m "$macaddr"
             if [ ! -f "${5}/${1}_${i}.qcow2" ]; then
-                qemu-img create -f qcow2 -b "$2" "$5/$1_$i.qcow2"
+                #Lined snapshots are disabled due to performance problems
+                #qemu-img create -f qcow2 -b "$2" "$5/$1_$i.qcow2"
+                rsync --progress "$2" "$5/$1_$i.qcow2"
             fi
             #2>/dev/null
             if virt-clone --print-xml -n "$1_$i" -o "$1" -m "$macaddr" |sed "s|<driver name=\"qemu\" type=\"qcow2\" cache=\"none\" io=\"native\"/>|<driver name=\"qemu\" type=\"qcow2\" cache=\"none\" io=\"native\"/>\\n      <source file=\"${5}/${1}_${i}.qcow2\"/>|g" > "$5/$1_$i.xml"; then
