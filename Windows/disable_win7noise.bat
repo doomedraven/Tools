@@ -15,7 +15,10 @@ netsh interface teredo set state disabled
 netsh interface ipv6 6to4 set state state=disabled undoonstop=disabled
 netsh interface ipv6 isatap set state state=disabled
 REM disable active probing
-reg add  "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\NlaSvc\Parameters\Internet" /v EnableActiveProbing /t REG_DWORD /d 0 /f
+reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\NlaSvc\Parameters\Internet" /v EnableActiveProbing /t REG_DWORD /d 0 /f
+reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\NetworkConnectivityStatusIndicator" /v EnableActiveProbing /t REG_DWORD /d 0 /f
+REM disable passive probing
+reg add  "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\NlaSvc\Parameters\Internet" /v PssivePollPeriod /t REG_DWORD /d 0 /f
 REM disable SSDP
 sc config SSDPSRV start= disabled
 net stop SSDPSRV
@@ -45,8 +48,8 @@ sc stop "ClickToRunSvc"
 sc config "ClickToRunSvc" start= disabled
 
 REM dr.watson
-reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AeDebug\AUTO" /v DWM.exe /t REG_DWORD /d 0 /f
-reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AeDebug\AutoExclusionList" /v DWM.exe /t REG_DWORD /d 0 /f
+reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AeDebug" /v AUTO /t REG_SZ /d 0 /f
+reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AeDebug" /v AutoExclusionList /t REG_SZ /d 0 /f
 
 REM curtain
 reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\PowerShell\ModuleLogging\ModuleNames" /v * /t REG_SZ /d * /f /reg:64
@@ -54,6 +57,9 @@ reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\PowerShell\Scrip
 reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\PowerShell\Transcription" /v EnableTranscripting /t REG_DWORD /d 00000001 /f /reg:64
 reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\PowerShell\Transcription" /v OutputDirectory /t REG_SZ /d C:\PSTranscipts /f /reg:64
 reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\PowerShell\Transcription" /v EnableInvocationHeader /t REG_DWORD /d 00000001 /f /reg:64
+
+REM disable windows defender
+reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows Defender" /v DisableAntiSpyware /t REG_DWORD /d 0 /f
 
 REM https://superuser.com/questions/972501/how-to-stop-microsoft-from-gathering-telemetry-data-from-windows-7-8-and-8-1
 sc stop DiagTrack
@@ -82,6 +88,12 @@ schtasks.exe /Change /TN "\Microsoft\Windows\Autochk\Proxy" /Disable /ru ""
 schtasks.exe /Change /TN "\Microsoft\Windows\DiskDiagnostic\Microsoft-Windows-DiskDiagnosticDataCollector" /Disable /ru ""
 schtasks.exe /Change /TN "\Microsoft\Windows\Windows Media Sharing\UpdateLibrary" /Disable /ru ""
 
+schtasks.exe /Change /TN "\CCleaner Update" /Disable /ru ""
+schtasks.exe /Change /TN "\CCleaner UpdateSkipUAC" /Disable /ru ""
+schtasks.exe /Change /TN "\Microsoft\Windows\Windows Media Sharing\UpdateLibrary" /Disable /ru ""
+schtasks.exe /Change /TN "\Microsoft\Windows\Windows Media Sharing\UpdateLibrary" /Disable /ru ""
+
+
 REM Uninstall telemetry updates
 wusa /uninstall /kb:3065988 /quiet /norestart
 wusa /uninstall /kb:3083325 /quiet /norestart
@@ -109,3 +121,23 @@ wusa /uninstall /kb:3083710 /quiet /norestart
 wusa /uninstall /kb:3083711 /quiet /norestart
 wusa /uninstall /kb:3112336 /quiet /norestart
 wusa /uninstall /kb:3123862 /quiet /norestart
+
+REM ToDo bat format
+REM office 2016
+reg add "HKEY_CURRENT_USER\Software\Microsoft\Office\Common\Security" /v DisableAllActiveX /t  REG_DWORD /d 0 /f
+reg add "HKEY_CURRENT_USER\Software\Microsoft\Office\Common\Security" /v UFIControls /t  REG_DWORD /d 1 /f
+SOFTWARE=("Word" "Excel" "PowerPoint" "Publisher" "Outlook")
+for %%x in (Word Excel PowerPoint Publisher Outlook) do (
+    reg add "HKEY_CURRENT_USER\Software\Microsoft\Office\16.0\%%x\Common\General" /v ShownOptIn /t  REG_DWORD /d 1 /f
+    reg add "HKEY_CURRENT_USER\Software\Microsoft\Office\16.0\%%x\Security" /v VBAWarnings /t  REG_DWORD /d 1 /f
+    reg add "HKEY_CURRENT_USER\Software\Microsoft\Office\16.0\%%x\Security" /v AccessVBOM /t  REG_DWORD /d 1 /f
+    reg add "HKEY_CURRENT_USER\Software\Microsoft\Office\16.0\%%x\Security" /v DisableDDEServerLaunch /t  REG_DWORD /d 0 /f
+    reg add "HKEY_CURRENT_USER\Software\Microsoft\Office\16.0\%%x\Security" /v ExtensionHardening /t  REG_DWORD /d 0 /f
+    reg add "HKEY_CURRENT_USER\Software\Microsoft\Office\16.0\%%x\Security" /v ShownOptIn /t  REG_DWORD /d 1 /f
+    reg add "HKEY_CURRENT_USER\Software\Microsoft\Office\16.0\%%x\Security" /v ShownOptIn /t  REG_DWORD /d 1 /f
+    reg add "HKEY_CURRENT_USER\Software\Microsoft\Office\16.0\%%x\Security" /v ShownOptIn /t  REG_DWORD /d 1 /f
+    reg add "HKEY_CURRENT_USER\Software\Policies\Microsoft\Office\16.0\%%x\Security" /v MarkInternalAsUnsafe /t  REG_DWORD /d 0 /f
+    reg add "HKEY_CURRENT_USER\Software\Microsoft\Office\16.0\%%x\Security\ProtectedView" /v DisableAttachmentsInPV /t  REG_DWORD /d 1 /f
+    reg add "HKEY_CURRENT_USER\Software\Microsoft\Office\16.0\%%x\Security\ProtectedView" /v DisableInternetFilesInPV /t  REG_DWORD /d 1 /f
+    reg add "HKEY_CURRENT_USER\Software\Microsoft\Office\16.0\%%x\Security\ProtectedView" /v DisableUnsafeLocationsInPV /t  REG_DWORD /d 1 /f
+)
