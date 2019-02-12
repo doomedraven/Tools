@@ -122,7 +122,6 @@ wusa /uninstall /kb:3083711 /quiet /norestart
 wusa /uninstall /kb:3112336 /quiet /norestart
 wusa /uninstall /kb:3123862 /quiet /norestart
 
-REM ToDo bat format
 REM office 2016
 reg add "HKEY_CURRENT_USER\Software\Microsoft\Office\Common\Security" /v DisableAllActiveX /t  REG_DWORD /d 0 /f
 reg add "HKEY_CURRENT_USER\Software\Microsoft\Office\Common\Security" /v UFIControls /t  REG_DWORD /d 1 /f
