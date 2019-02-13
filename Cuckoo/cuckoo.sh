@@ -1,13 +1,5 @@
 #!/bin/bash
 # By @doomedraven - https://twitter.com/D00m3dR4v3n
-# /usr/local/lib/python2.7/dist-packages/ratelimit/middleware.py
-# try:
-#     # Django versions >= 1.9
-#     from django.utils.module_loading import import_module
-# except ImportError:
-#     # Django versions < 1.9
-#     from django.utils.importlib import import_module
-
 # minfds=1048576
 
 # Static values
@@ -18,6 +10,28 @@ IFACE_IP="192.168.2.1"
 PASSWD="SuperPuperSecret"
 CUCKOO_ROOT="/opt/CAPE/"
 yara_version="3.8.1"
+
+function issues() {
+cat << EOI
+Problems with PyOpenSSL?
+    sudo rm -rf /usr/local/lib/python2.7/dist-packages/OpenSSL/
+    sudo rm -rf /home/cuckoo/.local/lib/python2.7/site-packages/OpenSSL/
+    sudo apt install --reinstall python-openssl
+
+Problem with PIP?
+    sudo python -m pip uninstall pip && sudo apt install python-pip --reinstall
+
+Problems with Django importlib
+/usr/local/lib/python2.7/dist-packages/ratelimit/middleware.py
+    try:
+        # Django versions >= 1.9
+        from django.utils.module_loading import import_module
+    except ImportError:
+        # Django versions < 1.9
+        from django.utils.importlib import import_module
+
+
+EOI
 
 function usage() {
 cat << EndOfHelp
@@ -30,6 +44,7 @@ cat << EndOfHelp
         Cuckoo - Install V2/CAPE Cuckoo
         Dependencies - Install all dependencies with performance tricks
         Supervisor - Install supervisor config for CAPE; for v2 use cuckoo --help ;)
+        Issues - show some known possible bugs/solutions
 
     Useful links - THEY CAN BE OUTDATED; RTFM!!!
         * https://cuckoo.sh/docs/introduction/index.html
@@ -260,6 +275,7 @@ EOF
     cat >> /etc/tor/torrc <<EOF
 TransPort $IFACE_IP:9040
 DNSPort $IFACE_IP:5353
+NumCPUs $(getconf _NPROCESSORS_ONLN)"
 EOF
 
     #Then restart Tor:
@@ -457,6 +473,8 @@ EOF
     fi;;
 'dependencies')
     dependencies;;
+'issues')
+    issues;;
 *)
     usage;;
 esac
