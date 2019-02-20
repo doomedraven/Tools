@@ -126,7 +126,15 @@ function install_libvirt() {
     #rm -r /usr/local/lib/python2.7/dist-packages/libvirt*
 
     # set to hold to avoid side problems
-    apt-mark hold libvirt0 libvirt-bin
+        cat >> /etc/apt/preferences.d/doomedraven << EOH
+Package: libvirt-bin
+Pin: release *
+Pin-Priority: -1
+
+Package: libvirt0
+Pin: release *
+Pin-Priority: -1
+EOH
 
     echo "[+] Checking/deleting old versions of Libvirt"
     apt-get purge libvirt0 libvirt-bin 2>/dev/null
