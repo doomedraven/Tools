@@ -334,16 +334,6 @@ function install_CAPE() {
     pip install -r CAPE/requirements.txt
     #chown -R root:cuckoo /usr/var/malheur/
     #chmod -R =rwX,g=rwX,o=X /usr/var/malheur/
-
-    cd /tmp || return
-    mkdir work
-    git clone https://github.com/herumi/cybozulib
-    git clone https://github.com/herumi/msoffice
-    cd msoffice || return
-    make -j"$(getconf _NPROCESSORS_ONLN)" RELEASE=1
-    mkdir -p "$CUCKOO_ROOT/data/msoffice/"
-    cp bin/msoffice-crypt.exe "$CUCKOO_ROOT/data/msoffice/"
-
     # Adapting owner permissions to the cuckoo path folder
     chown cuckoo:cuckoo -R "$CUCKOO_ROOT"
 
