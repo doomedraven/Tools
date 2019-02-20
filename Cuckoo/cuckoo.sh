@@ -9,7 +9,7 @@ IFACE_IP="192.168.2.1"
 # DB password
 PASSWD="SuperPuperSecret"
 CUCKOO_ROOT="/opt/CAPE/"
-yara_version="3.8.1"
+#yara_version="3.8.1"
 
 function issues() {
 cat << EOI
@@ -66,7 +66,7 @@ function dependencies() {
     #sudo canonical-livepatch enable APITOKEN
 
     # deps
-    apt-get install sqlite3 tmux net-tools checkinstall graphviz git numactl python python-dev python-pip python-m2crypto swig upx-ucl libssl-dev wget unzip p7zip-full geoip-database libgeoip-dev libjpeg-dev mono-utils ssdeep libfuzzy-dev exiftool checkinstall ssdeep uthash-dev libconfig-dev libarchive-dev libtool autoconf automake privoxy software-properties-common wkhtmltopdf xvfb xfonts-100dpi tcpdump libcap2-bin -y
+    apt-get install jq sqlite3 tmux net-tools checkinstall graphviz git numactl python python-dev python-pip python-m2crypto swig upx-ucl libssl-dev wget unzip p7zip-full geoip-database libgeoip-dev libjpeg-dev mono-utils ssdeep libfuzzy-dev exiftool checkinstall ssdeep uthash-dev libconfig-dev libarchive-dev libtool autoconf automake privoxy software-properties-common wkhtmltopdf xvfb xfonts-100dpi tcpdump libcap2-bin -y
     apt-get install supervisor python-pil subversion python-capstone uwsgi uwsgi-plugin-python -y
     #clamav clamav-daemon clamav-freshclam
     # if broken sudo python -m pip uninstall pip && sudo apt install python-pip --reinstall
@@ -121,15 +121,19 @@ EOF
     echo '[+] Installing Yara'
     apt-get install libtool libjansson-dev libmagic1 libmagic-dev -y
     cd /tmp/ || return
-    wget "https://github.com/VirusTotal/yara/archive/v$yara_version.zip" && unzip "v$yara_version.zip"
-    cd yara-$yara_version || return
+    yara_info=$(curl -s https://api.github.com/repos/VirusTotal/yara/releases/latest)
+    yara_version=$(echo $yara_info |jq .tag_name|sed "s/\"//g")
+    wget -q $(echo $yara_info | jq .zipball_url)
+    unzip "VirusTotal-yara-*"
+    #wget "https://github.com/VirusTotal/yara/archive/v$yara_version.zip" && unzip "v$yara_version.zip"
+    cd "VirusTotal-yara-*" || return
     ./bootstrap.sh
     ./configure --enable-cuckoo --enable-magic --enable-dotnet --enable-profiling
     make -j"$(getconf _NPROCESSORS_ONLN)"
-    checkinstall -D --pkgname="yara-$yara_version" --default
+    checkinstall -D --pkgname="yara-$yara_version" --default # -$yara_version
     ldconfig
     cd ..
-    rm "v$yara_version".zip
+    rm "VirusTotal-yara-*.zip"
     git clone --recursive https://github.com/VirusTotal/yara-python
     cd yara-python || return
     python setup.py build
@@ -336,9 +340,7 @@ function install_CAPE() {
     #chmod -R =rwX,g=rwX,o=X /usr/var/malheur/
     # Adapting owner permissions to the cuckoo path folder
     chown cuckoo:cuckoo -R "$CUCKOO_ROOT"
-
 }
-
 
 function supervisor() {
     #### Cuckoo Start at boot
