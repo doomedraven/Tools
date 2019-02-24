@@ -42,13 +42,15 @@ libvirt_version=5.0.0
 # virt-manager - https://github.com/virt-manager/virt-manager/releases
 virt_manager_version=2.1.0
 # http://download.libguestfs.org/
-libguestfs_version=1.40.1
+libguestfs_version=1.40.2
 # autofilled
 OS=""
 username=""
 
 function changelog() {
 cat << EndOfCL
+    # 24.02.2019 - Add support for Linux TCP BBR - https://www.cyberciti.biz/cloud-computing/increase-your-linux-server-internet-speed-with-tcp-bbr-congestion-control/
+    # 11.02.2019 - Depricated linked clones and added WebVirtMgr
     # 30.01.2019 - Libvirt 5.0.0
     # 27.12.2018 - libguestfs 1.38
     # 10.11.2018 - Virt-manager 2, libivrt-4.10, fixes
@@ -71,10 +73,14 @@ cat << EndOfHelp
         SeaBios - Install SeaBios and repalce QEMU bios file
         KVM - this will install intel-HAXM if you on Mac
         HAXM - Mac Hardware Accelerated Execution Manager
+        tcp_bbr - Enable TCP BBR congestion control
+            * https://www.cyberciti.biz/cloud-computing/increase-your-linux-server-internet-speed-with-tcp-bbr-congestion-control/
+        WebVirtMgr - Install WebManager for KVM
         Clone - <VM_NAME> <path_to_hdd> <start_from_number> <#vm_to_create> <path_where_to_store> <network_range_base>
                 * Example Win7x64 /VMs/Win7x64.qcow2 0 5 /var/lib/libvirt/images/ 192.168.1
                 https://wiki.qemu.org/Documentation/CreateSnapshot
         Libvirt <username_optional> - install libvirt, username is optional
+        Libguestfs - install libguestfs
         Replace_qemu - only fix antivms in QEMU source
         Replace_seabios <path> - only fix antivms in SeaBios source
         Issues - will give you error - solution list
@@ -87,6 +93,17 @@ cat << EndOfHelp
             * https://www.jamescoyle.net/how-to/1810-qcow2-disk-images-and-performance
             * https://www.jamescoyle.net/how-to/2060-qcow2-physical-size-with-different-preallocation-settings
 EndOfHelp
+}
+
+function _enable_tcp_bbr() {
+    # https://www.cyberciti.biz/cloud-computing/increase-your-linux-server-internet-speed-with-tcp-bbr-congestion-control/
+    # grep 'CONFIG_TCP_CONG_BBR' /boot/config-$(uname -r)
+    # grep 'CONFIG_NET_SCH_FQ' /boot/config-$(uname -r)
+    # egrep 'CONFIG_TCP_CONG_BBR|CONFIG_NET_SCH_FQ' /boot/config-$(uname -r)
+    echo "net.core.default_qdisc=fq" >> /etc/security/limits.conf
+    echo "net.ipv4.tcp_congestion_control=bbr" >> /etc/security/limits.conf
+
+    sudo sysctl --system
 }
 
 function _check_brew() {
@@ -110,6 +127,10 @@ function install_haxm_mac() {
 }
 
 function install_libguestfs() {
+
+    echo "[+] Check for previous version of LibGuestFS"
+    sudo dpkg --purge --force-all "libguestfs-*" 2>/dev/null
+
     sudo apt install gperf flex bison libaugeas-dev libhivex-dev supermin ocaml-nox libhivex-ocaml genisoimage libhivex-ocaml-dev libmagic-dev libjansson-dev -y 2>/dev/null
     cd /tmp || return
     wget "http://download.libguestfs.org/1.40-stable/libguestfs-$libguestfs_version.tar.gz"
@@ -126,12 +147,11 @@ function install_libvirt() {
     #rm -r /usr/local/lib/python2.7/dist-packages/libvirt*
 
     # set to hold to avoid side problems
-        cat >> /etc/apt/preferences.d/doomedraven << EOH
+    cat >> /etc/apt/preferences.d/doomedraven << EOH
 Package: libvirt-bin
 Pin: release *
 Pin-Priority: -1
-
-Package: libvirt0
+ Package: libvirt0
 Pin: release *
 Pin-Priority: -1
 EOH
@@ -349,7 +369,6 @@ function replace_qemu_clues_public() {
     #fi
 }
 
-
 function replace_seabios_clues_public() {
     echo "[+] Generating SeaBios Kconfig"
     echo "[+] Fixing SeaBios antivms"
@@ -440,7 +459,6 @@ function replace_seabios_clues_public() {
         fi
     done
 }
-
 
 function qemu_func() {
     cd /tmp || return
@@ -676,6 +694,28 @@ cat << EndOfHelp
 EndOfHelp
 }
 
+function install_WebVirtCloud(){
+    sudo apt-get -y install git virtualenv python-virtualenv python-dev python-lxml libvirt-dev zlib1g-dev libxslt1-dev nginx supervisor libsasl2-modules gcc pkg-config python-guestfs
+    git clone https://github.com/retspen/webvirtcloud
+    cd webvirtcloud
+    cp webvirtcloud/settings.py.template webvirtcloud/settings.py
+    # now put secret key to webvirtcloud/settings.py
+    sudo cp conf/supervisor/webvirtcloud.conf /etc/supervisor/conf.d
+    sudo cp conf/nginx/webvirtcloud.conf /etc/nginx/conf.d
+    cd ..
+    sudo mv webvirtcloud /srv
+    sudo chown -R www-data:www-data /srv/webvirtcloud
+    cd /srv/webvirtcloud
+    virtualenv venv
+    source venv/bin/activate
+    pip install -r conf/requirements.txt
+    python manage.py migrate
+    sudo chown -R www-data:www-data /srv/webvirtcloud
+    sudo rm /etc/nginx/sites-enabled/default
+    sudo service nginx restart
+    sudo service supervisor restart
+}
+
 function cloning() {
     if [ $# -lt 5 ]; then
         echo '[-] You must provide <VM_NAME> <path_to_hdd> <start_from_number> <#vm_to_create> <path_where_to_store> <network_base>'
@@ -688,9 +728,11 @@ function cloning() {
             macaddr=$(hexdump -n 6 -ve '1/1 "%.2x "' /dev/random | awk -v a="2,6,a,e" -v r="$RANDOM" 'BEGIN{srand(r);}NR==1{split(a,b,",");r=int(rand()*4+1);printf "%s%s:%s:%s:%s:%s:%s\n",substr($1,0,1),b[r],$2,$3,$4,$5,$6}') 2>/dev/null
             #virt-clone --print-xml -n $1_$i -o $1 -m "$macaddr"
             if [ ! -f "${5}/${1}_${i}.qcow2" ]; then
-                #Lined snapshots are disabled due to performance problems
+                #Linked snapshots are disabled due to performance problems
                 #qemu-img create -f qcow2 -b "$2" "$5/$1_$i.qcow2"
-                rsync --progress "$2" "$5/$1_$i.qcow2"
+                #rsync -ahW --no-compress --progress "$2" "$5/$1_$i.qcow2"
+                echo "Creating $5/$1_$i.qcow2"
+                cp "$2" "$5/$1_$i.qcow2"
             fi
             #2>/dev/null
             if virt-clone --print-xml -n "$1_$i" -o "$1" -m "$macaddr" |sed "s|<driver name=\"qemu\" type=\"qcow2\" cache=\"none\" io=\"native\"/>|<driver name=\"qemu\" type=\"qcow2\" cache=\"none\" io=\"native\"/>\\n      <source file=\"${5}/${1}_${i}.qcow2\"/>|g" > "$5/$1_$i.xml"; then
@@ -750,6 +792,7 @@ case "$COMMAND" in
         virt-host-validate
         systemctl daemon-reload
         systemctl restart libvirtd libvirt-guests.service
+        _enable_tcp_bbr
     elif [ "$OS" = "Darwin" ]; then
         install_haxm_mac
     fi
@@ -764,6 +807,8 @@ case "$COMMAND" in
     install_haxm_mac;;
 'libguestfs')
     install_libguestfs;;
+'tcp_bbr')
+    _enable_tcp_bbr;;
 'replace_qemu')
     if declare -f -F "replace_qemu_clues"; then
         replace_qemu_clues
@@ -804,6 +849,8 @@ case "$COMMAND" in
     ;;
 'changelog')
     changelog;;
+'webvirtmgr')
+    install_WebVirtCloud;;
 *)
     usage;;
 esac
