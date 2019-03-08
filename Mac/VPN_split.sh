@@ -1,6 +1,18 @@
 # !/bin/bash
 # replace "yourcomapy.com." with your real root domain
+# replace "VPN_IP" with real VPN public ip
+# replace dns1 and dns2 with your real dns
+# To get real dns, add --dump --verbose to vpn-slice when starts with openconnect
 
+function _check_brew() {
+    if [ ! -f /usr/local/bin/brew ]; then
+        /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+    fi
+}
+
+
+_check_brew
+brew install openconnect git
 
 # https://gist.github.com/stefancocora/686bbce938f27ef72649a181e7bd0158
 # vpn split
