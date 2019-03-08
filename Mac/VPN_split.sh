@@ -96,6 +96,7 @@ server:
     # additional blocklist (Steven Black hosts file, read above)
     # include: /usr/local/etc/unbound/zone-block-general.conf
     private-domain: "yourcomapy.com."
+    local-data: "vpn.yourcomapy.com.  IN A VPN_IP"
 remote-control:
     control-enable: yes
     control-interface: 127.0.0.1
