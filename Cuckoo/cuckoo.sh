@@ -270,7 +270,7 @@ EOF
     gpg2 --export A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89 | apt-key add -
 
     sudo apt-get update
-    apt install tor deb.torproject.org-keyring -y
+    apt install tor deb.torproject.org-keyring libzstd1 -y
     # Tor configuration
     #update-rc.d tor defaults
     #update-rc.d privoxy defaults
