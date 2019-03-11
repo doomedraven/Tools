@@ -47,7 +47,6 @@ curl --silent -o /usr/local/etc/unbound/root.hints https://www.internic.net/doma
 
 sudo cat >> /usr/local/etc/unbound/unbound.conf <<< EOL
 server:
-server:
     # log verbosity
     verbosity: 3
     # domain-insecure: *
@@ -132,7 +131,7 @@ forward-zone:
    forward-addr: 1.0.0.1@53#one.one.one.one
    forward-addr: 8.8.4.4@53#dns.google
    forward-addr: 149.112.112.112@53#dns.quad9.net
-EOF
+EOL
 
 sudo chown -R _unbound:staff /usr/local/etc/unbound
 sudo chmod 640 /usr/local/etc/unbound/*
