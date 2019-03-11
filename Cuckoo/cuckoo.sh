@@ -29,9 +29,8 @@ Problems with Django importlib
     except ImportError:
         # Django versions < 1.9
         from django.utils.importlib import import_module
-
-
 EOI
+}
 
 function usage() {
 cat << EndOfHelp
