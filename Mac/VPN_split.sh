@@ -45,7 +45,7 @@ sudo unbound-control-setup -d /usr/local/etc/unbound
 sudo cp /usr/local/etc/unbound/unbound.conf /usr/local/etc/unbound/unbound.conf_original
 curl --silent -o /usr/local/etc/unbound/root.hints https://www.internic.net/domain/named.cache
 
-sudo cat >> /usr/local/etc/unbound/unbound.conf <<< EOL
+sudo cat >> /usr/local/etc/unbound/unbound.conf << EOL
 server:
     # log verbosity
     verbosity: 3
