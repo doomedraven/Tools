@@ -26,3 +26,5 @@ net.ipv4.conf.all.forwarding=1 >> /etc/sysctl.conf
 net.ipv4.ip_forward=1 >> /etc/sysctl.conf
 sysctl -p
 echo "iptables -A FORWARD -i virbr0 -o virbr0 -j ACCEPT" >> /etc/network/if-pre-up.d/kvm_bridge_iptables
+
+virsh nwfilter-list
