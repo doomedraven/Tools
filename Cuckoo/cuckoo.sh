@@ -335,6 +335,8 @@ EOF
 function install_CAPE() {
     cd /opt || return
     git clone https://github.com/ctxis/CAPE/ CAPE
+    sed -i 's/libvirt-python//g' CAPE/requirements.txt
+    sed -i 's/clamd//g' CAPE/requirements.txt
     pip install -r CAPE/requirements.txt
     #chown -R root:cuckoo /usr/var/malheur/
     #chmod -R =rwX,g=rwX,o=X /usr/var/malheur/
