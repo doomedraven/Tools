@@ -388,8 +388,8 @@ stderr_logfile=/var/log/supervisor/suricata.err.log
 stdout_logfile=/var/log/supervisor/suricata.out.log
 EOF
 
-    sudo systemctl enable supervisord
-    sudo systemctl start supervisord
+    sudo systemctl enable supervisor
+    sudo systemctl start supervisor
 
     #supervisord -c /etc/supervisor/supervisord.conf
     supervisorctl -c /etc/supervisor/supervisord.conf reload
