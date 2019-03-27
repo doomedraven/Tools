@@ -356,6 +356,7 @@ directory=$CUCKOO_ROOT/
 user=cuckoo
 autostart=true
 autorestart=true
+stopasgroup=true
 stderr_logfile=/var/log/supervisor/cuckoo.err.log
 stdout_logfile=/var/log/supervisor/cuckoo.out.log
 [program:web]
@@ -364,6 +365,7 @@ directory=$CUCKOO_ROOT/web
 user=cuckoo
 autostart=true
 autorestart=true
+stopasgroup=true
 stderr_logfile=/var/log/supervisor/web.err.log
 stdout_logfile=/var/log/supervisor/web.out.log
 [program:process]
@@ -372,6 +374,7 @@ user=cuckoo
 directory=$CUCKOO_ROOT/utils
 autostart=true
 autorestart=true
+stopasgroup=true
 stderr_logfile=/var/log/supervisor/process.err.log
 stdout_logfile=/var/log/supervisor/process.out.log
 [program:rooter]
@@ -380,6 +383,7 @@ directory=$CUCKOO_ROOT/utils
 user=root
 autostart=true
 autorestart=true
+stopasgroup=true
 stderr_logfile=/var/log/supervisor/router.err.log
 stdout_logfile=/var/log/supervisor/router.out.log
 [program:suricata]
@@ -387,6 +391,7 @@ command=bash -c "mkdir /var/run/suricata; chown cuckoo:cuckoo /var/run/suricata;
 user=root
 autostart=true
 autorestart=true
+stopasgroup=true
 stderr_logfile=/var/log/supervisor/suricata.err.log
 stdout_logfile=/var/log/supervisor/suricata.out.log
 EOF
