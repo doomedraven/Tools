@@ -104,8 +104,11 @@ EOF
     systemctl enable mongodb.service
     systemctl restart mongodb.service
 
-    pip install sqlalchemy jinja2 markupsafe bottle django chardet pygal django-ratelimit rarfile jsbeautifier dpkt nose dnspython pytz requests python-magic geoip pillow java-random python-whois git+https://github.com/crackinglandia/pype32.git git+https://github.com/kbandla/pydeep.git flask flask-restful flask-sqlalchemy openjdk-11-jdk-headless openjdk-8-jdk-headless
+    pip install sqlalchemy jinja2 markupsafe bottle django chardet pygal django-ratelimit rarfile jsbeautifier dpkt nose dnspython pytz requests python-magic geoip pillow java-random python-whois git+https://github.com/crackinglandia/pype32.git git+https://github.com/kbandla/pydeep.git flask flask-restful flask-sqlalchemy
+    apt-get install openjdk-11-jdk-headless
+    apt-get install openjdk-8-jdk-headless
     pip install distorm3 openpyxl git+https://github.com/volatilityfoundation/volatility.git PyCrypto #git+https://github.com/buffer/pyv8
+	
     # Postgresql
     apt-get install postgresql libpq-dev -y
     pip install psycopg2
