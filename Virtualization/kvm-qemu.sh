@@ -411,7 +411,7 @@ function replace_seabios_clues_public() {
         "src/fw/q35-acpi-dsdt.dsl"
     )
     for file in "${FILES[@]}"; do
-        if ! sed -i 's/"BXPC"/<WOOT>"/g' "$file"; then
+        if ! sed -i 's/"BXPC"/"<WOOT>"/g' "$file"; then
             echo "BXPC was not replaced in $file"; fail=1
         fi
         if ! sed -i 's/"BXDSDT"/"<WOOT>"/g' "$file"; then
