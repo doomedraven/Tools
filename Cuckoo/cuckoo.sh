@@ -89,7 +89,7 @@ function dependencies() {
     sudo apt-get install -y mongodb-org-mongos mongodb-org-server mongodb-org-shell mongodb-org-tools
     pip install pymongo -U
 
-    cat /etc/systemd/system/mongodb.service <<EOF
+    cat >> /etc/systemd/system/mongodb.service <<EOF
     [Unit]
     Description=High-performance, schema-free document-oriented database
     After=network.target
