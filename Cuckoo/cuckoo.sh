@@ -9,7 +9,6 @@ IFACE_IP="192.168.2.1"
 # DB password
 PASSWD="SuperPuperSecret"
 CUCKOO_ROOT="/opt/CAPE/"
-#yara_version="3.8.1"
 
 function issues() {
 cat << EOI
@@ -134,7 +133,8 @@ EOF
     ./bootstrap.sh
     ./configure --enable-cuckoo --enable-magic --enable-dotnet --enable-profiling
     make -j"$(getconf _NPROCESSORS_ONLN)"
-    checkinstall -D --pkgname="yara-$yara_version" --default # -$yara_version
+    yara_version = 
+    checkinstall -D --pkgname="yara-$yara_version" --pkgversion="$yara_version|cut -c 2-" --default
     ldconfig
     cd ..
     rm "VirusTotal-yara-*.zip"
