@@ -74,7 +74,7 @@ function dependencies() {
     # from pip import __main__
     # if __name__ == '__main__':
     #     sys.exit(__main__._main())
-    pip install requests[security] pyOpenSSL pefile tldextract httpreplay imagehash oletools olefile capstone yara-python PyCrypto voluptuous -U
+    pip install requests[security] pyOpenSSL pefile tldextract httpreplay imagehash oletools olefile capstone PyCrypto voluptuous -U
     # re2
     apt-get install libre2-dev -y
     pip install re2
