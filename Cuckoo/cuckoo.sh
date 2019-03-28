@@ -127,9 +127,10 @@ EOF
     yara_version=$(echo $yara_info |jq .tag_name|sed "s/\"//g")
     yara_repo_url=$(echo $yara_info | jq ".zipball_url" | sed "s/\"//g")
     wget -q $yara_repo_url
-    unzip "VirusTotal-yara-*"
+    unzip $yara_version
     #wget "https://github.com/VirusTotal/yara/archive/v$yara_version.zip" && unzip "v$yara_version.zip"
-    cd "VirusTotal-yara-*" || return
+    directory=`ls | grep "VirusTotal-yara-*"`
+    cd $directory || return
     ./bootstrap.sh
     ./configure --enable-cuckoo --enable-magic --enable-dotnet --enable-profiling
     make -j"$(getconf _NPROCESSORS_ONLN)"
