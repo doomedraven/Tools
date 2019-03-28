@@ -271,8 +271,8 @@ EOF
     sudo apt-get install gnupg2 -y
     gpg --keyserver keys.gnupg.net --recv A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89
     #gpg2 --recv A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89
-    gpg2 --export A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89 | apt-key add -
-
+    #gpg2 --export A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89 | apt-key add -
+    wget -qO - https://deb.torproject.org/torproject.org/A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89.asc | sudo apt-key add -
     sudo apt-get update
     apt install tor deb.torproject.org-keyring libzstd1 -y
     # Tor configuration
