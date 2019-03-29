@@ -207,7 +207,9 @@ EOH
     cd libvirt-python* || return
     python3 setup.py build
     python3 setup.py install
-
+    # CAPE will use this lib so we can compile it with python2 too
+    python setup.py build
+    python setup.py install
     if [ "$OS" = "Linux" ]; then
         # https://github.com/libvirt/libvirt/commit/e94979e901517af9fdde358d7b7c92cc055dd50c
         groupname=""
