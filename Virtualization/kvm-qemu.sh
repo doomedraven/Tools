@@ -151,7 +151,7 @@ function install_libvirt() {
 Package: libvirt-bin
 Pin: release *
 Pin-Priority: -1
- Package: libvirt0
+Package: libvirt0
 Pin: release *
 Pin-Priority: -1
 EOH
