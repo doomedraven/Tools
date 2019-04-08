@@ -1,4 +1,17 @@
 #!/bin/bash
+
+# Copyright (C) 2011-2019 DoomedRaven.
+# This file is part of Tools - https://github.com/doomedraven/Tools
+# See the file 'LICENSE.md' for copying permission.
+
+: '
+Huge thanks to:
+    * @http_error_418
+    * @2sec4you
+    * @seifreed
+    * @Fire9
+'
+
 #ToDo investigate
 #https://www.jamescoyle.net/how-to/1810-qcow2-disk-images-and-performance
 #when backing storage is attached to virtio_blk (vda, vdb, etc.) storage controller - performance from iSCSI client connecting to the iSCSI target was in my environment ~ 20 IOPS, with throughput (depending on IO size) ~ 2-3 MiB/s. I changed virtual disk controller within virtual machine to SCSI and I'm able to get 1000+ IOPS and throughput 100+ MiB/s from my iSCSI clients.
@@ -38,28 +51,35 @@
 qemu_version=3.1.0
 # libvirt - https://libvirt.org/sources/
 # changelog - https://libvirt.org/news.html
-libvirt_version=5.1.0
+libvirt_version=5.2.0
 # virt-manager - https://github.com/virt-manager/virt-manager/releases
-virt_manager_version=2.1.0
+#virt_manager_version=2.1.0
 # http://download.libguestfs.org/
 libguestfs_version=1.40.2
 # autofilled
 OS=""
 username=""
 
+
+# ToDO add to see if cpu supports VTx
+# egrep '(vmx|svm)' --color=always /proc/cpuinfo
+#* If your CPU is Intel, you need activate in __BIOS__ VT-x
+#    * (last letter can change, you can activate [TxT ](https://software.intel.com/en-us/blogs/2012/09/25/how-to-enable-an-intel-trusted-execution-technology-capable-server) too, and any other feature, but VT-* is very important)
+
 function changelog() {
 cat << EndOfCL
-    # 24.02.2019 - Add support for Linux TCP BBR - https://www.cyberciti.biz/cloud-computing/increase-your-linux-server-internet-speed-with-tcp-bbr-congestion-control/
+    # 28.03.2019 - Huge cleanup, fixes, QEMU 4-RC2 testing in dev
+    # 24.02.2019 - Add Mosh + support for Linux TCP BBR - https://www.cyberciti.biz/cloud-computing/increase-your-linux-server-internet-speed-with-tcp-bbr-congestion-control/
     # 11.02.2019 - Depricated linked clones and added WebVirtMgr
     # 30.01.2019 - Libvirt 5.0.0
     # 27.12.2018 - libguestfs 1.38
     # 10.11.2018 - Virt-manager 2, libivrt-4.10, fixes
     # 11.09.2018 - code improvement
-    # 09.09.2018 - ACPI fixes - huge thanks to @2sec4u and @seifreed  for your patience and your time/help :P
+    # 09.09.2018 - ACPI fixes
     # 05.09.2018 - libivrt 4.7 and virtlogd
     # 19.08.2018 - Intel HAXM notes
     # 14.08.2018 - QEMU 3 support tested on ubuntu 18.04
-    # 03.08.2018 - More anti-anti by Tim Shelton (redsand) @ HAWK (hawk.io) and @http_error_418
+    # 03.08.2018 - More anti-anti
     # 28.02.2018 - Support for qemu 2.12
 EndOfCL
 }
@@ -73,8 +93,10 @@ cat << EndOfHelp
         SeaBios - Install SeaBios and repalce QEMU bios file
         KVM - this will install intel-HAXM if you on Mac
         HAXM - Mac Hardware Accelerated Execution Manager
+        GRUB - add IOMMU to grub command line
         tcp_bbr - Enable TCP BBR congestion control
             * https://www.cyberciti.biz/cloud-computing/increase-your-linux-server-internet-speed-with-tcp-bbr-congestion-control/
+        Mosh - mobile shell - https://mosh.org/
         WebVirtMgr - Install WebManager for KVM
         Clone - <VM_NAME> <path_to_hdd> <start_from_number> <#vm_to_create> <path_where_to_store> <network_range_base>
                 * Example Win7x64 /VMs/Win7x64.qcow2 0 5 /var/lib/libvirt/images/ 192.168.1
@@ -93,6 +115,25 @@ cat << EndOfHelp
             * https://www.jamescoyle.net/how-to/1810-qcow2-disk-images-and-performance
             * https://www.jamescoyle.net/how-to/2060-qcow2-physical-size-with-different-preallocation-settings
 EndOfHelp
+}
+
+function grub_iommu(){
+    # ToDo make a sed with regex which works on all cases
+    echo "[+] Updating GRUB for IOMMU support"
+    if sed -i 's/GRUB_CMDLINE_LINUX=""/GRUB_CMDLINE_LINUX="intel_iommu=on"/g' /etc/default/grub; then
+        echo "[-] GRUB patching failed, add intel_iommu=on manually"
+        return 1
+    fi
+    sudo update-grub
+    echo "[+] Please reboot"
+}
+
+function _sed_aux(){
+    # pattern path error_msg
+    echo $1 $2 $3
+    if [ -f "$2" ] && ! sed -i "$1" $2; then
+        echo $3
+    fi
 }
 
 function _enable_tcp_bbr() {
@@ -132,10 +173,10 @@ function install_libguestfs() {
     sudo dpkg --purge --force-all "libguestfs-*" 2>/dev/null
 
     sudo apt install gperf flex bison libaugeas-dev libhivex-dev supermin ocaml-nox libhivex-ocaml genisoimage libhivex-ocaml-dev libmagic-dev libjansson-dev -y 2>/dev/null
-    cd /tmp || return
+    cd /tmp || return
     wget "http://download.libguestfs.org/1.40-stable/libguestfs-$libguestfs_version.tar.gz"
     tar xf "libguestfs-$libguestfs_version.tar.gz"
-    cd libguestfs-$libguestfs_version
+    cd libguestfs-$libguestfs_version || return
     ./configure
     make -j"$(getconf _NPROCESSORS_ONLN)"
     REALLY_INSTALL=yes checkinstall -D --pkgname=libvirt-$libguestfs_version --default
@@ -146,7 +187,6 @@ function install_libvirt() {
     # http://ask.xmodulo.com/compile-virt-manager-debian-ubuntu.html
     #rm -r /usr/local/lib/python2.7/dist-packages/libvirt*
 
-    # set to hold to avoid side problems
     if [ ! -f /etc/apt/preferences.d/doomedraven ]; then
     # set to hold to avoid side problems
         cat >> /etc/apt/preferences.d/doomedraven << EOH
@@ -210,7 +250,7 @@ EOH
     cd libvirt-python* || return
     python3 setup.py build
     python3 setup.py install
-    # CAPE will use this lib so we can compile it with python2 too
+    #py2
     python setup.py build
     python setup.py install
     if [ "$OS" = "Linux" ]; then
@@ -235,9 +275,9 @@ EOH
 }
 
 function install_kvm_linux_apt() {
-    #sed -i 's/# deb-src/deb-src/g' /etc/apt/sources.list
+    sed -i 's/# deb-src/deb-src/g' /etc/apt/sources.list
     apt-get update 2>/dev/null
-    apt-get install build-essential python-pip python-pip3 gcc pkg-config cpu-checker intltool -y 2>/dev/null
+    apt-get install build-essential python-pip python3-pip gcc pkg-config cpu-checker intltool -y 2>/dev/null
     apt-get install gtk-update-icon-cache -y 2>/dev/null
 
     # WSL support
@@ -289,10 +329,10 @@ function install_kvm_linux_apt() {
     pip3 install PyGObject -U
     pip install PyGObject -U
 
-    cd /tmp || return
+    cd /tmp || return
     if wget https://libvirt.org/sources/glib/libvirt-glib-1.0.0.tar.gz; then
         tar xf libvirt-glib-1.0.0.tar.gz
-        cd libvirt-glib-1.0.0
+        cd libvirt-glib-1.0.0 || return
         aclocal && libtoolize --force
         automake --add-missing
         ./configure
@@ -326,130 +366,63 @@ function install_kvm_linux_apt() {
 
 function replace_qemu_clues_public() {
     echo '[+] Patching QEMU clues'
-    if ! sed -i 's/QEMU HARDDISK/<WOOT> HARDDISK/g' qemu*/hw/ide/core.c; then
-        echo 'QEMU HARDDISK was not replaced in core.c'; fail=1
-    fi
-    if ! sed -i 's/QEMU HARDDISK/<WOOT> HARDDISK/g' qemu*/hw/scsi/scsi-disk.c; then
-        echo 'QEMU HARDDISK was not replaced in scsi-disk.c'; fail=1
-    fi
-    if ! sed -i 's/QEMU DVD-ROM/<WOOT> DVD-ROM/g' qemu*/hw/ide/core.c; then
-        echo 'QEMU DVD-ROM was not replaced in core.c'; fail=1
-    fi
-    if ! sed -i 's/QEMU DVD-ROM/<WOOT> DVD-ROM/g' qemu*/hw/ide/atapi.c; then
-        echo 'QEMU DVD-ROM was not replaced in atapi.c'; fail=1
-    fi
-    if ! sed -i 's/s->vendor = g_strdup("QEMU");/s->vendor = g_strdup("<WOOT>");/g' qemu*/hw/scsi/scsi-disk.c; then
-        echo 'Vendor string was not replaced in scsi-disk.c'; fail=1
-    fi
-    if ! sed -i 's/QEMU CD-ROM/<WOOT> CD-ROM/g' qemu*/hw/scsi/scsi-disk.c; then
-        echo 'QEMU CD-ROM was not patched in scsi-disk.c'; fail=1
-    fi
-    if ! sed -i 's/padstr8(buf + 8, 8, "QEMU");/padstr8(buf + 8, 8, "<WOOT>");/g' qemu*/hw/ide/atapi.c; then
-        echo 'padstr was not replaced in atapi.c'; fail=1
-    fi
-    if ! sed -i 's/QEMU MICRODRIVE/<WOOT> MICRODRIVE/g' qemu*/hw/ide/core.c; then
-        echo 'QEMU MICRODRIVE was not replaced in core.c'; fail=1
-    fi
-    if ! sed -i 's/KVMKVMKVM\\0\\0\\0/GenuineIntel/g' qemu*/target/i386/kvm.c; then
-        echo 'KVMKVMKVM was not replaced in kvm.c'; fail=1
-    fi
-	# by @http_error_418
-    #if  sed -i 's/Microsoft Hv/GenuineIntel/g' qemu*/target/i386/kvm.c; then
-    #    echo 'Microsoft Hv was not replaced in target/i386/kvm.c'; fail=1
-    #fi
-    if ! sed -i 's/"bochs"/"hawks"/g' qemu*/block/bochs.c; then
-        echo 'BOCHS was not replaced in block/bochs.c'; fail=1
-    fi
-    # by Tim Shelton (redsand) @ HAWK (hawk.io)
-    if ! sed -i 's/"BOCHS "/"ALASKA"/g' qemu*/include/hw/acpi/aml-build.h; then
-        echo 'bochs was not replaced in include/hw/acpi/aml-build.h'; fail=1
-    fi
-    # by Tim Shelton (redsand) @ HAWK (hawk.io)
-    if ! sed -i 's/Bochs Pseudo/Intel RealTime/g' qemu*/roms/ipxe/src/drivers/net/pnic.c; then
-        echo 'Bochs Pseudo was not replaced in roms/ipxe/src/drivers/net/pnic.c'; fail=1
-    fi
-    # by Tim Shelton (redsand) @ HAWK (hawk.io)
-    #if ! sed -i 's/Bochs\/Plex86/<WOOT>\/FIRM64/g' qemu*/roms/vgabios/vbe.c; then
-    #    echo 'BOCHS was not replaced in roms/vgabios/vbe.c'; fail=1
-    #fi
+    _sed_aux 's/QEMU HARDDISK/<WOOT> HARDDISK/g' qemu*/hw/ide/core.c 'QEMU HARDDISK was not replaced in core.c'
+    _sed_aux 's/QEMU HARDDISK/<WOOT> HARDDISK/g' qemu*/hw/scsi/scsi-disk.c 'QEMU HARDDISK was not replaced in scsi-disk.c'
+    _sed_aux 's/QEMU DVD-ROM/<WOOT> DVD-ROM/g' qemu*/hw/ide/core.c 'QEMU DVD-ROM was not replaced in core.c'
+    _sed_aux 's/QEMU DVD-ROM/<WOOT> DVD-ROM/g' qemu*/hw/ide/atapi.c 'QEMU DVD-ROM was not replaced in atapi.c'
+    _sed_aux 's/s->vendor = g_strdup("QEMU");/s->vendor = g_strdup("<WOOT>");/g' qemu*/hw/scsi/scsi-disk.c 'Vendor string was not replaced in scsi-disk.c'
+    _sed_aux 's/QEMU CD-ROM/<WOOT> CD-ROM/g' qemu*/hw/scsi/scsi-disk.c 'Vendor string was not replaced in scsi-disk.c'
+    _sed_aux 's/padstr8(buf + 8, 8, "QEMU");/padstr8(buf + 8, 8, "<WOOT>");/g'  qemu*/hw/ide/atapi.c 'padstr was not replaced in atapi.c'
+    _sed_aux 's/QEMU MICRODRIVE/<WOOT> MICRODRIVE/g' qemu*/hw/ide/core.c 'QEMU MICRODRIVE was not replaced in core.c'
+    _sed_aux 's/KVMKVMKVM\\0\\0\\0/GenuineIntel/g' qemu*/target/i386/kvm.c 'QEMU MICRODRIVE was not replaced in core.c'
+    _sed_aux 's/KVMKVMKVM\\0\\0\\0/GenuineIntel/g' qemu*/target/i386/kvm.c 'KVMKVMKVM was not replaced in kvm.c'
+    _sed_aux 's/"bochs"/"hawks"/g' qemu*/block/bochs.c 'BOCHS was not replaced in block/bochs.c'
+    _sed_aux 's/"BOCHS "/"ALASKA"/g' qemu*/include/hw/acpi/aml-build.h 'BOCHS was not replaced in block/bochs.c'
+    _sed_aux 's/Bochs Pseudo/Intel RealTime/g' qemu*/roms/ipxe/src/drivers/net/pnic.c 'Bochs Pseudo was not replaced in roms/ipxe/src/drivers/net/pnic.c'
+    # depricated
+    #_sed_aux 's/Microsoft Hv/GenuineIntel/g' qemu*/target/i386/kvm.c 'Microsoft Hv was not replaced in target/i386/kvm.c'
+    #_sed_aux 's/Bochs\/Plex86/<WOOT>\/FIRM64/g' qemu*/roms/vgabios/vbe.c 'BOCHS was not replaced in roms/vgabios/vbe.c'
 }
+
 
 function replace_seabios_clues_public() {
     echo "[+] Generating SeaBios Kconfig"
     echo "[+] Fixing SeaBios antivms"
-    if ! sed -i 's/Bochs/<WOOT>/g' src/config.h; then
-        echo 'Bochs was not replaced in src/config.h'; fail=1
-    fi
-    if ! sed -i 's/BOCHSCPU/<WOOT>/g' src/config.h; then
-        echo 'BOCHSCPU was not replaced in src/config.h'; fail=1
-    fi
-    if ! sed -i 's/"BOCHS "/"<WOOT>"/g' src/config.h; then
-        echo 'BOCHS was not replaced in src/config.h'; fail=1
-    fi
-    if ! sed -i 's/BXPC/<WOOT>/g' src/config.h; then
-        echo 'BXPC was not replaced in src/config.h'; fail=1
-    fi
-    if ! sed -i 's/QEMU0001/<WOOT>/g' src/fw/ssdt-misc.dsl; then
-        echo 'QEMU0001 was not replaced in src/fw/ssdt-misc.dsl'; fail=1
-    fi
-    if ! sed -i 's/QEMU\/Bochs/<WOOT>\/<WOOT>/g' vgasrc/Kconfig; then
-        echo 'QEMU\/Bochs was not replaced in vgasrc/Kconfig'; fail=1
-    fi
-    if ! sed -i 's/qemu /<WOOT> /g' vgasrc/Kconfig; then
-        echo 'qemu was not replaced in vgasrc/Kconfig'; fail=1
-    fi
+    _sed_aux 's/Bochs/<WOOT>/g' src/config.h 'Bochs was not replaced in src/config.h'
+    _sed_aux 's/BOCHSCPU/<WOOT>/g' src/config.h 'BOCHSCPU was not replaced in src/config.h'
+    _sed_aux 's/"BOCHS "/"<WOOT>"/g' src/config.h 'BOCHS was not replaced in src/config.h'
+    _sed_aux 's/BXPC/<WOOT>/g' src/config.h 'BXPC was not replaced in src/config.h'
+    _sed_aux 's/QEMU0001/<WOOT>/g' src/fw/ssdt-misc.dsl 'QEMU0001 was not replaced in src/fw/ssdt-misc.dsl'
+    _sed_aux 's/QEMU\/Bochs/<WOOT>\/<WOOT>/g' vgasrc/Kconfig 'QEMU\/Bochs was not replaced in vgasrc/Kconfig'
+    _sed_aux 's/qemu /<WOOT> /g' vgasrc/Kconfig 'qemu was not replaced in vgasrc/Kconfig'
 
     FILES=(
         src/hw/blockcmd.c
         src/fw/paravirt.c
     )
     for file in "${FILES[@]}"; do
-        if ! sed -i 's/"QEMU/"<WOOT>/g' "$file"; then
-            echo "QEMU was not replaced in $file"; fail=1
-        fi
+        _sed_aux 's/"QEMU/"<WOOT>/g' "$file" "QEMU was not replaced in $file"
     done
-    if ! sed -i 's/"QEMU"/"<WOOT>"/g' src/hw/blockcmd.c; then
-        echo '"QEMU" was not replaced in  src/hw/blockcmd.c'; fail=1
-    fi
+
+    _sed_aux 's/"QEMU"/"<WOOT>"/g' src/hw/blockcmd.c '"QEMU" was not replaced in  src/hw/blockcmd.c'
+
     FILES=(
         "src/fw/acpi-dsdt.dsl"
         "src/fw/q35-acpi-dsdt.dsl"
     )
     for file in "${FILES[@]}"; do
-        if ! sed -i 's/"BXPC"/"<WOOT>"/g' "$file"; then
-            echo "BXPC was not replaced in $file"; fail=1
-        fi
-        if ! sed -i 's/"BXDSDT"/"<WOOT>"/g' "$file"; then
-            echo "BXDSDT was not replaced in $file"; fail=1
-        fi
+        _sed_aux 's/"BXPC"/"<WOOT>"/g' "$file" "BXPC was not replaced in $file"
     done
-    if ! sed -i 's/"BXPC"/"<WOOT>"/g' "src/fw/ssdt-pcihp.dsl"; then
-        echo 'BXPC was not replaced in src/fw/ssdt-pcihp.dsl'; fail=1
-    fi
-    if ! sed -i 's/"BXDSDT"/"<WOOT>"/g' "src/fw/ssdt-pcihp.dsl"; then
-        echo 'BXDSDT was not replaced in src/fw/ssdt-pcihp.dsl'; fail=1
-    fi
-    if ! sed -i 's/"BXPC"/"<WOOT>"/g' "src/fw/ssdt-proc.dsl"; then
-        echo 'BXPC was not replaced in "src/fw/ssdt-proc.dsl"'; fail=1
-    fi
-    if ! sed -i 's/"BXSSDT"/"<WOOT>"/g' "src/fw/ssdt-proc.dsl"; then
-        echo 'BXSSDT was not replaced in src/fw/ssdt-proc.dsl'; fail=1
-    fi
-    if ! sed -i 's/"BXPC"/"<WOOT>"/g' "src/fw/ssdt-misc.dsl"; then
-        echo 'BXPC was not replaced in src/fw/ssdt-misc.dsl'; fail=1
-    fi
-    if ! sed -i 's/"BXSSDTSU"/"<WOOT>"/g' "src/fw/ssdt-misc.dsl"; then
-        echo 'BXDSDT was not replaced in src/fw/ssdt-misc.dsl'; fail=1
-    fi
-    if ! sed -i 's/"BXSSDTSUSP"/"<WOOT>"/g' src/fw/ssdt-misc.dsl; then
-        echo 'BXSSDTSUSP was not replaced in src/fw/ssdt-misc.dsl'; fail=1
-    fi
-    if ! sed -i 's/"BXSSDT"/"<WOOT>"/g' src/fw/ssdt-proc.dsl; then
-        echo 'BXSSDT was not replaced in src/fw/ssdt-proc.dsl'; fail=1
-    fi
-    if ! sed -i 's/"BXSSDTPCIHP"/"<WOOT>"/g' src/fw/ssdt-pcihp.dsl; then
-        echo 'BXPC was not replaced in src/fw/ssdt-pcihp.dsl'; fail=1
-    fi
+    _sed_aux 's/"BXPC"/"<WOOT>"/g' "src/fw/ssdt-pcihp.dsl" 'BXPC was not replaced in src/fw/ssdt-pcihp.dsl'
+    _sed_aux 's/"BXDSDT"/"<WOOT>"/g' "src/fw/ssdt-pcihp.dsl" 'BXDSDT was not replaced in src/fw/ssdt-pcihp.dsl'
+    _sed_aux 's/"BXPC"/"<WOOT>"/g' "src/fw/ssdt-proc.dsl" 'BXPC was not replaced in "src/fw/ssdt-proc.dsl"'
+    _sed_aux 's/"BXSSDT"/"<WOOT>"/g' "src/fw/ssdt-proc.dsl" 'BXSSDT was not replaced in src/fw/ssdt-proc.dsl'
+    _sed_aux 's/"BXPC"/"<WOOT>"/g' "src/fw/ssdt-misc.dsl" 'BXPC was not replaced in src/fw/ssdt-misc.dsl'
+    _sed_aux 's/"BXSSDTSU"/"<WOOT>"/g' "src/fw/ssdt-misc.dsl" 'BXDSDT was not replaced in src/fw/ssdt-misc.dsl'
+    _sed_aux 's/"BXSSDTSUSP"/"<WOOT>"/g' src/fw/ssdt-misc.dsl 'BXSSDTSUSP was not replaced in src/fw/ssdt-misc.dsl'
+    _sed_aux 's/"BXSSDT"/"<WOOT>"/g' src/fw/ssdt-proc.dsl 'BXSSDT was not replaced in src/fw/ssdt-proc.dsl'
+    _sed_aux 's/"BXSSDTPCIHP"/"<WOOT>"/g' src/fw/ssdt-pcihp.dsl 'BXPC was not replaced in src/fw/ssdt-pcihp.dsl'
+
     FILES=(
         src/fw/q35-acpi-dsdt.dsl
         src/fw/acpi-dsdt.dsl
@@ -459,9 +432,7 @@ function replace_seabios_clues_public() {
         src/config.h
     )
     for file in "${FILES[@]}"; do
-        if ! sed -i 's/"BXPC"/"A M I"/g' "$file"; then
-            echo "BXPC was not replaced in $file"; fail=1
-        fi
+        _sed_aux 's/"BXPC"/"A M I"/g' "$file" "BXPC was not replaced in $file"
     done
 }
 
@@ -483,18 +454,22 @@ function qemu_func() {
         exit
     fi
 
-    if ! $(tar xf "qemu-$qemu_version.tar.xz") ; then
+    if ! tar xf "qemu-$qemu_version.tar.xz" ; then
         echo "[-] Failed to extract, check if download was correct"
         exit 1
     fi
     fail=0
+
+    pip install sphinx
 
     if [ "$OS" = "Linux" ]; then
         add-apt-repository universe
         apt-get update
         apt-get install checkinstall openbios-* libssh2-1-dev vde2 liblzo2-dev libghc-gtk3-dev libsnappy-dev libbz2-dev libxml2-dev google-perftools libgoogle-perftools-dev libvde-dev -y 2>/dev/null
         apt-get install debhelper ibusb-1.0-0-dev libxen-dev uuid-dev xfslibs-dev libjpeg-dev libusbredirparser-dev device-tree-compiler texinfo libbluetooth-dev libbrlapi-dev libcap-ng-dev libcurl4-gnutls-dev libfdt-dev gnutls-dev libiscsi-dev libncurses5-dev libnuma-dev libcacard-dev librados-dev librbd-dev libsasl2-dev libseccomp-dev libspice-server-dev \
-        libaio-dev libcap-dev libattr1-dev libpixman-1-dev libgtk2.0-bin  libxml2-utils systemtap-sdt-dev -y 2>/dev/null
+        libaio-dev libcap-dev libattr1-dev libpixman-1-dev libgtk2.0-bin  libxml2-utils systemtap-sdt-dev texinfo -y 2>/dev/null
+        # qemu docs required
+        perl -MCPAN -e install "Perl/perl-podlators"
 
     elif [ "$OS" = "Darwin" ]; then
         _check_brew
@@ -509,14 +484,15 @@ function qemu_func() {
         else
             replace_qemu_clues_public
         fi
-        if [ $fail -eq 0 ]; then
+        # ToDo reintroduce it?
+        #if [ $fail -eq 0 ]; then
             echo '[+] Starting compile it'
             cd qemu-$qemu_version || return
-	        # add in future --enable-netmap https://sgros-students.blogspot.com/2016/05/installing-and-testing-netmap.html
+            # add in future --enable-netmap https://sgros-students.blogspot.com/2016/05/installing-and-testing-netmap.html
             # remove --target-list=i386-softmmu,x86_64-softmmu,i386-linux-user,x86_64-linux-user  if you want all targets
             if [ "$OS" = "Linux" ]; then
-                # --target-list=i386-softmmu,x86_64-softmmu,i386-linux-user,x86_64-linux-user
-                ./configure --prefix=/usr --libexecdir=/usr/lib/qemu --localstatedir=/var --bindir=/usr/bin/ --enable-gnutls --enable-docs --enable-gtk --enable-vnc --enable-vnc-sasl --enable-vnc-png --enable-vnc-jpeg --enable-curl --enable-kvm  --enable-linux-aio --enable-cap-ng --enable-vhost-net --enable-vhost-crypto --enable-spice --enable-usb-redir --enable-lzo --enable-snappy --enable-bzip2 --enable-coroutine-pool --enable-libssh2 --enable-libxml2 --enable-tcmalloc --enable-replication --enable-tools --enable-capstone
+                # --enable-sparse
+                ./configure --target-list=i386-softmmu,x86_64-softmmu,i386-linux-user,x86_64-linux-user --prefix=/usr --libexecdir=/usr/lib/qemu --localstatedir=/var --bindir=/usr/bin/ --enable-hax --enable-gnutls --enable-docs --enable-gtk --enable-vnc --enable-vnc-sasl --enable-vnc-png --enable-vnc-jpeg --enable-curl --enable-kvm  --enable-linux-aio --enable-cap-ng --enable-vhost-net --enable-vhost-crypto --enable-spice --enable-usb-redir --enable-lzo --enable-snappy --enable-bzip2 --enable-coroutine-pool --enable-libssh2 --enable-libxml2 --enable-tcmalloc --enable-replication --enable-tools --enable-capstone
             elif [ "$OS" = "Darwin" ]; then
                 # --enable-vhost-net --enable-vhost-crypto
                 ./configure --prefix=/usr --libexecdir=/usr/lib/qemu --localstatedir=/var --bindir=/usr/bin/ --enable-gnutls --enable-docs  --enable-vnc --enable-vnc-sasl --enable-vnc-png --enable-vnc-jpeg --enable-curl --enable-hax --enable-usb-redir --enable-lzo --enable-snappy --enable-bzip2 --enable-coroutine-pool  --enable-libxml2 --enable-tcmalloc --enable-replication --enable-tools --enable-capstone
@@ -553,10 +529,10 @@ function qemu_func() {
             else
                 echo '[-] Compilling failed'
             fi
-        else
-            echo '[-] Check previous output'
-            exit
-        fi
+        #else
+        #    echo '[-] Check previous output'
+        #    exit
+        #fi
 
     #else
     #    echo '[-] Download QEMU source was not possible'
@@ -570,7 +546,7 @@ function qemu_func() {
 }
 
 function seabios_func() {
-    cd /tmp || return
+    cd /tmp || return
     fail=0
     echo '[+] Installing SeaBios dependencies'
     apt-get install git iasl -y
@@ -621,6 +597,10 @@ cat << EndOfHelp
     * https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/virtualization_deployment_and_administration_guide/sect-troubleshooting-common_libvirt_errors_and_troubleshooting
 
 ### Errors and Solutions
+    * Error:
+        * If you getting an apparmor error
+    * Solution
+        * sed -i 's/#security_driver = "apparmor"/security_driver = ""/g' /etc/libvirt/qemu.conf
     * Error:
         required by /usr/lib/libvirt/storage-file/libvirt_storage_file_fs.so
     * Solution:
@@ -702,7 +682,7 @@ EndOfHelp
 function install_WebVirtCloud(){
     sudo apt-get -y install git virtualenv python-virtualenv python-dev python-lxml libvirt-dev zlib1g-dev libxslt1-dev nginx supervisor libsasl2-modules gcc pkg-config python-guestfs
     git clone https://github.com/retspen/webvirtcloud
-    cd webvirtcloud
+    cd webvirtcloud || return
     cp webvirtcloud/settings.py.template webvirtcloud/settings.py
     # now put secret key to webvirtcloud/settings.py
     sudo cp conf/supervisor/webvirtcloud.conf /etc/supervisor/conf.d
@@ -710,7 +690,7 @@ function install_WebVirtCloud(){
     cd ..
     sudo mv webvirtcloud /srv
     sudo chown -R www-data:www-data /srv/webvirtcloud
-    cd /srv/webvirtcloud
+    cd /srv/webvirtcloud || return
     virtualenv venv
     source venv/bin/activate
     pip install -r conf/requirements.txt
@@ -746,7 +726,7 @@ function cloning() {
                 worked=0
             fi
         done
-        echo "<host mac='$macaddr' name='$1_$i' ip='$6.$(($i+1))'/>"
+        echo "<host mac='$macaddr' name='$1_$i' ip='$6.$i+1'/>"
     done
 
     echo "[+] Enjoy"
@@ -754,7 +734,7 @@ function cloning() {
 }
 
 # Doesn't work ${$1,,}
-COMMAND=$(echo "$1"|tr "[A-Z]" "[a-z]")
+COMMAND=$(echo "$1"|tr "[:upper:]" "[:lower:]")
 
 case $COMMAND in
     '-h')
@@ -798,6 +778,7 @@ case "$COMMAND" in
         systemctl daemon-reload
         systemctl restart libvirtd libvirt-guests.service
         _enable_tcp_bbr
+        grub_iommu
     elif [ "$OS" = "Darwin" ]; then
         install_haxm_mac
     fi
@@ -827,11 +808,11 @@ case "$COMMAND" in
     cloning "$2" "$3" "$4" "$5" "$6" "$7";;
 'noip')
     if [ "$OS" = "Linux" ]; then
-        cd /tmp
+        cd /tmp || return
         wget http://www.no-ip.com/client/linux/noip-duc-linux.tar.gz
         tar xf noip-duc-linux.tar.gz
         rm noip-duc-linux.tar.gz
-        cd "noip-*"
+        cd "noip-*" || return
         make install
         crontab -l | { cat; echo "@reboot sleep 10 && /usr/local/bin/noip2 -c /usr/local/etc/no-ip2.conf"; } | crontab -
     elif [ "$OS" = "Darwin" ]; then
@@ -856,6 +837,18 @@ case "$COMMAND" in
     changelog;;
 'webvirtmgr')
     install_WebVirtCloud;;
+'grub')
+    grub_iommu;;
+'mosh')
+    if [ "$OS" = "Linux" ]; then
+        sudo apt-get install mosh -y
+    elif [ "$OS" = "Darwin" ]; then
+        _check_brew
+        brew install mosh
+    else
+        echo "https://mosh.org/#getting"
+    fi
+    ;;
 *)
     usage;;
 esac
