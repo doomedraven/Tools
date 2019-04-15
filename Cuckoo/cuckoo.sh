@@ -91,11 +91,23 @@ function dependencies() {
     cat >> /etc/systemd/system/mongodb.service <<EOF
     [Unit]
     Description=High-performance, schema-free document-oriented database
+    Wants=network.target
     After=network.target
+
     [Service]
-    User=root
-    #ExecStart=/usr/bin/mongod --quiet --config /etc/mongod.conf
-    ExecStart=/usr/bin/numactl --interleave=all /usr/bin/mongod --quiet --bind_ip 0.0.0.0 --port 27017
+    # https://www.tutorialspoint.com/mongodb/mongodb_replication.htm
+    ExecStart=/usr/bin/numactl --interleave=all /usr/bin/mongod --quiet --shardsvr --bind_ip 0.0.0.0 --port 27017
+    # --replSet rs0
+    ExecReload=/bin/kill -HUP $MAINPID
+    Restart=always
+    # enable on ramfs servers
+    # --wiredTigerCacheSizeGB=50
+    User=mongodb
+    Group=mongodb
+    StandardOutput=syslog
+    StandardError=syslog
+    SyslogIdentifier=mongodb
+
     [Install]
     WantedBy=multi-user.target
 EOF
