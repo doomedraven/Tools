@@ -735,7 +735,7 @@ function cloning() {
 
 }
 
-if lsb_release -a | grep Debian; then
+if [ $(lsb_release -is) = "Debian" ]; then
     echo "[!] Debian isn't supported!"
     exit 1
 fi
