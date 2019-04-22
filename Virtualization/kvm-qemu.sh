@@ -735,6 +735,11 @@ function cloning() {
 
 }
 
+if lsb_release -a | grep Debian; then
+    echo "[!] Debian isn't supported!"
+    exit 1
+fi
+
 # Doesn't work ${$1,,}
 COMMAND=$(echo "$1"|tr "[:upper:]" "[:lower:]")
 
