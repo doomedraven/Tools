@@ -4,6 +4,11 @@
 # This file is part of Tools - https://github.com/doomedraven/Tools
 # See the file 'LICENSE.md' for copying permission.
 
+
+# https://www.doomedraven.com/2016/05/kvm.html
+# Use Ubuntu 18.04 LTS - Debian isn't supported!
+
+
 : '
 Huge thanks to:
     * @http_error_418
@@ -20,9 +25,6 @@ Huge thanks to:
 #"cluster_size"
 #Changes the qcow2 cluster size (must be between 512 and 2M). Smaller cluster sizes can improve the image file size whereas larger cluster sizes generally provide better performance.
 
-
-# https://www.doomedraven.com/2016/05/kvm.html
-# Use Ubuntu 18.04 LTS
 
 # https://github.com/dylanaraps/pure-bash-bible
 # https://www.shellcheck.net/
