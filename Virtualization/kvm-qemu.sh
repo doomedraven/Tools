@@ -566,7 +566,8 @@ function seabios_func() {
         # make menuconfig -> BIOS tables -> disable Include default ACPI DSDT
         # get rid of this hack
         make -j "$(getconf _NPROCESSORS_ONLN)" 2>/dev/null
-        sed -i 's/CONFIG_ACPI_DSDT=y/CONFIG_ACPI_DSDT=n/g' .config
+        # Windows 10(latest rev.) is uninstallable without ACPI_DSDT
+        # sed -i 's/CONFIG_ACPI_DSDT=y/CONFIG_ACPI_DSDT=n/g' .config
         sed -i 's/CONFIG_XEN=y/CONFIG_XEN=n/g' .config
         if make -j "$(getconf _NPROCESSORS_ONLN)"; then
             echo '[+] Replacing old bios.bin to new out/bios.bin'
