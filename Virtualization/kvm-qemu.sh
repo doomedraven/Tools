@@ -268,7 +268,7 @@ EOH
             groupadd libvirt
         fi
         usermod -G $groupname -a "$(whoami)"
-        if "$username"; then
+        if [[ ! -z "$username" ]]; then
             usermod -G $groupname -a "$username"
         fi
         echo "[+] You should logout and login "
@@ -372,6 +372,9 @@ function install_kvm_linux_apt() {
     addgroup kvm
     usermod -a -G kvm "$(whoami)"
     chgrp kvm /dev/kvm
+    if [[ ! -z "$username" ]]; then
+        usermod -a -G kvm "$username"
+    fi
     if [ ! -f /etc/udev/rules.d/50-qemu-kvm.rules ]; then
         echo 'KERNEL=="kvm", GROUP="kvm", MODE="0660"' >> /etc/udev/rules.d/50-qemu-kvm.rules
     fi
