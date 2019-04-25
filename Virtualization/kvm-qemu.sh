@@ -370,7 +370,9 @@ function install_kvm_linux_apt() {
     addgroup kvm
     usermod -a -G kvm "$(whoami)"
     chgrp kvm /dev/kvm
-    echo 'KERNEL=="kvm", GROUP="kvm", MODE="0660"' >> /etc/udev/rules.d/50-qemu-kvm.rules
+    if [ ! -f /etc/udev/rules.d/50-qemu-kvm.rules ]; then
+        echo 'KERNEL=="kvm", GROUP="kvm", MODE="0660"' >> /etc/udev/rules.d/50-qemu-kvm.rules
+    fi
 }
 
 
