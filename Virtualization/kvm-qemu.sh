@@ -4,11 +4,6 @@
 # This file is part of Tools - https://github.com/doomedraven/Tools
 # See the file 'LICENSE.md' for copying permission.
 
-
-# https://www.doomedraven.com/2016/05/kvm.html
-# Use Ubuntu 18.04 LTS - Debian isn't supported!
-
-
 : '
 Huge thanks to:
     * @http_error_418
@@ -25,6 +20,9 @@ Huge thanks to:
 #"cluster_size"
 #Changes the qcow2 cluster size (must be between 512 and 2M). Smaller cluster sizes can improve the image file size whereas larger cluster sizes generally provide better performance.
 
+
+# https://www.doomedraven.com/2016/05/kvm.html
+# Use Ubuntu 18.04 LTS
 
 # https://github.com/dylanaraps/pure-bash-bible
 # https://www.shellcheck.net/
@@ -50,7 +48,7 @@ Huge thanks to:
 #      strs[5] = "VBoxVBoxVBox"; /* VirtualBox */
 
 #https://www.qemu.org/download/#source or https://download.qemu.org/
-qemu_version=3.1.0
+qemu_version=4.0.0
 # libvirt - https://libvirt.org/sources/
 # changelog - https://libvirt.org/news.html
 libvirt_version=5.2.0
@@ -70,6 +68,7 @@ username=""
 
 function changelog() {
 cat << EndOfCL
+    # 24.04.2019 - QEMU 4
     # 28.03.2019 - Huge cleanup, fixes, QEMU 4-RC2 testing in dev
     # 24.02.2019 - Add Mosh + support for Linux TCP BBR - https://www.cyberciti.biz/cloud-computing/increase-your-linux-server-internet-speed-with-tcp-bbr-congestion-control/
     # 11.02.2019 - Depricated linked clones and added WebVirtMgr
@@ -104,6 +103,7 @@ cat << EndOfHelp
                 * Example Win7x64 /VMs/Win7x64.qcow2 0 5 /var/lib/libvirt/images/ 192.168.1
                 https://wiki.qemu.org/Documentation/CreateSnapshot
         Libvirt <username_optional> - install libvirt, username is optional
+        Virtmanager - install virt-manager
         Libguestfs - install libguestfs
         Replace_qemu - only fix antivms in QEMU source
         Replace_seabios <path> - only fix antivms in SeaBios source
@@ -180,7 +180,7 @@ function install_libguestfs() {
     tar xf "libguestfs-$libguestfs_version.tar.gz"
     cd libguestfs-$libguestfs_version || return
     ./configure
-    make -j"$(getconf _NPROCESSORS_ONLN)"
+    make -j$(nproc)
     REALLY_INSTALL=yes checkinstall -D --pkgname=libvirt-$libguestfs_version --default
     # ln -s /usr/local/lib/libguestfs.so.0 /lib/x86_64-linux-gnu/libguestfs.so.0
 }
@@ -214,13 +214,13 @@ EOH
     tar xf libvirt-$libvirt_version.tar.xz
     cd libvirt-$libvirt_version || return
     if [ "$OS" = "Linux" ]; then
-        apt-get install python-dev python3-dev unzip numad glib-2.0 libglib2.0-dev libsdl1.2-dev lvm2 python-pip python-libxml2 python3-libxml2 ebtables libosinfo-1.0-dev libnl-3-dev libnl-route-3-dev libyajl-dev xsltproc libapparmor-dev libdevmapper-dev libpciaccess-dev apparmor-utils -y 2>/dev/null
+        apt-get install python-dev python3-dev unzip numad glib-2.0 libglib2.0-dev libsdl1.2-dev lvm2 python-pip python-libxml2 python3-libxml2 ebtables libosinfo-1.0-dev libnl-3-dev libnl-route-3-dev libyajl-dev xsltproc libapparmor-dev libdevmapper-dev libpciaccess-dev apparmor-utils dnsmasq -y 2>/dev/null
         pip install ipaddr
         # --prefix=/usr --localstatedir=/var --sysconfdir=/etc
         ./autogen.sh --system  --with-qemu=yes --with-dtrace --with-numad --with-storage-rbd  --disable-nls --with-openvz=no --with-vmware=no --with-phyp=no --with-xenapi=no --with-libxl=no  --with-vbox=no --with-lxc=no --with-vz=no   --with-esx=no --with-hyperv=no --with-yajl=yes --with-secdriver-apparmor=yes --with-apparmor-profiles --with-apparmor-profiles
-        make -j"$(getconf _NPROCESSORS_ONLN)"
+        make -j$(nproc)
         checkinstall -D --pkgname=libvirt-$libvirt_version --default
-        #make -j"$(getconf _NPROCESSORS_ONLN)" install
+        #make -j$(nproc) install
     elif [ "$OS" = "Darwin" ]; then
         ./autogen.sh --system --prefix=/usr/local/ --localstatedir=/var --sysconfdir=/etc --with-qemu=yes --with-dtrace --disable-nls --with-openvz=no --with-vmware=no --with-phyp=no --with-xenapi=no --with-libxl=no  --with-vbox=no --with-lxc=no --with-vz=no   --with-esx=no --with-hyperv=no --with-wireshark-dissector=no --with-yajl=yes
     fi
@@ -268,7 +268,7 @@ EOH
             groupadd libvirt
         fi
         usermod -G $groupname -a "$(whoami)"
-        if "$username"; then
+        if [[ ! -z "$username" ]]; then
             usermod -G $groupname -a "$username"
         fi
         echo "[+] You should logout and login "
@@ -276,23 +276,7 @@ EOH
 
 }
 
-function install_kvm_linux_apt() {
-    sed -i 's/# deb-src/deb-src/g' /etc/apt/sources.list
-    apt-get update 2>/dev/null
-    apt-get install build-essential python-pip python3-pip gcc pkg-config cpu-checker intltool -y 2>/dev/null
-    apt-get install gtk-update-icon-cache -y 2>/dev/null
-
-    # WSL support
-    apt-get install gcc make gnutls-bin -y
-    # remove old
-    apt-get purge libvirt0 libvirt-bin -y
-    install_libvirt
-
-    systemctl enable libvirtd.service
-    systemctl restart libvirtd.service
-    systemctl enable virtlogd.socket
-    systemctl restart virtlogd.socket
-
+function install_virt_manager() {
     # from build-dep
     apt install libgirepository1.0-dev gtk-doc-tools python-pip python3-pip gir1.2-govirt-1.0 libgovirt-dev \
     libgovirt-common libgovirt2 gir1.2-rest-0.7 unzip intltool augeas-doc ifupdown wodim cdrkit-doc indicator-application \
@@ -323,7 +307,7 @@ function install_kvm_linux_apt() {
     gir1.2-libosinfo-1.0  gir1.2-pango-1.0 gir1.2-spiceclientglib-2.0 gir1.2-spiceclientgtk-3.0 gir1.2-vte-2.91 glib-networking \
     glib-networking-common glib-networking-services gsettings-desktop-schemas gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
     gstreamer1.0-x adwaita-icon-theme at-spi2-core augeas-lenses bridge-utils cpu-checker dconf-gsettings-backend dconf-service \
-    fontconfig fontconfig-config fonts-dejavu-core genisoimage gir1.2-appindicator3-0.1 gir1.2-secret-1 -y 2>/dev/null
+    fontconfig fontconfig-config fonts-dejavu-core genisoimage gir1.2-appindicator3-0.1 gir1.2-secret-1 -y
     # should be installed first
 
     pip install pycairo
@@ -338,11 +322,11 @@ function install_kvm_linux_apt() {
         aclocal && libtoolize --force
         automake --add-missing
         ./configure
-        make -j"$(getconf _NPROCESSORS_ONLN)"
+        make -j$(nproc)
+        #ToDo add blacklist
         checkinstall --pkgname=libvirt-glib-1.0-0 --default
         wget http://launchpadlibrarian.net/297448356/gir1.2-libvirt-glib-1.0_1.0.0-1_amd64.deb
         dpkg -i gir1.2-libvirt-glib-1.0_1.0.0-1_amd64.deb
-        #apt-get install gir1.2-libvirt-glib-1.0 -y
 
         /sbin/ldconfig
     fi
@@ -361,7 +345,25 @@ function install_kvm_linux_apt() {
     else
         echo "export LIBVIRT_DEFAULT_URI=qemu:///system" >> "$HOME/.bashrc"
     fi
-    #reboot me here
+}
+
+function install_kvm_linux_apt() {
+    sed -i 's/# deb-src/deb-src/g' /etc/apt/sources.list
+    apt-get update 2>/dev/null
+    apt-get install build-essential python-pip python3-pip gcc pkg-config cpu-checker intltool -y 2>/dev/null
+    apt-get install gtk-update-icon-cache -y 2>/dev/null
+
+    # WSL support
+    apt-get install gcc make gnutls-bin -y
+    # remove old
+    apt-get purge libvirt0 libvirt-bin -y
+    install_libvirt
+
+    systemctl enable libvirtd.service
+    systemctl restart libvirtd.service
+    systemctl enable virtlogd.socket
+    systemctl restart virtlogd.socket
+
     kvm-ok
 
     # Ubuntu 18.04:
@@ -370,6 +372,9 @@ function install_kvm_linux_apt() {
     addgroup kvm
     usermod -a -G kvm "$(whoami)"
     chgrp kvm /dev/kvm
+    if [[ ! -z "$username" ]]; then
+        usermod -a -G kvm "$username"
+    fi
     if [ ! -f /etc/udev/rules.d/50-qemu-kvm.rules ]; then
         echo 'KERNEL=="kvm", GROUP="kvm", MODE="0660"' >> /etc/udev/rules.d/50-qemu-kvm.rules
     fi
@@ -395,7 +400,6 @@ function replace_qemu_clues_public() {
     #_sed_aux 's/Microsoft Hv/GenuineIntel/g' qemu*/target/i386/kvm.c 'Microsoft Hv was not replaced in target/i386/kvm.c'
     #_sed_aux 's/Bochs\/Plex86/<WOOT>\/FIRM64/g' qemu*/roms/vgabios/vbe.c 'BOCHS was not replaced in roms/vgabios/vbe.c'
 }
-
 
 function replace_seabios_clues_public() {
     echo "[+] Generating SeaBios Kconfig"
@@ -515,11 +519,11 @@ function qemu_func() {
                 if [ -f /usr/share/qemu/qemu_logo_no_text.svg ]; then
                     rm /usr/share/qemu/qemu_logo_no_text.svg
                 fi
-                make -j"$(getconf _NPROCESSORS_ONLN)"
+                make -j$(nproc)
                 if [ "$OS" = "Linux" ]; then
                     checkinstall -D --pkgname=qemu-$qemu_version --nodoc --showinstall=no --default
                 elif [ "$OS" = "Darwin" ]; then
-                    make -j"$(getconf _NPROCESSORS_ONLN)" install
+                    make -j$(nproc) install
                 fi
                 # hack for libvirt/virt-manager
                 if [ ! -f /usr/bin/qemu-system-x86_64-spice ]; then
@@ -536,8 +540,10 @@ function qemu_func() {
                 else
                     echo '[-] Install failed'
                 fi
-                groupadd tss
-                useradd -g tss tss
+                if [ ! grep -q -E "^tss:" /etc/group ]; then
+                    groupadd tss
+                    useradd -g tss tss
+                fi
             else
                 echo '[-] Compilling failed'
             fi
@@ -575,11 +581,11 @@ function seabios_func() {
         # make help
         # make menuconfig -> BIOS tables -> disable Include default ACPI DSDT
         # get rid of this hack
-        make -j "$(getconf _NPROCESSORS_ONLN)" 2>/dev/null
+        make -j $(nproc) 2>/dev/null
         # Windows 10(latest rev.) is uninstallable without ACPI_DSDT
         # sed -i 's/CONFIG_ACPI_DSDT=y/CONFIG_ACPI_DSDT=n/g' .config
         sed -i 's/CONFIG_XEN=y/CONFIG_XEN=n/g' .config
-        if make -j "$(getconf _NPROCESSORS_ONLN)"; then
+        if make -j $(nproc); then
             echo '[+] Replacing old bios.bin to new out/bios.bin'
             bios=0
             FILES=(
@@ -706,6 +712,7 @@ function install_WebVirtCloud(){
     cd /srv/webvirtcloud || return
     virtualenv venv
     source venv/bin/activate
+    sed -i 's/libvirt-python//g' conf/requirements.txt
     pip install -r conf/requirements.txt
     python manage.py migrate
     sudo chown -R www-data:www-data /srv/webvirtcloud
@@ -746,11 +753,6 @@ function cloning() {
 
 }
 
-if [ $(lsb_release -is) = "Debian" ]; then
-    echo "[!] Debian isn't supported!"
-    exit 1
-fi
-
 # Doesn't work ${$1,,}
 COMMAND=$(echo "$1"|tr "[:upper:]" "[:lower:]")
 
@@ -790,6 +792,7 @@ case "$COMMAND" in
     seabios_func
     if [ "$OS" = "Linux" ]; then
         install_kvm_linux_apt
+        install_virt_manager
         install_libguestfs
         # check if all features enabled
         virt-host-validate
@@ -822,6 +825,8 @@ case "$COMMAND" in
     ;;
 'libvirt')
     install_libvirt;;
+'virtmanager')
+    install_virt_manager;;
 'clone')
     cloning "$2" "$3" "$4" "$5" "$6" "$7";;
 'noip')
