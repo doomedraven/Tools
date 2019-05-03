@@ -10,6 +10,7 @@ Huge thanks to:
     * @2sec4you
     * @seifreed
     * @Fire9
+    * @abuse_ch
 '
 
 #ToDo investigate
@@ -51,7 +52,7 @@ Huge thanks to:
 qemu_version=4.0.0
 # libvirt - https://libvirt.org/sources/
 # changelog - https://libvirt.org/news.html
-libvirt_version=5.2.0
+libvirt_version=5.0.0
 # virt-manager - https://github.com/virt-manager/virt-manager/releases
 #virt_manager_version=2.1.0
 # http://download.libguestfs.org/
