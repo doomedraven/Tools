@@ -1,10 +1,10 @@
 #!/bin/bash
-# By @doomedraven - https://twitter.com/D00m3dR4v3n
+# By @doomedraven - https://twitter.com/D00m3dR4v3n
 # minfds=1048576
 
-# Static values
+# Static values
 # Where to place everything
-# for tor
+# for tor
 IFACE_IP="192.168.2.1"
 # DB password
 PASSWD="SuperPuperSecret"
@@ -67,12 +67,12 @@ function dependencies() {
     apt-get install jq sqlite3 tmux net-tools checkinstall graphviz git numactl python python-dev python-pip python-m2crypto swig upx-ucl libssl-dev wget unzip p7zip-full geoip-database libgeoip-dev libjpeg-dev mono-utils ssdeep libfuzzy-dev exiftool checkinstall ssdeep uthash-dev libconfig-dev libarchive-dev libtool autoconf automake privoxy software-properties-common wkhtmltopdf xvfb xfonts-100dpi tcpdump libcap2-bin -y
     apt-get install supervisor python-pil subversion python-capstone uwsgi uwsgi-plugin-python python-pyelftools -y
     #clamav clamav-daemon clamav-freshclam
-    # if broken sudo python -m pip uninstall pip && sudo apt install python-pip --reinstall
+    # if broken sudo python -m pip uninstall pip && sudo apt install python-pip --reinstall
     #pip install --upgrade pip
-    # /usr/bin/pip
+    # /usr/bin/pip
     # from pip import __main__
     # if __name__ == '__main__':
-    #     sys.exit(__main__._main())
+    #     sys.exit(__main__._main())
     pip install requests[security] pyOpenSSL pefile tldextract httpreplay imagehash oletools olefile capstone PyCrypto voluptuous -U
     # re2
     apt-get install libre2-dev -y
@@ -95,13 +95,13 @@ function dependencies() {
     After=network.target
 
     [Service]
-    # https://www.tutorialspoint.com/mongodb/mongodb_replication.htm
+    # https://www.tutorialspoint.com/mongodb/mongodb_replication.htm
     ExecStart=/usr/bin/numactl --interleave=all /usr/bin/mongod --quiet --shardsvr --bind_ip 0.0.0.0 --port 27017
     # --replSet rs0
     ExecReload=/bin/kill -HUP $MAINPID
     Restart=always
     # enable on ramfs servers
-    # --wiredTigerCacheSizeGB=50
+    # --wiredTigerCacheSizeGB=50
     User=mongodb
     Group=mongodb
     StandardOutput=syslog
@@ -119,7 +119,7 @@ EOF
     apt-get install -y openjdk-11-jdk-headless
     apt-get install -y openjdk-8-jdk-headless
     pip install distorm3 openpyxl git+https://github.com/volatilityfoundation/volatility.git PyCrypto #git+https://github.com/buffer/pyv8
-	
+
     # Postgresql
     apt-get install postgresql libpq-dev -y
     pip install psycopg2
@@ -145,7 +145,7 @@ EOF
     ./bootstrap.sh
     ./configure --enable-cuckoo --enable-magic --enable-dotnet --enable-profiling
     make -j"$(getconf _NPROCESSORS_ONLN)"
-    yara_version = 
+    yara_version =
     checkinstall -D --pkgname="yara-$yara_version" --pkgversion="$yara_version|cut -c 2-" --default
     ldconfig
     cd ..
@@ -254,12 +254,9 @@ EOF
     """
 
     # Download etupdate to update Emerging Threats Open IDS rules:
-    cd /tmp || return
-    git clone https://github.com/seanthegeek/etupdate.git
-    sudo cp etupdate/etupdate /usr/sbin
-    sudo /usr/sbin/etupdate -V
+    sudo pip install suricata-update
 
-    crontab -l | { cat; echo "15 * * * * /usr/sbin/etupdate"; } | crontab -
+    crontab -l | { cat; echo "15 * * * * sudo /usr/bin/suricata-update"; } | crontab -
     crontab -l | { cat; echo "15 * * * * /usr/bin/suricatasc -c reload-rules"; } | crontab -
 
     #change suricata yaml
