@@ -52,9 +52,9 @@ Huge thanks to:
 qemu_version=4.0.0
 # libvirt - https://libvirt.org/sources/
 # changelog - https://libvirt.org/news.html
-libvirt_version=5.0.0
+libvirt_version=5.3.0
 # virt-manager - https://github.com/virt-manager/virt-manager/releases
-#virt_manager_version=2.1.0
+virt_manager_version=2.1.0
 # http://download.libguestfs.org/
 libguestfs_version=1.40.2
 # autofilled
@@ -91,7 +91,8 @@ cat << EndOfHelp
     Usage: $0 <func_name> <args>
     Commands - are case insensitive:
         All - <username_optional> - Execs QEMU/SeaBios/KVM, username is optional
-        QEMU - Install QEMU from source
+        QEMU - Install QEMU from source,
+            DEFAULT support are x86 and x64, set ENV var QEMU_TARGERS=all to install for all arches
         SeaBios - Install SeaBios and repalce QEMU bios file
         KVM - this will install intel-HAXM if you on Mac
         HAXM - Mac Hardware Accelerated Execution Manager
@@ -215,13 +216,27 @@ EOH
     tar xf libvirt-$libvirt_version.tar.xz
     cd libvirt-$libvirt_version || return
     if [ "$OS" = "Linux" ]; then
-        apt-get install python-dev python3-dev unzip numad glib-2.0 libglib2.0-dev libsdl1.2-dev lvm2 python-pip python-libxml2 python3-libxml2 ebtables libosinfo-1.0-dev libnl-3-dev libnl-route-3-dev libyajl-dev xsltproc libapparmor-dev libdevmapper-dev libpciaccess-dev apparmor-utils dnsmasq -y 2>/dev/null
+        apt-get install python-dev python3-dev unzip numad glib-2.0 libglib2.0-dev libsdl1.2-dev lvm2 python-pip python-libxml2 python3-libxml2 ebtables libosinfo-1.0-dev libnl-3-dev libnl-route-3-dev libyajl-dev xsltproc libapparmor-dev libdevmapper-dev libpciaccess-dev dnsmasq dmidecode librbd-dev -y 2>/dev/null
+        #apt-get install apparmor-profiles apparmor-profiles-extra apparmor-utils libapparmor-dev python-apparmor libapparmor-perl -y
         pip install ipaddr
         # --prefix=/usr --localstatedir=/var --sysconfdir=/etc
-        ./autogen.sh --system  --with-qemu=yes --with-dtrace --with-numad --with-storage-rbd  --disable-nls --with-openvz=no --with-vmware=no --with-phyp=no --with-xenapi=no --with-libxl=no  --with-vbox=no --with-lxc=no --with-vz=no   --with-esx=no --with-hyperv=no --with-yajl=yes --with-secdriver-apparmor=yes --with-apparmor-profiles --with-apparmor-profiles
+        ./autogen.sh --system  --with-qemu=yes --with-dtrace --with-numad --disable-nls --with-openvz=no --with-vmware=no --with-phyp=no --with-xenapi=no --with-libxl=no  --with-vbox=no --with-lxc=no --with-vz=no   --with-esx=no --with-hyperv=no --with-yajl=yes --with-secdriver-apparmor=yes --with-apparmor-profiles
         make -j$(nproc)
         checkinstall -D --pkgname=libvirt-$libvirt_version --default
-        #make -j$(nproc) install
+        # check if linked correctly
+        if [ -f /usr/lib/libvirt-qemu.so ]; then
+            libvirt_so_path=/usr/lib/
+            export PKG_CONFIG_PATH=/usr/lib/pkgconfig/
+        elif [ -f /usr/lib64/libvirt-qemu.so ]; then
+            libvirt_so_path=/usr/lib64/
+            export PKG_CONFIG_PATH=/usr/lib64/pkgconfig/
+        fi
+
+        if [[ ! -z "$libvirt_so_path" ]]; then
+            # #ln -s /usr/lib64/libvirt-qemu.so /lib/x86_64-linux-gnu/libvirt-qemu.so.0
+            for so_path in $(ls ${libvirt_so_path}libvirt*.so); do ln -s $so_path /lib/$(uname -m)-linux-gnu/$(basename $so_path) 2>/dev/null; done
+        fi
+
     elif [ "$OS" = "Darwin" ]; then
         ./autogen.sh --system --prefix=/usr/local/ --localstatedir=/var --sysconfdir=/etc --with-qemu=yes --with-dtrace --disable-nls --with-openvz=no --with-vmware=no --with-phyp=no --with-xenapi=no --with-libxl=no  --with-vbox=no --with-lxc=no --with-vz=no   --with-esx=no --with-hyperv=no --with-wireshark-dissector=no --with-yajl=yes
     fi
@@ -233,24 +248,28 @@ EOH
         path="/usr/local/etc/libvirt/libvirtd.conf"
     fi
 
-    sed -i 's/#unix_sock_group/unix_sock_group/g' $path
-    sed -i 's/#unix_sock_ro_perms = "0777"/unix_sock_ro_perms = "0770"/g' $path
-    sed -i 's/#unix_sock_rw_perms = "0770"/unix_sock_rw_perms = "0770"/g' $path
-    sed -i 's/#auth_unix_ro = "none"/auth_unix_ro = "none"/g' $path
-    sed -i 's/#auth_unix_rw = "none"/auth_unix_rw = "none"/g' $path
+    sed -i 's/#unix_sock_group/unix_sock_group/g' "$path"
+    sed -i 's/#unix_sock_ro_perms = "0777"/unix_sock_ro_perms = "0770"/g' "$path"
+    sed -i 's/#unix_sock_rw_perms = "0770"/unix_sock_rw_perms = "0770"/g' "$path"
+    sed -i 's/#auth_unix_ro = "none"/auth_unix_ro = "none"/g' "$path"
+    sed -i 's/#auth_unix_rw = "none"/auth_unix_rw = "none"/g' "$path"
 
+    #echo "[+] Setting AppArmor for libvirt/kvm/qemu"
+    #sed -i 's/#security_driver = "selinux"/security_driver = "apparmor"/g' /etc/libvirt/qemu.conf
     # https://gitlab.com/apparmor/apparmor/wikis/Libvirt
-    echo "[+] Setting AppArmor for libvirt/kvm/qemu"
-    sed -i 's/#security_driver = "selinux"/security_driver = "apparmor"/g' /etc/libvirt/qemu.conf
-    aa-complain /usr/sbin/libvirtd
+    sudo aa-complain /usr/sbin/libvirtd
+    sudo aa-complain /etc/apparmor.d/usr.sbin.libvirtd
 
     cd /tmp || return
 
     if [ ! -f v$libvirt_version.zip ]; then
         wget https://github.com/libvirt/libvirt-python/archive/v$libvirt_version.zip
     fi
+    if [ -d "libvirt-python-$libvirt_version" ]; then
+        rm -r "libvirt-python-$libvirt_version"
+    fi
     unzip v$libvirt_version.zip
-    cd libvirt-python* || return
+    cd "libvirt-python-$libvirt_version" || return
     python3 setup.py build
     python3 setup.py install
     #py2
@@ -335,6 +354,7 @@ function install_virt_manager() {
     if [ ! -f "virt-manager" ]; then
         #git clone -b v1.5-maint https://github.com/virt-manager/virt-manager.git
         git clone https://github.com/virt-manager/virt-manager.git
+        echo "[+] Cloned Virt Manager repo"
     fi
     cd "virt-manager" || return
     apt-get install gobject-introspection intltool pkg-config python-lxml python3-libxml2 libxml2-dev libxslt-dev python-dev gir1.2-gtk-vnc-2.0 gir1.2-spiceclientgtk-3.0 libgtk-3-dev -y
@@ -372,10 +392,10 @@ function install_kvm_linux_apt() {
     # "chown root:libvirt /dev/kvm" doesnt help
     addgroup kvm
     usermod -a -G kvm "$(whoami)"
-    chgrp kvm /dev/kvm
     if [[ ! -z "$username" ]]; then
         usermod -a -G kvm "$username"
     fi
+    chgrp kvm /dev/kvm
     if [ ! -f /etc/udev/rules.d/50-qemu-kvm.rules ]; then
         echo 'KERNEL=="kvm", GROUP="kvm", MODE="0660"' >> /etc/udev/rules.d/50-qemu-kvm.rules
     fi
@@ -453,6 +473,7 @@ function replace_seabios_clues_public() {
     done
 }
 
+
 function qemu_func() {
     cd /tmp || return
 
@@ -464,6 +485,8 @@ function qemu_func() {
     echo '[+] Downloading QEMU source code'
     if [ ! -f qemu-$qemu_version.tar.xz ]; then
         wget "https://download.qemu.org/qemu-$qemu_version.tar.xz"
+        wget "https://download.qemu.org/qemu-$qemu_version.tar.xz.sig"
+        gpg --verify "https://download.qemu.org/qemu-$qemu_version.tar.xz.sig"
     fi
 
     if [ ! -f qemu-$qemu_version.tar.xz ]; then
@@ -509,7 +532,11 @@ function qemu_func() {
             # remove --target-list=i386-softmmu,x86_64-softmmu,i386-linux-user,x86_64-linux-user  if you want all targets
             if [ "$OS" = "Linux" ]; then
                 # --enable-sparse
-                ./configure --target-list=i386-softmmu,x86_64-softmmu,i386-linux-user,x86_64-linux-user --prefix=/usr --libexecdir=/usr/lib/qemu --localstatedir=/var --bindir=/usr/bin/ --enable-gnutls --enable-docs --enable-gtk --enable-vnc --enable-vnc-sasl --enable-vnc-png --enable-vnc-jpeg --enable-curl --enable-kvm  --enable-linux-aio --enable-cap-ng --enable-vhost-net --enable-vhost-crypto --enable-spice --enable-usb-redir --enable-lzo --enable-snappy --enable-bzip2 --enable-coroutine-pool --enable-libssh2 --enable-libxml2 --enable-tcmalloc --enable-replication --enable-tools --enable-capstone
+                QTARGETS=--target-list=i386-softmmu,x86_64-softmmu,i386-linux-user,x86_64-linux-user
+                if [[ ! -z "$QEMU_TARGERS" ]]; then
+                    QEMU_TARGERS=""
+                fi
+                ./configure $QTARGETS --prefix=/usr --libexecdir=/usr/lib/qemu --localstatedir=/var --bindir=/usr/bin/ --enable-gnutls --enable-docs --enable-gtk --enable-vnc --enable-vnc-sasl --enable-vnc-png --enable-vnc-jpeg --enable-curl --enable-kvm  --enable-linux-aio --enable-cap-ng --enable-vhost-net --enable-vhost-crypto --enable-spice --enable-usb-redir --enable-lzo --enable-snappy --enable-bzip2 --enable-coroutine-pool --enable-libssh2 --enable-libxml2 --enable-tcmalloc --enable-replication --enable-tools --enable-capstone
             elif [ "$OS" = "Darwin" ]; then
                 # --enable-vhost-net --enable-vhost-crypto
                 ./configure --prefix=/usr --libexecdir=/usr/lib/qemu --localstatedir=/var --bindir=/usr/bin/ --enable-gnutls --enable-docs  --enable-vnc --enable-vnc-sasl --enable-vnc-png --enable-vnc-jpeg --enable-curl --enable-hax --enable-usb-redir --enable-lzo --enable-snappy --enable-bzip2 --enable-coroutine-pool  --enable-libxml2 --enable-tcmalloc --enable-replication --enable-tools --enable-capstone
@@ -542,8 +569,11 @@ function qemu_func() {
                     echo '[-] Install failed'
                 fi
                 if [ ! grep -q -E "^tss:" /etc/group ]; then
-                    groupadd tss
-                    useradd -g tss tss
+                    groupadd "tss"
+                    useradd -g "tss" "tss"
+                    echo "[+] Creating Group and User: tss"
+                else:
+                    echo "[?] tss Group and User exist, skip"
                 fi
             else
                 echo '[-] Compilling failed'
@@ -650,6 +680,7 @@ cat << EndOfHelp
             sed -i 's/#auth_unix_rw = "none"/auth_unix_rw = "none"/g' /etc/libvirt/libvirtd.conf
         2. Add ssh key to $HOME/.ssh/authorized_keys
             virt-manager -c "qemu+ssh://user@host/system?socket=/var/run/libvirt/libvirt-sock"
+
     * Slow HDD/Snapshot taking performance?
         Modify
             <driver name='qemu' type='qcow2'/>
@@ -667,7 +698,7 @@ cat << EndOfHelp
 
     # Fixes from http://ask.xmodulo.com/compile-virt-manager-debian-ubuntu.html
     1. ImportError: No module named libvirt
-    $ $0 libvirt
+    $ ./kvm-qemu.sh libvirt
 
     2. ImportError: No module named libxml2
     $ apt-get install python-libxml2 python3-libxml2
@@ -676,24 +707,21 @@ cat << EndOfHelp
     $ apt-get install python-requests
 
     4. Error launching details: Namespace GtkVnc not available
-    $ $0 libvirt
+    $ ./kvm-qemu.sh libvirt
 
-    5. Error launching details: Namespace SpiceClientGtk not available
-    $ apt-get install gir1.2-spice-client-gtk-3.0
+    5. ValueError: Namespace LibvirtGLib not available
+    $ ./kvm-qemu.sh libvirt
 
-    6. ValueError: Namespace LibvirtGLib not available
-    $ $0 libvirt
-
-    7. ValueError: Namespace Libosinfo not available
+    6. ValueError: Namespace Libosinfo not available
     $ apt-get install libosinfo-1.0
 
-    8. ImportError: No module named ipaddr
+    7. ImportError: No module named ipaddr
     $ apt-get install python-ipaddr
 
-    9. Namespace Gtk not available: Could not open display: localhost:10.0
+    8. Namespace Gtk not available: Could not open display: localhost:10.0
     $ apt-get install libgtk-3-dev
 
-    10. ImportError: cannot import name Vte
+    9. ImportError: cannot import name Vte
     $ apt-get install gir1.2-vte-2.90
 
 EndOfHelp
