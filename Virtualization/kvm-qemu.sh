@@ -255,11 +255,17 @@ EOH
     sed -i 's/#auth_unix_rw = "none"/auth_unix_rw = "none"/g' "$path"
 
     #echo "[+] Setting AppArmor for libvirt/kvm/qemu"
-    #sed -i 's/#security_driver = "selinux"/security_driver = "apparmor"/g' /etc/libvirt/qemu.conf
+    sed -i 's/#security_driver = "selinux"/security_driver = "apparmor"/g' /etc/libvirt/qemu.conf
     # https://gitlab.com/apparmor/apparmor/wikis/Libvirt
-    sudo aa-complain /usr/sbin/libvirtd
-    sudo aa-complain /etc/apparmor.d/usr.sbin.libvirtd
-
+    FILES=(
+        /etc/apparmor.d/usr.sbin.libvirtd
+        /usr/sbin/libvirtd
+    )
+    for file in "${FILES[@]}"; do
+        if [ -f $file ]; then
+            sudo aa-complain $file
+        fi 
+    done
     cd /tmp || return
 
     if [ ! -f v$libvirt_version.zip ]; then
