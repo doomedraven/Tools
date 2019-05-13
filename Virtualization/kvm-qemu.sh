@@ -656,7 +656,14 @@ cat << EndOfHelp
     * Error:
         * If you getting an apparmor error
     * Solution
-        * sed -i 's/#security_driver = "apparmor"/security_driver = ""/g' /etc/libvirt/qemu.conf
+        * sed -i 's/#security_driver = "apparmor"/security_driver = "none"/g' /etc/libvirt/qemu.conf
+
+    * Error:
+        * Libvirt sometimes causes access denied errors with access the locations different from "/var/lib/libvirt/images"
+    * Solution:
+        * sed -i 's/user = "root"/user = "$(whoami)"/g' /etc/libvirt/qemu.conf
+        * sed -i 's/user = "root"/group = "libvirt"/g' /etc/libvirt/qemu.conf
+
     * Error:
         required by /usr/lib/libvirt/storage-file/libvirt_storage_file_fs.so
     * Solution:
