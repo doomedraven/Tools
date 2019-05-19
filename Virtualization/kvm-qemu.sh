@@ -6,6 +6,7 @@
 
 : '
 Huge thanks to:
+    * @SamRSA8
     * @http_error_418
     * @2sec4you
     * @seifreed
