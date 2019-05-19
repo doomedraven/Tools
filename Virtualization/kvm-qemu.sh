@@ -105,6 +105,7 @@ cat << EndOfHelp
                 * Example Win7x64 /VMs/Win7x64.qcow2 0 5 /var/lib/libvirt/images/ 192.168.1
                 https://wiki.qemu.org/Documentation/CreateSnapshot
         Libvirt <username_optional> - install libvirt, username is optional
+	Libvmi - install LibVMI
         Virtmanager - install virt-manager
         Libguestfs - install libguestfs
         Replace_qemu - only fix antivms in QEMU source
