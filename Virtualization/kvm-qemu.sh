@@ -232,15 +232,15 @@ function install_libvmi() {
 	# LibVMI Python
 	cd /tmp || return
 
-    if [ ! -f "python" ]; then
+    if [ ! -f "python_Libvmi" ]; then
 		# actual
 		# https://github.com/libvmi/python/tree/76d9ea85eefa0d77f6ad4d6089e757e844763917
 		# git checkout add_vmi_request_page_fault
 		# git pull
-        git clone https://github.com/libvmi/python.git
+        git clone https://github.com/libvmi/python.git python_Libvmi
         echo "[+] Cloned LibVMI Python repo"
     fi
-    cd "python" || return
+    cd "python_Libvmi" || return
 
 	# install deps
     apt-get install -y python3-pkgconfig python3-cffi python3-future
