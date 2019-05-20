@@ -106,7 +106,7 @@ cat << EndOfHelp
                 * Example Win7x64 /VMs/Win7x64.qcow2 0 5 /var/lib/libvirt/images/ 192.168.1
                 https://wiki.qemu.org/Documentation/CreateSnapshot
         Libvirt <username_optional> - install libvirt, username is optional
-	Libvmi - install LibVMI
+		Libvmi - install LibVMI
         Virtmanager - install virt-manager
         Libguestfs - install libguestfs
         Replace_qemu - only fix antivms in QEMU source
@@ -224,7 +224,7 @@ function install_libvmi() {
 	apt-get install -y pkg-config
 	mkdir build
 	cd build || return
-	cmake -DCMAKE_INSTALL_PREFIX=/usr -DENABLE_XEN=OFF -DENABLE_KVM=ON -DENABLE_XENSTORE=OFF -DBUILD_EXAMPLES=OFF -DENABLE_BAREFLANK=OFF ..
+	cmake -DENABLE_XEN=ON -DENABLE_KVM=ON -DENABLE_XENSTORE=OFF -DENABLE_BAREFLANK=OFF ..
 	make -j$(nproc)
 	make install
 	/sbin/ldconfig
@@ -232,11 +232,15 @@ function install_libvmi() {
 	# LibVMI Python
 	cd /tmp || return
 
-    if [ ! -f "python" ]; then
-        git clone https://github.com/libvmi/python.git
+    if [ ! -f "python_Libvmi" ]; then
+		# actual
+		# https://github.com/libvmi/python/tree/76d9ea85eefa0d77f6ad4d6089e757e844763917
+		# git checkout add_vmi_request_page_fault
+		# git pull
+        git clone https://github.com/libvmi/python.git python_Libvmi
         echo "[+] Cloned LibVMI Python repo"
     fi
-    cd "python" || return
+    cd "python_Libvmi" || return
 
 	# install deps
     apt-get install -y python3-pkgconfig python3-cffi python3-future
@@ -251,7 +255,7 @@ function install_libvmi() {
 
     if [ ! -f "rekall" ]; then
         git clone https://github.com/google/rekall.git
-        echo "[+] Cloned LibVMI Python repo"
+        echo "[+] Cloned Rekall repo"
     fi
 
 	virtualenv /tmp/MyEnv
@@ -261,6 +265,8 @@ function install_libvmi() {
 	pip3 install --editable rekall/rekall-lib
 	# ERROR: rekall-efilter 1.6.0 has requirement future==0.16.0
 	pip3 install future==0.16.0
+	# TypeError: Set() missing 1 required positional argument: 'value'
+	pip3 install pyaff4==0.26.post6
 	pip3 install --editable rekall/rekall-core
 	pip3 install --editable rekall/rekall-agent
 	pip3 install --editable rekall
@@ -269,17 +275,46 @@ function install_libvmi() {
 }
 
 # In progress...
-#
+# Errors: "The selected hypervisor has no events support!" - only Xen supported unfortunately
+# 
 function install_pyvmidbg() {
 	# deps
 	apt-get install python3-docopt python3-lxml cabextract
 
 	# libvmi config entry
+	#
     # /etc/libvmi.conf:
-    # "{{ lookup('file', 'files/'+item.name+'.conf')}}"
+	# win10 {
+	#    ostype = "Windows";
+	#    rekall_profile = "/etc/libvmi/rekall-profile.json";
+	# }
+
+	# Make Windows 10 profile
+	# Copy from Guest OS file "C:\Windows\System32\ntoskrnl.exe"
+	# rekall peinfo -f <path/to/ntoskrnl.exe>
+	#
+	# Once the PDB filename and GUID is known, creating the Rekall profile is done in two steps:
+	# rekall fetch_pdb <PDB filename> <GUID>
+	# rekall parse_pdb <PDB filename> > rekall-profile.json
+	#
+	# In case of Windows 10:
+	# rekall fetch_pdb ntkrnlmp <GUID>
+	# May cause error like "ERROR:rekall.1:Unrecognized type T_64PUINT4" (not dangerous)
+	# rekall parse_pdb ntkrnlmp > rekall-profile.json
 
 	# install rekall profile
-	# /etc/libvmi/{{ item.name}}-profile.json
+	# /etc/libvmi/rekall-profile.json
+
+	# git clone https://github.com/Wenzel/pyvmidbg.git
+	# virtualenv -p python3 venv
+	# source venv/bin/activate
+	# pip install .
+
+	# sudo python3 -m vmidbg 5000 <vm_name> --address 0.0.0.0 cmd -d
+
+	# git clone https://github.com/radare/radare2.git
+	# sys/install.sh
+	# r2 -d gdb://127.0.0.1:5000 -b 64
 
 }
 
