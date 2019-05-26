@@ -13,15 +13,7 @@ function _check_brew() {
 
 _check_brew
 brew install openconnect git
-
-# https://gist.github.com/stefancocora/686bbce938f27ef72649a181e7bd0158
-# vpn split
-git clone https://github.com/dlenski/vpn-slice.git
-cd vpn-slice
-# till not merged
-git fetch origin pull/11/head:feature/macos
-git checkout feature/macos
-pip3 install -e .
+pip3 install git+https://github.com/dlenski/vpn-slice.git
 
 
 # how to configure local dns server
