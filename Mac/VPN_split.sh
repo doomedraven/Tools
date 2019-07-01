@@ -12,7 +12,7 @@ function _check_brew() {
 
 
 _check_brew
-brew install openconnect git
+brew install openconnect git unbound
 pip3 install git+https://github.com/dlenski/vpn-slice.git
 
 
@@ -32,10 +32,10 @@ sudo dscl . -create /Users/_unbound UserShell /usr/bin/false
 sudo dscl . -create /Users/_unbound Password '*'
 sudo dscl . -create /Groups/_unbound GroupMembership _unbound
 
-sudo unbound-anchor -a /usr/local/etc/unbound/root.key
-sudo unbound-control-setup -d /usr/local/etc/unbound
+sudo /usr/local/opt/unbound/sbin/unbound-anchor -a /usr/local/etc/unbound/root.key
+sudo /usr/local/opt/unbound/sbin/unbound-control-setup -d /usr/local/etc/unbound
 sudo cp /usr/local/etc/unbound/unbound.conf /usr/local/etc/unbound/unbound.conf_original
-curl --silent -o /usr/local/etc/unbound/root.hints https://www.internic.net/domain/named.cache
+sudo curl --silent -o /usr/local/etc/unbound/root.hints https://www.internic.net/domain/named.cache
 
 sudo cat >> /usr/local/etc/unbound/unbound.conf << EOL
 server:
@@ -127,6 +127,9 @@ EOL
 
 sudo chown -R _unbound:staff /usr/local/etc/unbound
 sudo chmod 640 /usr/local/etc/unbound/*
+
+sudo brew services start unbound
+
 networksetup -setdnsservers Wi-Fi 127.0.0.1
 networksetup -getdnsservers Wi-Fi
-sudo brew services start unbound
+
