@@ -27,20 +27,20 @@ Huge thanks to:
 # Use Ubuntu 18.04 LTS
 
 # https://github.com/dylanaraps/pure-bash-bible
-# https://www.shellcheck.net/
+# https://www.shellcheck.net/
 
-# ACPI tables related
+# ACPI tables related
 # https://wiki.archlinux.org/index.php/DSDT
-# Dump on linux
-#   acpidump > acpidump.out
-# Dump on Windows
-#    https://acpica.org/downloads/binary-tools
+# Dump on linux
+#   acpidump > acpidump.out
+# Dump on Windows
+#    https://acpica.org/downloads/binary-tools
 #    acpixtract -a acpi/4/acpi.dump
 
-# acpixtract -a acpidump.out
-# iasl -d DSDT.dat
-# Decompile: iasl -d dsdt.dat
-# Recompile: iasl -tc dsdt.dsl
+# acpixtract -a acpidump.out
+# iasl -d DSDT.dat
+# Decompile: iasl -d dsdt.dat
+# Recompile: iasl -tc dsdt.dsl
 
 #      strs[0] = "KVMKVMKVM\0\0\0"; /* KVM */
 #      strs[1] = "Microsoft Hv"; /* Microsoft Hyper-V or Windows Virtual PC */
@@ -52,11 +52,10 @@ Huge thanks to:
 #https://www.qemu.org/download/#source or https://download.qemu.org/
 qemu_version=4.0.0
 # libvirt - https://libvirt.org/sources/
-# changelog - https://libvirt.org/news.html
-libvirt_version=5.3.0
-# virt-manager - https://github.com/virt-manager/virt-manager/releases
-virt_manager_version=2.1.0
-# http://download.libguestfs.org/
+# changelog - https://libvirt.org/news.html
+libvirt_version=5.5.0
+# virt-manager - https://github.com/virt-manager/virt-manager/releases
+# http://download.libguestfs.org/
 libguestfs_version=1.40.2
 # autofilled
 OS=""
@@ -64,20 +63,20 @@ username=""
 
 
 # ToDO add to see if cpu supports VTx
-# egrep '(vmx|svm)' --color=always /proc/cpuinfo
+# egrep '(vmx|svm)' --color=always /proc/cpuinfo
 #* If your CPU is Intel, you need activate in __BIOS__ VT-x
 #    * (last letter can change, you can activate [TxT ](https://software.intel.com/en-us/blogs/2012/09/25/how-to-enable-an-intel-trusted-execution-technology-capable-server) too, and any other feature, but VT-* is very important)
 
 function changelog() {
 cat << EndOfCL
     # 24.04.2019 - QEMU 4
-    # 28.03.2019 - Huge cleanup, fixes, QEMU 4-RC2 testing in dev
+    # 28.03.2019 - Huge cleanup, fixes, QEMU 4-RC2 testing in dev
     # 24.02.2019 - Add Mosh + support for Linux TCP BBR - https://www.cyberciti.biz/cloud-computing/increase-your-linux-server-internet-speed-with-tcp-bbr-congestion-control/
-    # 11.02.2019 - Depricated linked clones and added WebVirtMgr
+    # 11.02.2019 - Depricated linked clones and added WebVirtMgr
     # 30.01.2019 - Libvirt 5.0.0
     # 27.12.2018 - libguestfs 1.38
     # 10.11.2018 - Virt-manager 2, libivrt-4.10, fixes
-    # 11.09.2018 - code improvement
+    # 11.09.2018 - code improvement
     # 09.09.2018 - ACPI fixes
     # 05.09.2018 - libivrt 4.7 and virtlogd
     # 19.08.2018 - Intel HAXM notes
@@ -106,7 +105,7 @@ cat << EndOfHelp
                 * Example Win7x64 /VMs/Win7x64.qcow2 0 5 /var/lib/libvirt/images/ 192.168.1
                 https://wiki.qemu.org/Documentation/CreateSnapshot
         Libvirt <username_optional> - install libvirt, username is optional
-		Libvmi - install LibVMI
+        Libvmi - install LibVMI
         Virtmanager - install virt-manager
         Libguestfs - install libguestfs
         Replace_qemu - only fix antivms in QEMU source
@@ -120,6 +119,9 @@ cat << EndOfHelp
         * QCOW2 allocations types performance
             * https://www.jamescoyle.net/how-to/1810-qcow2-disk-images-and-performance
             * https://www.jamescoyle.net/how-to/2060-qcow2-physical-size-with-different-preallocation-settings
+
+    Update date: 02.07.2019
+
 EndOfHelp
 }
 
@@ -135,10 +137,9 @@ function grub_iommu(){
 }
 
 function _sed_aux(){
-    # pattern path error_msg
-    echo $1 $2 $3
-    if [ -f "$2" ] && ! sed -i "$1" $2; then
-        echo $3
+    # pattern path error_msg
+    if [ -f "$2" ] && ! sed -i "$1" "$2"; then
+        echo "$3"
     fi
 }
 
@@ -178,38 +179,50 @@ function install_libguestfs() {
     echo "[+] Check for previous version of LibGuestFS"
     sudo dpkg --purge --force-all "libguestfs-*" 2>/dev/null
 
-    sudo apt install gperf flex bison libaugeas-dev libhivex-dev supermin ocaml-nox libhivex-ocaml genisoimage libhivex-ocaml-dev libmagic-dev libjansson-dev -y 2>/dev/null
+    sudo apt install erlang-dev gperf flex bison libaugeas-dev libhivex-dev supermin ocaml-nox libhivex-ocaml genisoimage libhivex-ocaml-dev libmagic-dev libjansson-dev -y 2>/dev/null
     cd /tmp || return
-    wget "http://download.libguestfs.org/1.40-stable/libguestfs-$libguestfs_version.tar.gz"
+    if [ ! -f "libguestfs-$libguestfs_version.tar.gz" ]; then
+        wget "http://download.libguestfs.org/1.40-stable/libguestfs-$libguestfs_version.tar.gz"
+        wget "http://download.libguestfs.org/1.40-stable/libguestfs-$libguestfs_version.tar.gz.sig"
+    fi
+    gpg --verify "libguestfs-$libguestfs_version.tar.gz.sig"
+
     tar xf "libguestfs-$libguestfs_version.tar.gz"
-    cd libguestfs-$libguestfs_version || return
+    cd "libguestfs-$libguestfs_version" || return
+
+    #git clone https://github.com/libguestfs/libguestfs
+    #./autogen.sh
+
     ./configure
-    make -j$(nproc)
-    REALLY_INSTALL=yes checkinstall -D --pkgname=libvirt-$libguestfs_version --default
-    # ln -s /usr/local/lib/libguestfs.so.0 /lib/x86_64-linux-gnu/libguestfs.so.0
+    #make -j"$(nproc)" -C builder index-parse.c ||:
+    make -j"$(nproc)"
+    #REALLY_INSTALL=yes checkinstall -D --pkgname=libguestfs-$libguestfs_version --default
+    ln -s /usr/local/lib/libguestfs.so.0 /lib/x86_64-linux-gnu/libguestfs.so.0
+    ln -s /usr/lib64/libvirt-admin.so.0 /lib/x86_64-linux-gnu/libvirt-admin.so.0
+
 }
 
+
 function install_libvmi() {
-	# IMPORTANT:
-	# 1)
-	# LibVMI will have KVM support if libvirt is available during compile time.
-	#
-	# 2)
-	# Enable GDB access to your KVM VM. This is done by adding '-s' to the VM creation line or, by modifying the VM XML definition used by libvirt as follows:
+    # IMPORTANT:
+    # 1) LibVMI will have KVM support if libvirt is available during compile time.
+    #
+    # 2 )Enable GDB access to your KVM VM. This is done by adding '-s' to the VM creation line or
+    #       by modifying the VM XML definition used by libvirt as follows:
     # Change:
     # <domain type='kvm'>
     # to:
     # <domain type='kvm' xmlns:qemu='http://libvirt.org/schemas/domain/qemu/1.0'>
-	#
+    #
     # Add:
     # <qemu:commandline>
     #   <qemu:arg value='-s'/>
     # </qemu:commandline>
     # under the <domain> level of the XML.
 
-	# The -s switch is a shorthand for -gdb tcp::1234
+    # The -s switch is a shorthand for -gdb tcp::1234
 
-	# LibVMI
+    # LibVMI
     cd /tmp || return
 
     if [ ! -f "libvmi" ]; then
@@ -218,114 +231,112 @@ function install_libvmi() {
     fi
     cd "libvmi" || return
 
-	# install deps
-	apt-get install -y cmake flex bison libglib2.0-dev libjson-c-dev libyajl-dev
-	# other deps
-	apt-get install -y pkg-config
-	mkdir build
-	cd build || return
-	cmake -DENABLE_XEN=ON -DENABLE_KVM=ON -DENABLE_XENSTORE=OFF -DENABLE_BAREFLANK=OFF ..
-	make -j$(nproc)
-	make install
-	/sbin/ldconfig
+    # install deps
+    apt-get install -y cmake flex bison libglib2.0-dev libjson-c-dev libyajl-dev
+    # other deps
+    apt-get install -y pkg-config
+    mkdir build
+    cd build || return
+    cmake -DENABLE_XEN=ON -DENABLE_KVM=ON -DENABLE_XENSTORE=OFF -DENABLE_BAREFLANK=OFF ..
+    make -j$(nproc)
+    make install
+    /sbin/ldconfig
 
-	# LibVMI Python
-	cd /tmp || return
+    # LibVMI Python
+    cd /tmp || return
 
     if [ ! -f "python_Libvmi" ]; then
-		# actual
-		# https://github.com/libvmi/python/tree/76d9ea85eefa0d77f6ad4d6089e757e844763917
-		# git checkout add_vmi_request_page_fault
-		# git pull
-        git clone https://github.com/libvmi/python.git python_Libvmi
+        # actual
+        # https://github.com/libvmi/python/tree/76d9ea85eefa0d77f6ad4d6089e757e844763917
+        # git checkout add_vmi_request_page_fault
+        # git pull
+        git clone https://github.com/libvmi/python.git
         echo "[+] Cloned LibVMI Python repo"
     fi
     cd "python_Libvmi" || return
 
-	# install deps
+    # install deps
     apt-get install -y python3-pkgconfig python3-cffi python3-future
-	python setup.py build
-	python setup.py install
-	# python3
-	python3 setup.py build
-	python3 setup.py install
+    python setup.py build
+    python setup.py install
+    # python3
+    python3 setup.py build
+    python3 setup.py install
 
-	# Rekall
-	cd /tmp || return
+    # Rekall
+    cd /tmp || return
 
     if [ ! -f "rekall" ]; then
         git clone https://github.com/google/rekall.git
         echo "[+] Cloned Rekall repo"
     fi
 
-	virtualenv /tmp/MyEnv
-	source /tmp/MyEnv/bin/activate
-	pip3 install --upgrade testresources setuptools pip wheel
-	pip3 install capstone
-	pip3 install --editable rekall/rekall-lib
-	# ERROR: rekall-efilter 1.6.0 has requirement future==0.16.0
-	pip3 install future==0.16.0
-	# TypeError: Set() missing 1 required positional argument: 'value'
-	pip3 install pyaff4==0.26.post6
-	pip3 install --editable rekall/rekall-core
-	pip3 install --editable rekall/rekall-agent
-	pip3 install --editable rekall
-	pip3 install --upgrade pyasn1
-	deactivate
+    virtualenv /tmp/MyEnv
+    source /tmp/MyEnv/bin/activate
+    pip3 install --upgrade testresources setuptools pip wheel
+    pip3 install capstone
+    pip3 install --editable rekall/rekall-lib
+    # ERROR: rekall-efilter 1.6.0 has requirement future==0.16.0
+    pip3 install future==0.16.0
+    # TypeError: Set() missing 1 required positional argument: 'value'
+    pip3 install pyaff4==0.26.post6
+    pip3 install --editable rekall/rekall-core
+    pip3 install --editable rekall/rekall-agent
+    pip3 install --editable rekall
+    pip3 install --upgrade pyasn1
+    deactivate
 }
 
 # In progress...
+#
 # Errors: "The selected hypervisor has no events support!" - only Xen supported unfortunately
-# 
+#
 function install_pyvmidbg() {
-	# deps
-	apt-get install python3-docopt python3-lxml cabextract
+    # deps
+    apt-get install python3-docopt python3-lxml cabextract
 
-	# libvmi config entry
-	#
+    # libvmi config entry
     # /etc/libvmi.conf:
-	# win10 {
-	#    ostype = "Windows";
-	#    rekall_profile = "/etc/libvmi/rekall-profile.json";
-	# }
+    # win10 {
+    #    ostype = "Windows";
+    #    rekall_profile = "/etc/libvmi/rekall-profile.json";
+    # }
 
-	# Make Windows 10 profile
-	# Copy from Guest OS file "C:\Windows\System32\ntoskrnl.exe"
-	# rekall peinfo -f <path/to/ntoskrnl.exe>
-	#
-	# Once the PDB filename and GUID is known, creating the Rekall profile is done in two steps:
-	# rekall fetch_pdb <PDB filename> <GUID>
-	# rekall parse_pdb <PDB filename> > rekall-profile.json
-	#
-	# In case of Windows 10:
-	# rekall fetch_pdb ntkrnlmp <GUID>
-	# May cause error like "ERROR:rekall.1:Unrecognized type T_64PUINT4" (not dangerous)
-	# rekall parse_pdb ntkrnlmp > rekall-profile.json
+    # Make Windows 10 profile
+    # Copy from Guest OS file "C:\Windows\System32\ntoskrnl.exe"
+    # rekall peinfo -f <path/to/ntoskrnl.exe>
+    #
+    # Once the PDB filename and GUID is known, creating the Rekall profile is done in two steps:
+    # rekall fetch_pdb <PDB filename> <GUID>
+    # rekall parse_pdb <PDB filename> > rekall-profile.json
+    #
+    # In case of Windows 10:
+    # rekall fetch_pdb ntkrnlmp <GUID>
+    # May cause error like "ERROR:rekall.1:Unrecognized type T_64PUINT4" (not dangerous)
+    # rekall parse_pdb ntkrnlmp > rekall-profile.json
 
-	# install rekall profile
-	# /etc/libvmi/rekall-profile.json
+    # install rekall profile
+    # /etc/libvmi/rekall-profile.json
 
-	# git clone https://github.com/Wenzel/pyvmidbg.git
-	# virtualenv -p python3 venv
-	# source venv/bin/activate
-	# pip install .
+    # git clone https://github.com/Wenzel/pyvmidbg.git
+    # virtualenv -p python3 venv
+    # source venv/bin/activate
+    # pip install .
 
-	# sudo python3 -m vmidbg 5000 <vm_name> --address 0.0.0.0 cmd -d
+    # sudo python3 -m vmidbg 5000 <vm_name> --address 0.0.0.0 cmd -d
 
-	# git clone https://github.com/radare/radare2.git
-	# sys/install.sh
-	# r2 -d gdb://127.0.0.1:5000 -b 64
-
+    # git clone https://github.com/radare/radare2.git
+    # sys/install.sh
+    # r2 -d gdb://127.0.0.1:5000 -b 64
 }
 
 function install_libvirt() {
-    # http://ask.xmodulo.com/compile-virt-manager-debian-ubuntu.html
+    # http://ask.xmodulo.com/compile-virt-manager-debian-ubuntu.html
     #rm -r /usr/local/lib/python2.7/dist-packages/libvirt*
 
-	# doomedraven changed to libvirtinstall - so later not to forget what it is intended for
-    if [ ! -f /etc/apt/preferences.d/libvirtinstall ]; then
-    # set to hold to avoid side problems
-        cat >> /etc/apt/preferences.d/libvirtinstall << EOH
+    if [ ! -f /etc/apt/preferences.d/doomedraven ]; then
+    # set to hold to avoid side problems
+        cat >> /etc/apt/preferences.d/doomedraven << EOH
 Package: libvirt-bin
 Pin: release *
 Pin-Priority: -1
@@ -344,16 +355,19 @@ EOH
         rm -r libvirt-$libvirt_version
     else
         wget https://libvirt.org/sources/libvirt-$libvirt_version.tar.xz
+        wget https://libvirt.org/sources/libvirt-$libvirt_version.tar.xz.asc
+        gpg --verify "libvirt-$libvirt_version.tar.xz.asc"
     fi
     tar xf libvirt-$libvirt_version.tar.xz
     cd libvirt-$libvirt_version || return
     if [ "$OS" = "Linux" ]; then
         apt-get install python-dev python3-dev unzip numad glib-2.0 libglib2.0-dev libsdl1.2-dev lvm2 python-pip python-libxml2 python3-libxml2 ebtables libosinfo-1.0-dev libnl-3-dev libnl-route-3-dev libyajl-dev xsltproc libapparmor-dev libdevmapper-dev libpciaccess-dev dnsmasq dmidecode librbd-dev -y 2>/dev/null
-        #apt-get install apparmor-profiles apparmor-profiles-extra apparmor-utils libapparmor-dev python-apparmor libapparmor-perl -y
+        apt-get install apparmor-profiles apparmor-profiles-extra apparmor-utils libapparmor-dev python-apparmor libapparmor-perl -y
         pip install ipaddr
-        # --prefix=/usr --localstatedir=/var --sysconfdir=/etc
-        ./autogen.sh --system  --with-qemu=yes --with-dtrace --with-numad --disable-nls --with-openvz=no --with-vmware=no --with-phyp=no --with-xenapi=no --with-libxl=no  --with-vbox=no --with-lxc=no --with-vz=no   --with-esx=no --with-hyperv=no --with-yajl=yes --with-secdriver-apparmor=yes --with-apparmor-profiles
-        make -j$(nproc)
+        # --prefix=/usr --localstatedir=/var --sysconfdir=/etc
+        # --with-secdriver-apparmor=yes --with-apparmor-profiles
+        ./autogen.sh --system --with-qemu=yes --with-dtrace --with-numad --disable-nls --with-openvz=no --with-vmware=no --with-phyp=no --with-xenapi=no --with-libxl=no  --with-vbox=no --with-lxc=no --with-vz=no   --with-esx=no --with-hyperv=no --with-yajl=yes --with-secdriver-apparmor=yes --with-apparmor-profiles
+        make -j"$(nproc)"
         checkinstall -D --pkgname=libvirt-$libvirt_version --default
         # check if linked correctly
         if [ -f /usr/lib/libvirt-qemu.so ]; then
@@ -373,7 +387,7 @@ EOH
         ./autogen.sh --system --prefix=/usr/local/ --localstatedir=/var --sysconfdir=/etc --with-qemu=yes --with-dtrace --disable-nls --with-openvz=no --with-vmware=no --with-phyp=no --with-xenapi=no --with-libxl=no  --with-vbox=no --with-lxc=no --with-vz=no   --with-esx=no --with-hyperv=no --with-wireshark-dissector=no --with-yajl=yes
     fi
 
-    # https://wiki.archlinux.org/index.php/Libvirt#Using_polkit
+    # https://wiki.archlinux.org/index.php/Libvirt#Using_polkit
     if [ -f /etc/libvirt/libvirtd.conf ]; then
         path="/etc/libvirt/libvirtd.conf"
     elif [ -f /usr/local/etc/libvirt/libvirtd.conf ]; then
@@ -388,16 +402,17 @@ EOH
 
     #echo "[+] Setting AppArmor for libvirt/kvm/qemu"
     sed -i 's/#security_driver = "selinux"/security_driver = "apparmor"/g' /etc/libvirt/qemu.conf
-    # https://gitlab.com/apparmor/apparmor/wikis/Libvirt
+    # https://gitlab.com/apparmor/apparmor/wikis/Libvirt
     FILES=(
         /etc/apparmor.d/usr.sbin.libvirtd
         /usr/sbin/libvirtd
     )
     for file in "${FILES[@]}"; do
-        if [ -f $file ]; then
-            sudo aa-complain $file
-        fi 
+        if [ -f "$file" ]; then
+            sudo aa-complain "$file"
+        fi
     done
+
     cd /tmp || return
 
     if [ ! -f v$libvirt_version.zip ]; then
@@ -421,12 +436,12 @@ EOH
         elif grep -q -E '^libvirt:' /etc/group; then
             groupname="libvirt"
         else
-            # create group if missed
+            # create group if missed
             groupname="libvirt"
             groupadd libvirt
         fi
         usermod -G $groupname -a "$(whoami)"
-        if [[ ! -z "$username" ]]; then
+        if [[ -n "$username" ]]; then
             usermod -G $groupname -a "$username"
         fi
         echo "[+] You should logout and login "
@@ -474,20 +489,24 @@ function install_virt_manager() {
     pip install PyGObject -U
 
     cd /tmp || return
-    if wget https://libvirt.org/sources/glib/libvirt-glib-1.0.0.tar.gz; then
-        tar xf libvirt-glib-1.0.0.tar.gz
-        cd libvirt-glib-1.0.0 || return
-        aclocal && libtoolize --force
-        automake --add-missing
-        ./configure
-        make -j$(nproc)
-        #ToDo add blacklist
-        checkinstall --pkgname=libvirt-glib-1.0-0 --default
-        wget http://launchpadlibrarian.net/297448356/gir1.2-libvirt-glib-1.0_1.0.0-1_amd64.deb
-        dpkg -i gir1.2-libvirt-glib-1.0_1.0.0-1_amd64.deb
-
-        /sbin/ldconfig
+    if [ ! -f libvirt-glib-1.0.0.tar.gz ]; then
+        wget https://libvirt.org/sources/glib/libvirt-glib-1.0.0.tar.gz
     fi
+    tar xf libvirt-glib-1.0.0.tar.gz
+    cd libvirt-glib-1.0.0 || return
+    aclocal && libtoolize --force
+    automake --add-missing
+    ./configure
+    make -j"$(nproc)"
+    #ToDo add blacklist
+    checkinstall --pkgname=libvirt-glib-1.0-0 --default
+
+    if [ ! -f gir1.2-libvirt-glib-1.0_1.0.0-1_amd64.deb ]; then
+        wget http://launchpadlibrarian.net/297448356/gir1.2-libvirt-glib-1.0_1.0.0-1_amd64.deb
+    fi
+    dpkg -i gir1.2-libvirt-glib-1.0_1.0.0-1_amd64.deb
+
+    /sbin/ldconfig
 
     if [ ! -f "virt-manager" ]; then
         #git clone -b v1.5-maint https://github.com/virt-manager/virt-manager.git
@@ -530,7 +549,7 @@ function install_kvm_linux_apt() {
     # "chown root:libvirt /dev/kvm" doesnt help
     addgroup kvm
     usermod -a -G kvm "$(whoami)"
-    if [[ ! -z "$username" ]]; then
+    if [[ -n "$username" ]]; then
         usermod -a -G kvm "$username"
     fi
     chgrp kvm /dev/kvm
@@ -612,7 +631,6 @@ function replace_seabios_clues_public() {
     done
 }
 
-
 function qemu_func() {
     cd /tmp || return
 
@@ -625,7 +643,7 @@ function qemu_func() {
     if [ ! -f qemu-$qemu_version.tar.xz ]; then
         wget "https://download.qemu.org/qemu-$qemu_version.tar.xz"
         wget "https://download.qemu.org/qemu-$qemu_version.tar.xz.sig"
-        gpg --verify "https://download.qemu.org/qemu-$qemu_version.tar.xz.sig"
+        gpg --verify "qemu-$qemu_version.tar.xz.sig"
     fi
 
     if [ ! -f qemu-$qemu_version.tar.xz ]; then
@@ -642,6 +660,7 @@ function qemu_func() {
     pip install sphinx
 
     if [ "$OS" = "Linux" ]; then
+        apt-get install software-properties-common
         add-apt-repository universe
         apt-get update
         apt-get install checkinstall openbios-* libssh2-1-dev vde2 liblzo2-dev libghc-gtk3-dev libsnappy-dev libbz2-dev libxml2-dev google-perftools libgoogle-perftools-dev libvde-dev -y 2>/dev/null
@@ -670,10 +689,10 @@ function qemu_func() {
             # add in future --enable-netmap https://sgros-students.blogspot.com/2016/05/installing-and-testing-netmap.html
             # remove --target-list=i386-softmmu,x86_64-softmmu,i386-linux-user,x86_64-linux-user  if you want all targets
             if [ "$OS" = "Linux" ]; then
-                # --enable-sparse
-                #QTARGETS=--target-list=i386-softmmu,x86_64-softmmu,i386-linux-user,x86_64-linux-user
-                #if [[ ! -z "$QEMU_TARGERS" ]]; then
-                #    QEMU_TARGERS=""
+            #    # --enable-sparse
+                #QTARGETS="--target-list=i386-softmmu,x86_64-softmmu,i386-linux-user,x86_64-linux-user"
+                #if [[ -n "$QEMU_TARGERS" ]]; then
+                #    QTARGETS=""
                 #fi
                 ./configure --prefix=/usr --libexecdir=/usr/lib/qemu --localstatedir=/var --bindir=/usr/bin/ --enable-gnutls --enable-docs --enable-gtk --enable-vnc --enable-vnc-sasl --enable-vnc-png --enable-vnc-jpeg --enable-curl --enable-kvm  --enable-linux-aio --enable-cap-ng --enable-vhost-net --enable-vhost-crypto --enable-spice --enable-usb-redir --enable-lzo --enable-snappy --enable-bzip2 --enable-coroutine-pool --enable-libssh2 --enable-libxml2 --enable-tcmalloc --enable-replication --enable-tools --enable-capstone
             elif [ "$OS" = "Darwin" ]; then
@@ -682,15 +701,14 @@ function qemu_func() {
             fi
             if  [ $? -eq 0 ]; then
                 echo '[+] Starting Install it'
-                #dpkg -i qemu*.deb
                 if [ -f /usr/share/qemu/qemu_logo_no_text.svg ]; then
                     rm /usr/share/qemu/qemu_logo_no_text.svg
                 fi
-                make -j$(nproc)
+                make -j"$(nproc)"
                 if [ "$OS" = "Linux" ]; then
                     checkinstall -D --pkgname=qemu-$qemu_version --nodoc --showinstall=no --default
                 elif [ "$OS" = "Darwin" ]; then
-                    make -j$(nproc) install
+                    make -j"$(nproc)" install
                 fi
                 # hack for libvirt/virt-manager
                 if [ ! -f /usr/bin/qemu-system-x86_64-spice ]; then
@@ -707,11 +725,11 @@ function qemu_func() {
                 else
                     echo '[-] Install failed'
                 fi
-                if [ ! grep -q -E "^tss:" /etc/group ]; then
-                    groupadd "tss"
-                    useradd -g "tss" "tss"
+                if ! grep -q -E "^tss:" /etc/group; then
+                    groupadd tss
+                    useradd -g tss tss
                     echo "[+] Creating Group and User: tss"
-                else:
+                else
                     echo "[?] tss Group and User exist, skip"
                 fi
             else
@@ -748,8 +766,8 @@ function seabios_func() {
         else
             replace_seabios_clues_public
         fi
-        # make help
-        # make menuconfig -> BIOS tables -> disable Include default ACPI DSDT
+        # make help
+        # make menuconfig -> BIOS tables -> disable Include default ACPI DSDT
         # get rid of this hack
         make -j $(nproc) 2>/dev/null
         # Windows 10(latest rev.) is uninstallable without ACPI_DSDT
@@ -784,18 +802,13 @@ function issues(){
 cat << EndOfHelp
 ### Links:
     * https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/virtualization_deployment_and_administration_guide/sect-troubleshooting-common_libvirt_errors_and_troubleshooting
+    * https://wiki.libvirt.org/page/Failed_to_connect_to_the_hypervisor
 
 ### Errors and Solutions
     * Error:
         * If you getting an apparmor error
     * Solution
-        * sed -i 's/#security_driver = "apparmor"/security_driver = "none"/g' /etc/libvirt/qemu.conf
-
-    * Error:
-        * Libvirt sometimes causes access denied errors with access the locations different from "/var/lib/libvirt/images"
-    * Solution:
-        * sed -i 's/user = "root"/user = "$(whoami)"/g' /etc/libvirt/qemu.conf
-        * sed -i 's/user = "root"/group = "libvirt"/g' /etc/libvirt/qemu.conf
+        * sed -i 's/#security_driver = "apparmor"/security_driver = ""/g' /etc/libvirt/qemu.conf
 
     * Error:
         required by /usr/lib/libvirt/storage-file/libvirt_storage_file_fs.so
@@ -814,6 +827,11 @@ cat << EndOfHelp
         1. ldd /usr/sbin/libvirtd
         2. ls -lah /usr/lib/libvirt*
             * Make sure what all symlinks pointing to last version
+    * Error:
+        * Libvirt sometimes causes access denied errors with access the locations different from "/var/lib/libvirt/images"
+    * Solution:
+        * sed -i 's/user = "root"/user = "$(whoami)"/g' /etc/libvirt/qemu.conf
+        * sed -i 's/user = "root"/group = "libvirt"/g' /etc/libvirt/qemu.conf
 
     * Error:
         libvirt: Polkit error : authentication unavailable: no polkit agent available to authenticate action 'org.libvirt.unix.manage'
@@ -826,6 +844,11 @@ cat << EndOfHelp
             sed -i 's/#auth_unix_rw = "none"/auth_unix_rw = "none"/g' /etc/libvirt/libvirtd.conf
         2. Add ssh key to $HOME/.ssh/authorized_keys
             virt-manager -c "qemu+ssh://user@host/system?socket=/var/run/libvirt/libvirt-sock"
+
+    * Error:
+        unable to execute QEMU command 'getfd'
+    * Solution:
+        Compile without apparmor
 
     * Slow HDD/Snapshot taking performance?
         Modify
@@ -940,7 +963,7 @@ case $COMMAND in
         exit 0;;
 esac
 
-#if ([ "$COMMAND" = "all" ] || [ "$COMMAND" = "libvirt" ]) && [ $# -eq 2 ]; then
+#if ([ "$COMMAND" = "all" ] || [ "$COMMAND" = "libvirt" ]) && [ $# -eq 2 ]; then
 #    if [ id -u "$2" ]; then
 #        username="$2"
 #    else
@@ -1009,7 +1032,9 @@ case "$COMMAND" in
 'noip')
     if [ "$OS" = "Linux" ]; then
         cd /tmp || return
-        wget http://www.no-ip.com/client/linux/noip-duc-linux.tar.gz
+        if [ ! -f noip-duc-linux.tar.gz ]; then
+            wget http://www.no-ip.com/client/linux/noip-duc-linux.tar.gz
+        fi
         tar xf noip-duc-linux.tar.gz
         rm noip-duc-linux.tar.gz
         cd "noip-*" || return
