@@ -69,6 +69,7 @@ username=""
 
 function changelog() {
 cat << EndOfCL
+    # 06.07.2019 - Libvirt 5.5, more checks, compatibility with Ubuntu 19.04, but I suggest to stay with 18.04
     # 24.04.2019 - QEMU 4
     # 28.03.2019 - Huge cleanup, fixes, QEMU 4-RC2 testing in dev
     # 24.02.2019 - Add Mosh + support for Linux TCP BBR - https://www.cyberciti.biz/cloud-computing/increase-your-linux-server-internet-speed-with-tcp-bbr-congestion-control/
@@ -120,7 +121,7 @@ cat << EndOfHelp
             * https://www.jamescoyle.net/how-to/1810-qcow2-disk-images-and-performance
             * https://www.jamescoyle.net/how-to/2060-qcow2-physical-size-with-different-preallocation-settings
 
-    Update date: 02.07.2019
+    Update date: 06.07.2019
 
 EndOfHelp
 }
@@ -257,9 +258,10 @@ function install_libvmi() {
 
     # install deps
     apt-get install -y python3-pkgconfig python3-cffi python3-future
+    #pip install .
     python setup.py build
     python setup.py install
-    # python3
+    #pip3 install .
     python3 setup.py build
     python3 setup.py install
 
@@ -423,11 +425,12 @@ EOH
     fi
     unzip v$libvirt_version.zip
     cd "libvirt-python-$libvirt_version" || return
-    python3 setup.py build
-    python3 setup.py install
-    #py2
+    #pip install .
     python setup.py build
     python setup.py install
+    #pip3 install .
+    python3 setup.py build
+    python3 setup.py install
     if [ "$OS" = "Linux" ]; then
         # https://github.com/libvirt/libvirt/commit/e94979e901517af9fdde358d7b7c92cc055dd50c
         groupname=""
@@ -444,6 +447,10 @@ EOH
         if [[ -n "$username" ]]; then
             usermod -G $groupname -a "$username"
         fi
+
+        #check links
+        #sudo ln -s /usr/lib64/libvirt-qemu.so /lib/x86_64-linux-gnu/libvirt-qemu.so.0
+        #sudo ln -s /usr/lib64/libvirt.so.0 /lib/x86_64-linux-gnu/libvirt.so.0
         echo "[+] You should logout and login "
     fi
 
@@ -488,9 +495,20 @@ function install_virt_manager() {
     pip3 install PyGObject -U
     pip install PyGObject -U
 
+    if [ -f /usr/lib/libvirt-qemu.so ]; then
+        libvirt_so_path=/usr/lib/
+        export PKG_CONFIG_PATH=/usr/lib/pkgconfig/
+    elif [ -f /usr/lib64/libvirt-qemu.so ]; then
+        libvirt_so_path=/usr/lib64/
+        export PKG_CONFIG_PATH=/usr/lib64/pkgconfig/
+    fi
+
     cd /tmp || return
     if [ ! -f libvirt-glib-1.0.0.tar.gz ]; then
         wget https://libvirt.org/sources/glib/libvirt-glib-1.0.0.tar.gz
+        wget https://libvirt.org/sources/glib/libvirt-glib-1.0.0.tar.gz.asc
+        gpg --verify "libvirt-glib-1.0.0.tar.gz.asc"
+
     fi
     tar xf libvirt-glib-1.0.0.tar.gz
     cd libvirt-glib-1.0.0 || return
@@ -509,13 +527,13 @@ function install_virt_manager() {
     /sbin/ldconfig
 
     if [ ! -f "virt-manager" ]; then
-        #git clone -b v1.5-maint https://github.com/virt-manager/virt-manager.git
         git clone https://github.com/virt-manager/virt-manager.git
         echo "[+] Cloned Virt Manager repo"
     fi
     cd "virt-manager" || return
     apt-get install gobject-introspection intltool pkg-config python-lxml python3-libxml2 libxml2-dev libxslt-dev python-dev gir1.2-gtk-vnc-2.0 gir1.2-spiceclientgtk-3.0 libgtk-3-dev -y
     # py3
+    #pip3 install .
     python3 setup.py build
     python3 setup.py install
     if [ "$SHELL" = "/bin/zsh" ] || [ "$SHELL" = "/usr/bin/zsh" ] ; then
@@ -579,6 +597,7 @@ function replace_qemu_clues_public() {
     #_sed_aux 's/Microsoft Hv/GenuineIntel/g' qemu*/target/i386/kvm.c 'Microsoft Hv was not replaced in target/i386/kvm.c'
     #_sed_aux 's/Bochs\/Plex86/<WOOT>\/FIRM64/g' qemu*/roms/vgabios/vbe.c 'BOCHS was not replaced in roms/vgabios/vbe.c'
 }
+
 
 function replace_seabios_clues_public() {
     echo "[+] Generating SeaBios Kconfig"
@@ -663,11 +682,13 @@ function qemu_func() {
         apt-get install software-properties-common
         add-apt-repository universe
         apt-get update
-        apt-get install checkinstall openbios-* libssh2-1-dev vde2 liblzo2-dev libghc-gtk3-dev libsnappy-dev libbz2-dev libxml2-dev google-perftools libgoogle-perftools-dev libvde-dev -y 2>/dev/null
+        apt-get install checkinstall openbios-* libssh2-1-dev vde2 liblzo2-dev libghc-gtk3-dev libsnappy-dev libbz2-dev libxml2-dev google-perftools libgoogle-perftools-dev libvde-dev python-pip -y 2>/dev/null
         apt-get install debhelper ibusb-1.0-0-dev libxen-dev uuid-dev xfslibs-dev libjpeg-dev libusbredirparser-dev device-tree-compiler texinfo libbluetooth-dev libbrlapi-dev libcap-ng-dev libcurl4-gnutls-dev libfdt-dev gnutls-dev libiscsi-dev libncurses5-dev libnuma-dev libcacard-dev librados-dev librbd-dev libsasl2-dev libseccomp-dev libspice-server-dev \
         libaio-dev libcap-dev libattr1-dev libpixman-1-dev libgtk2.0-bin  libxml2-utils systemtap-sdt-dev texinfo -y 2>/dev/null
         # qemu docs required
         perl -MCPAN -e install "Perl/perl-podlators"
+        pip install sphinx
+        pip3 install sphinx
 
     elif [ "$OS" = "Darwin" ]; then
         _check_brew
