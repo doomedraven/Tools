@@ -3,6 +3,10 @@
 # Copyright (C) 2011-2019 DoomedRaven.
 # This file is part of Tools - https://github.com/doomedraven/Tools
 # See the file 'LICENSE.md' for copying permission.
+# https://www.doomedraven.com/2016/05/kvm.html
+# Use Ubuntu 18.04 LTS
+
+#Update date: 08.07.2019
 
 : '
 Huge thanks to:
@@ -21,10 +25,6 @@ Huge thanks to:
 #https://linux.die.net/man/1/qemu-img
 #"cluster_size"
 #Changes the qcow2 cluster size (must be between 512 and 2M). Smaller cluster sizes can improve the image file size whereas larger cluster sizes generally provide better performance.
-
-
-# https://www.doomedraven.com/2016/05/kvm.html
-# Use Ubuntu 18.04 LTS
 
 # https://github.com/dylanaraps/pure-bash-bible
 # https://www.shellcheck.net/
@@ -55,8 +55,6 @@ qemu_version=4.0.0
 # changelog - https://libvirt.org/news.html
 libvirt_version=5.5.0
 # virt-manager - https://github.com/virt-manager/virt-manager/releases
-# http://download.libguestfs.org/
-libguestfs_version=1.40.2
 # autofilled
 OS=""
 username=""
@@ -120,9 +118,6 @@ cat << EndOfHelp
         * QCOW2 allocations types performance
             * https://www.jamescoyle.net/how-to/1810-qcow2-disk-images-and-performance
             * https://www.jamescoyle.net/how-to/2060-qcow2-physical-size-with-different-preallocation-settings
-
-    Update date: 06.07.2019
-
 EndOfHelp
 }
 
@@ -177,30 +172,19 @@ function install_haxm_mac() {
 
 function install_libguestfs() {
 
+    cd /opt || return
     echo "[+] Check for previous version of LibGuestFS"
     sudo dpkg --purge --force-all "libguestfs-*" 2>/dev/null
 
-    sudo apt install erlang-dev gperf flex bison libaugeas-dev libhivex-dev supermin ocaml-nox libhivex-ocaml genisoimage libhivex-ocaml-dev libmagic-dev libjansson-dev -y 2>/dev/null
-    cd /tmp || return
-    if [ ! -f "libguestfs-$libguestfs_version.tar.gz" ]; then
-        wget "http://download.libguestfs.org/1.40-stable/libguestfs-$libguestfs_version.tar.gz"
-        wget "http://download.libguestfs.org/1.40-stable/libguestfs-$libguestfs_version.tar.gz.sig"
+    sudo apt install erlang-dev gperf flex bison libaugeas-dev libhivex-dev supermin ocaml-nox libhivex-ocaml genisoimage libhivex-ocaml-dev libmagic-dev libjansson-dev gnulib -y 2>/dev/null
+
+    if [ ! -d libguestfs ]; then
+        git clone https://github.com/libguestfs/libguestfs
     fi
-    gpg --verify "libguestfs-$libguestfs_version.tar.gz.sig"
-
-    tar xf "libguestfs-$libguestfs_version.tar.gz"
-    cd "libguestfs-$libguestfs_version" || return
-
-    #git clone https://github.com/libguestfs/libguestfs
-    #./autogen.sh
-
-    ./configure
-    #make -j"$(nproc)" -C builder index-parse.c ||:
+    ./autogen.sh
     make -j"$(nproc)"
-    #REALLY_INSTALL=yes checkinstall -D --pkgname=libguestfs-$libguestfs_version --default
-    ln -s /usr/local/lib/libguestfs.so.0 /lib/x86_64-linux-gnu/libguestfs.so.0
-    ln -s /usr/lib64/libvirt-admin.so.0 /lib/x86_64-linux-gnu/libvirt-admin.so.0
-
+    echo "[+] ./run --help"
+    echo "[+] ./run ./sparsify/virt-sparsify"
 }
 
 
@@ -597,7 +581,6 @@ function replace_qemu_clues_public() {
     #_sed_aux 's/Microsoft Hv/GenuineIntel/g' qemu*/target/i386/kvm.c 'Microsoft Hv was not replaced in target/i386/kvm.c'
     #_sed_aux 's/Bochs\/Plex86/<WOOT>\/FIRM64/g' qemu*/roms/vgabios/vbe.c 'BOCHS was not replaced in roms/vgabios/vbe.c'
 }
-
 
 function replace_seabios_clues_public() {
     echo "[+] Generating SeaBios Kconfig"
