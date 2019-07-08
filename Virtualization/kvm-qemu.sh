@@ -172,7 +172,7 @@ function install_haxm_mac() {
 
 function install_libguestfs() {
 
-    cd /opt || return
+    cd /opt || return
     echo "[+] Check for previous version of LibGuestFS"
     sudo dpkg --purge --force-all "libguestfs-*" 2>/dev/null
 
@@ -181,6 +181,8 @@ function install_libguestfs() {
     if [ ! -d libguestfs ]; then
         git clone https://github.com/libguestfs/libguestfs
     fi
+    cd libguestfs || return
+    ./bootstrap
     ./autogen.sh
     make -j"$(nproc)"
     echo "[+] ./run --help"
