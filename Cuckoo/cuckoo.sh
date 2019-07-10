@@ -10,6 +10,8 @@ IFACE_IP="192.168.2.1"
 PASSWD="SuperPuperSecret"
 CUCKOO_ROOT="/opt/CAPE/"
 
+DIST_MASTER_IP=X.X.X.X
+
 function issues() {
 cat << EOI
 Problems with PyOpenSSL?
@@ -42,6 +44,8 @@ cat << EndOfHelp
         Cuckoo - Install V2/CAPE Cuckoo
         Dependencies - Install all dependencies with performance tricks
         Supervisor - Install supervisor config for CAPE; for v2 use cuckoo --help ;)
+        Dist - will install CAPE distributed stuff
+        redsocks2 - install redsocks2
         Issues - show some known possible bugs/solutions
 
     Useful links - THEY CAN BE OUTDATED; RTFM!!!
@@ -51,6 +55,94 @@ cat << EndOfHelp
     Cuckoo V2 customizations neat howto
         * https://www.adlice.com/cuckoo-sandbox-customization-v2/
 EndOfHelp
+}
+
+function redsocks2() {
+    sudo apt install -y git libevent-dev libreadline-dev libssl1.0-dev zlib1g-dev libncurses5-dev
+    git clone https://github.com/semigodking/redsocks redsocks2 && cd redsocks2
+    ENABLE_STATIC=true DISABLE_SHADOWSOCKS=true make -j$(nproc)
+    cp redsocks2 /usr/bin/
+}
+
+function distributed() {
+    sudo apt install uwsgi -y 2>/dev/null
+    sudo mkdir -p /data/{config,}db
+    sudo chown mongodb:mongodb /data/ -R
+    cat >> /etc/uwsgi/apps-available/cuckoo_api.ini << EOL
+[uwsgi]
+    plugins = python
+    callable = application
+    ;change this patch if is different
+    chdir = /opt/CAPE/utils
+    master = true
+    mount = /=api.py
+    processes = 5
+    manage-script-name = true
+    socket = 0.0.0.0:8090
+    http-timeout = 200
+    pidfile = /tmp/api.pid
+    ; if you will use with nginx, comment next line
+    protocol=http
+    enable-threads = true
+    lazy-apps = true
+    timeout = 600
+    chmod-socket = 664
+    chown-socket = cuckoo:cuckoo
+    gui = cuckoo
+    uid = cuckoo
+    stats = 127.0.0.1:9191
+EOL
+
+    ln -s /etc/uwsgi/apps-available/cuckoo_api.ini /etc/uwsgi/apps-enabled
+    service uwsgi restart
+
+    cat >> /etc/systemd/system/mongod.service <<EOL
+# /etc/systemd/system/mongodb.service
+[Unit]
+Description=High-performance, schema-free document-oriented database
+Wants=network.target
+After=network.target
+
+[Service]
+ExecStartPre=/bin/mkdir -p /data/db
+ExecStartPre=/bin/chown mongodb:mongodb /data/db -R
+# https://www.tutorialspoint.com/mongodb/mongodb_replication.htm
+ExecStart=/usr/bin/numactl --interleave=all /usr/bin/mongod --quiet --shardsvr --bind_ip 0.0.0.0 --port 27017
+# --replSet rs0
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=always
+# enable on ramfs servers
+# --wiredTigerCacheSizeGB=50
+#User=mongodb
+#Group=mongodb
+#StandardOutput=syslog
+#StandardError=syslog
+#SyslogIdentifier=mongodb
+
+[Install]
+WantedBy=multi-user.target
+EOL
+
+    cat >> /etc/systemd/system/mongos.service << EOL
+[Unit]
+Description=Mongo shard service
+After=network.target
+After=bind9.service
+[Service]
+PIDFile=/var/run/mongos.pid
+User=root
+ExecStart=/usr/bin/mongos --configdb cuckoo_config/${DIST_MASTER_IP}:27019 --port 27020
+[Install]
+WantedBy=multi-user.target
+EOL
+
+    systemctl daemon-reload
+    systemctl enable mongod.service
+    systemctl enable mongos.service
+    systemctl start mongod.service
+    systemctl start mongos.service
+
+    echo -e "\n\n\n[+] CAPE distributed documentation: https://github.com/kevoreilly/CAPE/blob/master/docs/book/src/usage/dist.rst"
 }
 
 function dependencies() {
@@ -73,7 +165,7 @@ function dependencies() {
     # from pip import __main__
     # if __name__ == '__main__':
     #     sys.exit(__main__._main())
-    pip install requests[security] pyOpenSSL pefile tldextract httpreplay imagehash oletools olefile capstone PyCrypto voluptuous gevent -U
+    pip install requests[security] pyOpenSSL pefile tldextract httpreplay imagehash oletools olefile capstone PyCrypto voluptuous -U
     # re2
     apt-get install libre2-dev -y
     pip install re2
@@ -292,7 +384,7 @@ EOF
     cat >> /etc/tor/torrc <<EOF
 TransPort $IFACE_IP:9040
 DNSPort $IFACE_IP:5353
-NumCPUs $(getconf _NPROCESSORS_ONLN)"
+NumCPUs $(getconf _NPROCESSORS_ONLN)
 EOF
 
     #Then restart Tor:
@@ -460,6 +552,8 @@ case "$COMMAND" in
         install_CAPE
     fi
     supervisor
+    distributed
+    redsocks2
     crontab -l | { cat; echo "@reboot $CUCKOO_ROOT/utils/suricata.sh"; } | crontab -
 
     # suricata with socket is faster
@@ -483,6 +577,10 @@ EOF
     else
         install_CAPE
     fi;;
+'dist')
+    distributed;;
+'redsocks2')
+    redsocks2;;
 'dependencies')
     dependencies;;
 'issues')
