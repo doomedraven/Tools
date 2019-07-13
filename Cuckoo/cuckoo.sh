@@ -97,7 +97,8 @@ EOL
     ln -s /etc/uwsgi/apps-available/cuckoo_api.ini /etc/uwsgi/apps-enabled
     service uwsgi restart
 
-    cat >> /etc/systemd/system/mongod.service <<EOL
+    if [ ! -f /etc/systemd/system/mongod.service ]; then
+        cat >> /etc/systemd/system/mongod.service <<EOL
 # /etc/systemd/system/mongodb.service
 [Unit]
 Description=High-performance, schema-free document-oriented database
@@ -123,8 +124,10 @@ Restart=always
 [Install]
 WantedBy=multi-user.target
 EOL
+fi
 
-    cat >> /etc/systemd/system/mongos.service << EOL
+    if [ ! -f /etc/systemd/system/mongos.service ]; then
+        cat >> /etc/systemd/system/mongos.service << EOL
 [Unit]
 Description=Mongo shard service
 After=network.target
@@ -136,6 +139,7 @@ ExecStart=/usr/bin/mongos --configdb cuckoo_config/${DIST_MASTER_IP}:27019 --por
 [Install]
 WantedBy=multi-user.target
 EOL
+fi
 
     systemctl daemon-reload
     systemctl enable mongod.service
@@ -157,7 +161,7 @@ function dependencies() {
     #sudo canonical-livepatch enable APITOKEN
 
     # deps
-    apt-get install jq sqlite3 tmux net-tools checkinstall graphviz git numactl python python-dev python-pip python-m2crypto swig upx-ucl libssl-dev wget unzip p7zip-full geoip-database libgeoip-dev libjpeg-dev mono-utils ssdeep libfuzzy-dev exiftool checkinstall ssdeep uthash-dev libconfig-dev libarchive-dev libtool autoconf automake privoxy software-properties-common wkhtmltopdf xvfb xfonts-100dpi tcpdump libcap2-bin -y
+    apt-get install jq sqlite3 tmux net-tools checkinstall graphviz git numactl python python-dev python-pip python-m2crypto swig upx-ucl libssl-dev wget unzip p7zip-full rar unace-nonfree cabextract geoip-database libgeoip-dev libjpeg-dev mono-utils ssdeep libfuzzy-dev exiftool checkinstall ssdeep uthash-dev libconfig-dev libarchive-dev libtool autoconf automake privoxy software-properties-common wkhtmltopdf xvfb xfonts-100dpi tcpdump libcap2-bin -y
     apt-get install supervisor python-pil subversion python-capstone uwsgi uwsgi-plugin-python python-pyelftools -y
     #clamav clamav-daemon clamav-freshclam
     # if broken sudo python -m pip uninstall pip && sudo apt install python-pip --reinstall
