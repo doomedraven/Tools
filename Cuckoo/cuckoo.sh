@@ -5,7 +5,7 @@
 # Static values
 # Where to place everything
 # for tor
-IFACE_IP="192.168.2.1"
+IFACE_IP="192.168.1.1"
 # DB password
 PASSWD="SuperPuperSecret"
 CUCKOO_ROOT="/opt/CAPE/"
@@ -58,10 +58,11 @@ EndOfHelp
 }
 
 function redsocks2() {
+    cd /tmp || return
     sudo apt install -y git libevent-dev libreadline-dev libssl1.0-dev zlib1g-dev libncurses5-dev
     git clone https://github.com/semigodking/redsocks redsocks2 && cd redsocks2
-    ENABLE_STATIC=true DISABLE_SHADOWSOCKS=true make -j$(nproc)
-    cp redsocks2 /usr/bin/
+    DISABLE_SHADOWSOCKS=true make -j$(nproc) #ENABLE_STATIC=true
+    sudo cp redsocks2 /usr/bin/
 }
 
 function distributed() {
@@ -165,7 +166,7 @@ function dependencies() {
     # from pip import __main__
     # if __name__ == '__main__':
     #     sys.exit(__main__._main())
-    pip install requests[security] pyOpenSSL pefile tldextract httpreplay imagehash oletools olefile capstone PyCrypto voluptuous -U
+    pip install requests[security] pyOpenSSL pefile tldextract httpreplay imagehash oletools olefile capstone PyCrypto voluptuous sflock xmltodict -U
     # re2
     apt-get install libre2-dev -y
     pip install re2
@@ -555,17 +556,17 @@ case "$COMMAND" in
     distributed
     redsocks2
     crontab -l | { cat; echo "@reboot $CUCKOO_ROOT/utils/suricata.sh"; } | crontab -
-
+    crontab -l | { cat; echo "@reboot $CUCKOO_ROOT/socksproxies.sh"; } | crontab -
     # suricata with socket is faster
     cat >> $CUCKOO_ROOT/utils/suricata.sh <<EOF
-    #!/bin/sh
-    # Add "@reboot $CUCKOO_ROOT/utils/suricata.sh" to the root crontab.
-    mkdir /var/run/suricata
-    chown cuckoo:cuckoo /var/run/suricata
-    LD_LIBRARY_PATH=/usr/local/lib /usr/bin/suricata -c /etc/suricata/suricata.yaml --unix-socket -k none -D
-    while [ ! -e /var/run/suricata/suricata-command.socket ]; do
-        sleep 1
-    done
+#!/bin/sh
+# Add "@reboot $CUCKOO_ROOT/utils/suricata.sh" to the root crontab.
+mkdir /var/run/suricata
+chown cuckoo:cuckoo /var/run/suricata
+LD_LIBRARY_PATH=/usr/local/lib /usr/bin/suricata -c /etc/suricata/suricata.yaml --unix-socket -k none -D
+while [ ! -e /var/run/suricata/suricata-command.socket ]; do
+    sleep 1
+done
 EOF
     ;;
 'supervisor')
