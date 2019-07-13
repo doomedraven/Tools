@@ -6,7 +6,7 @@
 # https://www.doomedraven.com/2016/05/kvm.html
 # Use Ubuntu 18.04 LTS
 
-#Update date: 08.07.2019
+#Update date: 13.07.2019
 
 : '
 Huge thanks to:
@@ -124,7 +124,7 @@ EndOfHelp
 function grub_iommu(){
     # ToDo make a sed with regex which works on all cases
     echo "[+] Updating GRUB for IOMMU support"
-    if sed -i 's/GRUB_CMDLINE_LINUX=""/GRUB_CMDLINE_LINUX="intel_iommu=on"/g' /etc/default/grub; then
+    if [[ ! sed -i 's/GRUB_CMDLINE_LINUX=""/GRUB_CMDLINE_LINUX="intel_iommu=on"/g' /etc/default/grub ]]; then
         echo "[-] GRUB patching failed, add intel_iommu=on manually"
         return 1
     fi
@@ -349,7 +349,7 @@ EOH
     tar xf libvirt-$libvirt_version.tar.xz
     cd libvirt-$libvirt_version || return
     if [ "$OS" = "Linux" ]; then
-        apt-get install python-dev python3-dev unzip numad glib-2.0 libglib2.0-dev libsdl1.2-dev lvm2 python-pip python-libxml2 python3-libxml2 ebtables libosinfo-1.0-dev libnl-3-dev libnl-route-3-dev libyajl-dev xsltproc libapparmor-dev libdevmapper-dev libpciaccess-dev dnsmasq dmidecode librbd-dev -y 2>/dev/null
+        apt-get install python-dev python3-dev unzip numad glib-2.0 libglib2.0-dev libsdl1.2-dev lvm2 python-pip python-libxml2 python3-libxml2 ebtables libosinfo-1.0-dev libnl-3-dev libnl-route-3-dev libyajl-dev xsltproc libapparmor-dev apparmor-utils libdevmapper-dev libpciaccess-dev dnsmasq dmidecode librbd-dev -y 2>/dev/null
         apt-get install apparmor-profiles apparmor-profiles-extra apparmor-utils libapparmor-dev python-apparmor libapparmor-perl -y
         pip install ipaddr
         # --prefix=/usr --localstatedir=/var --sysconfdir=/etc
@@ -635,6 +635,7 @@ function replace_seabios_clues_public() {
     done
 }
 
+
 function qemu_func() {
     cd /tmp || return
 
@@ -660,8 +661,6 @@ function qemu_func() {
         exit 1
     fi
     fail=0
-
-    pip install sphinx
 
     if [ "$OS" = "Linux" ]; then
         apt-get install software-properties-common
@@ -938,13 +937,12 @@ function cloning() {
             #virt-clone --print-xml -n $1_$i -o $1 -m "$macaddr"
             if [ ! -f "${5}/${1}_${i}.qcow2" ]; then
                 #Linked snapshots are disabled due to performance problems
-                #qemu-img create -f qcow2 -b "$2" "$5/$1_$i.qcow2"
-                #rsync -ahW --no-compress --progress "$2" "$5/$1_$i.qcow2"
                 echo "Creating $5/$1_$i.qcow2"
-                cp "$2" "$5/$1_$i.qcow2"
+                qemu-img create -f qcow2 -b "$2" "$5/$1_$i.qcow2"
+                #cp "$2" "$5/$1_$i.qcow2"
             fi
             #2>/dev/null
-            if virt-clone --print-xml -n "$1_$i" -o "$1" -m "$macaddr" |sed "s|<driver name=\"qemu\" type=\"qcow2\" cache=\"none\" io=\"native\"/>|<driver name=\"qemu\" type=\"qcow2\" cache=\"none\" io=\"native\"/>\\n      <source file=\"${5}/${1}_${i}.qcow2\"/>|g" > "$5/$1_$i.xml"; then
+            if virt-clone --print-xml -n "$1_$i" -o "$1" -m "$macaddr" |sed "s|<driver name=\"qemu\" type=\"qcow2\" cache=\"none\" io=\"native\"/>|<driver name=\"qemu\" type=\"qcow2\" cache=\"none\" discard=\"unmap\" detect_zeroes=\"on\" io=\"native\"/>\\n      <source file=\"${5}/${1}_${i}.qcow2\"/>|g" > "$5/$1_$i.xml"; then
                 sed -i "s|<domain type='kvm'>|<domain type='kvm' xmlns:qemu='http://libvirt.org/schemas/domain/qemu/1.0'>|g" "$5/$1_$i.xml"
                 virsh define "$5/$1_$i.xml"
                 worked=0
