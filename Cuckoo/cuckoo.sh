@@ -503,6 +503,9 @@ stderr_logfile=/var/log/supervisor/suricata.err.log
 stdout_logfile=/var/log/supervisor/suricata.out.log
 EOF
 
+
+    # fix for too many open files
+    python -c "pa = '/etc/supervisor/supervisord.conf';q=open(pa, 'rb').read().replace('[supervisord]\nlogfile=', '[supervisord]\nminfds=1048576 ;\nlogfile=');open(pa, 'wb').write(q);"
     sudo systemctl enable supervisor
     sudo systemctl start supervisor
 
