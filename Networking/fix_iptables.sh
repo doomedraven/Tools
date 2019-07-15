@@ -19,11 +19,11 @@ iptables -A FORWARD -i "$2" -o lo -j ACCEPT
 
 echo "[+] Setting network options"
 # https://forums.fedoraforum.org/showthread.php?312824-Bridge-broken-after-docker-install&s=ffc1c60cccc19e46c01b9a8e0fcd0c35&p=1804899#post1804899
-net.bridge.bridge-nf-call-ip6tables=0 >> /etc/sysctl.conf
-net.bridge.bridge-nf-call-iptables=0 >> /etc/sysctl.conf
-net.bridge.bridge-nf-call-arptables=0 >> /etc/sysctl.conf
-net.ipv4.conf.all.forwarding=1 >> /etc/sysctl.conf
-net.ipv4.ip_forward=1 >> /etc/sysctl.conf
+echo net.bridge.bridge-nf-call-ip6tables=0 >> /etc/sysctl.conf
+echo net.bridge.bridge-nf-call-iptables=0 >> /etc/sysctl.conf
+echo net.bridge.bridge-nf-call-arptables=0 >> /etc/sysctl.conf
+echo net.ipv4.conf.all.forwarding=1 >> /etc/sysctl.conf
+echo net.ipv4.ip_forward=1 >> /etc/sysctl.conf
 sysctl -p
 echo "iptables -A FORWARD -i virbr0 -o virbr0 -j ACCEPT" >> /etc/network/if-pre-up.d/kvm_bridge_iptables
 
