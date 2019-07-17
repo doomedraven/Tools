@@ -1,6 +1,6 @@
 #!/bin/bash
 # Fix when docker breaks your iptables
-if [ $# -eq 0 ] || [ $# -lt 2 ]; then
+if [ $# -eq 0 ] || [ $# -lt 2 ]; then
     echo "$0 <netowrk range> <vir_iface> <real_iface>"
     echo "    example: $0 192.168.1.0 virbr0 eno0"
     exit 1
@@ -25,6 +25,6 @@ echo net.bridge.bridge-nf-call-arptables=0 >> /etc/sysctl.conf
 echo net.ipv4.conf.all.forwarding=1 >> /etc/sysctl.conf
 echo net.ipv4.ip_forward=1 >> /etc/sysctl.conf
 sysctl -p
-echo "iptables -A FORWARD -i virbr0 -o virbr0 -j ACCEPT" >> /etc/network/if-pre-up.d/kvm_bridge_iptables
+echo "iptables -A FORWARD -i "$2" -o "$2" -j ACCEPT" >> /etc/network/if-pre-up.d/kvm_bridge_iptables
 
 virsh nwfilter-list
