@@ -59,7 +59,9 @@ EndOfHelp
 
 function redsocks2() {
     cd /tmp || return
-    sudo apt install -y git libevent-dev libreadline-dev libssl1.0-dev zlib1g-dev libncurses5-dev
+    sudo apt install -y git libevent-dev libreadline-dev zlib1g-dev libncurses5-dev
+    sudo apt install -y libssl1.0-dev 2>/dev/null
+    sudo apt install -y libssl-dev 2>/dev/null
     git clone https://github.com/semigodking/redsocks redsocks2 && cd redsocks2
     DISABLE_SHADOWSOCKS=true make -j$(nproc) #ENABLE_STATIC=true
     sudo cp redsocks2 /usr/bin/
@@ -109,7 +111,7 @@ After=network.target
 ExecStartPre=/bin/mkdir -p /data/db
 ExecStartPre=/bin/chown mongodb:mongodb /data/db -R
 # https://www.tutorialspoint.com/mongodb/mongodb_replication.htm
-ExecStart=/usr/bin/numactl --interleave=all /usr/bin/mongod --quiet --shardsvr --bind_ip 0.0.0.0 --port 27017
+ExecStart=/usr/bin/numactl --interleave=all /usr/bin/mongod --quiet --shardsvr --port 27017
 # --replSet rs0
 ExecReload=/bin/kill -HUP $MAINPID
 Restart=always
@@ -170,7 +172,9 @@ function dependencies() {
     # from pip import __main__
     # if __name__ == '__main__':
     #     sys.exit(__main__._main())
-    pip install requests[security] pyOpenSSL pefile tldextract httpreplay imagehash oletools olefile capstone PyCrypto voluptuous sflock xmltodict future python-dateutil -U
+    pip install requests[security] pyOpenSSL pefile tldextract httpreplay imagehash oletools olefile capstone PyCrypto voluptuous xmltodict future python-dateutil requests_file -U
+    pip install git+https://github.com/doomedraven/socks5man.git
+    pip install git+https://github.com/doomedraven/sflock.git
     # re2
     apt-get install libre2-dev -y
     pip install re2
@@ -212,7 +216,7 @@ EOF
     systemctl enable mongodb.service
     systemctl restart mongodb.service
 
-    pip install sqlalchemy sqlalchemy-utils jinja2 markupsafe bottle django chardet pygal django-ratelimit rarfile jsbeautifier dpkt nose dnspython pytz requests python-magic geoip pillow java-random python-whois git+https://github.com/crackinglandia/pype32.git git+https://github.com/kbandla/pydeep.git flask flask-restful flask-sqlalchemy
+    pip install sqlalchemy sqlalchemy-utils jinja2 markupsafe bottle django==1.11.22 chardet pygal django-ratelimit rarfile jsbeautifier dpkt nose dnspython pytz requests python-magic geoip pillow java-random python-whois git+https://github.com/crackinglandia/pype32.git git+https://github.com/kbandla/pydeep.git flask flask-restful flask-sqlalchemy socks5man
     apt-get install -y openjdk-11-jdk-headless
     apt-get install -y openjdk-8-jdk-headless
     pip install distorm3 openpyxl git+https://github.com/volatilityfoundation/volatility.git PyCrypto #git+https://github.com/buffer/pyv8
@@ -266,7 +270,7 @@ EOF
     sudo aa-disable /usr/sbin/tcpdump
     # ToDo check if user exits
 
-    adduser cuckoo
+    adduser -r cuckoo
     usermod -G cuckoo -a cuckoo
     groupadd pcap
     usermod -a -G pcap cuckoo
@@ -381,10 +385,6 @@ EOF
     wget -qO - https://deb.torproject.org/torproject.org/A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89.asc | sudo apt-key add -
     sudo apt-get update
     apt install tor deb.torproject.org-keyring libzstd1 -y
-    # Tor configuration
-    #update-rc.d tor defaults
-    #update-rc.d privoxy defaults
-
 
     cat >> /etc/tor/torrc <<EOF
 TransPort $IFACE_IP:9040
@@ -408,6 +408,9 @@ EOF
     echo "net.ipv6.conf.all.disable_ipv6 = 1" >> /etc/sysctl.conf
     echo "net.ipv6.conf.default.disable_ipv6 = 1" >> /etc/sysctl.conf
     echo "net.ipv6.conf.lo.disable_ipv6 = 1" >> /etc/sysctl.conf
+    echo "net.bridge.bridge-nf-call-ip6tables = 0" >> /etc/sysctl.conf
+    echo "net.bridge.bridge-nf-call-iptables = 0" >> /etc/sysctl.conf
+    echo "net.bridge.bridge-nf-call-arptables = 0" >> /etc/sysctl.conf
 
     sudo sysctl -p
 
@@ -564,6 +567,7 @@ case "$COMMAND" in
     redsocks2
     crontab -l | { cat; echo "@reboot $CUCKOO_ROOT/utils/suricata.sh"; } | crontab -
     crontab -l | { cat; echo "@reboot $CUCKOO_ROOT/socksproxies.sh"; } | crontab -
+    crontab -l | { cat; echo "@reboot cd $CUCKOO_ROOT/utils/ && ./smtp_sinkhole.sh"; } | crontab -
     # suricata with socket is faster
     cat >> $CUCKOO_ROOT/utils/suricata.sh <<EOF
 #!/bin/sh
