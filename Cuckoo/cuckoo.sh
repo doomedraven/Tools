@@ -252,8 +252,8 @@ EOF
     rm "VirusTotal-yara-*.zip"
     git clone --recursive https://github.com/VirusTotal/yara-python
     cd yara-python || return
-    python setup.py build
-    python setup.py install
+    pip install .
+    pip3 install .
 
     # elastic as reporting module is incomplate
     #java + elastic
