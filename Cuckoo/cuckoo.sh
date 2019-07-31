@@ -233,7 +233,7 @@ EOF
     #exit
 
     echo '[+] Installing Yara'
-    apt-get install libtool libjansson-dev libmagic1 libmagic-dev jq autoconf -y
+    apt-get install libtool libjansson-dev libmagic1 libmagic-dev jq autoconf checkinstall -y
     cd /tmp/ || return
     yara_info=$(curl -s https://api.github.com/repos/VirusTotal/yara/releases/latest)
     yara_version=$(echo $yara_info |jq .tag_name|sed "s/\"//g")
@@ -246,7 +246,6 @@ EOF
     ./bootstrap.sh
     ./configure --enable-cuckoo --enable-magic --enable-dotnet --enable-profiling
     make -j"$(getconf _NPROCESSORS_ONLN)"
-    yara_version =
     checkinstall -D --pkgname="yara-$yara_version" --pkgversion="$yara_version|cut -c 2-" --default
     ldconfig
     cd ..
