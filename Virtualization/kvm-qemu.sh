@@ -477,10 +477,10 @@ function install_virt_manager() {
     fontconfig fontconfig-config fonts-dejavu-core genisoimage gir1.2-appindicator3-0.1 gir1.2-secret-1 -y
     # should be installed first
 
-    pip install pycairo
-    pip3 install pycairo
-    pip3 install PyGObject -U
-    pip install PyGObject -U
+    pip install pycairo --no-use-pep517
+    pip3 install pycairo --no-use-pep517
+    pip3 install PyGObject --no-use-pep517 -U
+    pip install PyGObject --no-use-pep517 -U
 
     if [ -f /usr/lib/libvirt-qemu.so ]; then
         libvirt_so_path=/usr/lib/
