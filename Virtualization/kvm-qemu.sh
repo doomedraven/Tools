@@ -6,7 +6,7 @@
 # https://www.doomedraven.com/2016/05/kvm.html
 # Use Ubuntu 18.04 LTS
 
-#Update date: 13.07.2019
+#Update date: 06.08.2019
 
 : '
 Huge thanks to:
@@ -53,7 +53,7 @@ Huge thanks to:
 qemu_version=4.0.0
 # libvirt - https://libvirt.org/sources/
 # changelog - https://libvirt.org/news.html
-libvirt_version=5.5.0
+libvirt_version=5.6.0
 # virt-manager - https://github.com/virt-manager/virt-manager/releases
 # autofilled
 OS=""
@@ -67,6 +67,7 @@ username=""
 
 function changelog() {
 cat << EndOfCL
+    # 06.08.2019 - Libvirt 5.6
     # 06.07.2019 - Libvirt 5.5, more checks, compatibility with Ubuntu 19.04, but I suggest to stay with 18.04
     # 24.04.2019 - QEMU 4
     # 28.03.2019 - Huge cleanup, fixes, QEMU 4-RC2 testing in dev
@@ -87,7 +88,7 @@ EndOfCL
 
 function usage() {
 cat << EndOfHelp
-    Usage: $0 <func_name> <args>
+    Usage: $0 <func_name> <args> | tee $0.log
     Commands - are case insensitive:
         All - <username_optional> - Execs QEMU/SeaBios/KVM, username is optional
         QEMU - Install QEMU from source,
@@ -124,7 +125,7 @@ EndOfHelp
 function grub_iommu(){
     # ToDo make a sed with regex which works on all cases
     echo "[+] Updating GRUB for IOMMU support"
-    if [[ ! sed -i 's/GRUB_CMDLINE_LINUX=""/GRUB_CMDLINE_LINUX="intel_iommu=on"/g' /etc/default/grub ]]; then
+    if ! sed -i 's/GRUB_CMDLINE_LINUX=""/GRUB_CMDLINE_LINUX="intel_iommu=on"/g' /etc/default/grub; then
         echo "[-] GRUB patching failed, add intel_iommu=on manually"
         return 1
     fi
@@ -172,7 +173,7 @@ function install_haxm_mac() {
 
 function install_libguestfs() {
 
-    cd /opt || return
+    cd /opt || return
     echo "[+] Check for previous version of LibGuestFS"
     sudo dpkg --purge --force-all "libguestfs-*" 2>/dev/null
 
@@ -181,7 +182,7 @@ function install_libguestfs() {
     if [ ! -d libguestfs ]; then
         git clone https://github.com/libguestfs/libguestfs
     fi
-    cd libguestfs || return
+    cd libguestfs || return
     ./bootstrap
     ./autogen.sh
     make -j"$(nproc)"
@@ -225,7 +226,7 @@ function install_libvmi() {
     mkdir build
     cd build || return
     cmake -DENABLE_XEN=ON -DENABLE_KVM=ON -DENABLE_XENSTORE=OFF -DENABLE_BAREFLANK=OFF ..
-    make -j$(nproc)
+    make -j"$(nproc)"
     make install
     /sbin/ldconfig
 
@@ -366,7 +367,7 @@ EOH
             export PKG_CONFIG_PATH=/usr/lib64/pkgconfig/
         fi
 
-        if [[ ! -z "$libvirt_so_path" ]]; then
+        if [[ -n "$libvirt_so_path" ]]; then
             # #ln -s /usr/lib64/libvirt-qemu.so /lib/x86_64-linux-gnu/libvirt-qemu.so.0
             for so_path in $(ls ${libvirt_so_path}libvirt*.so.0); do ln -s $so_path /lib/$(uname -m)-linux-gnu/$(basename $so_path) 2>/dev/null; done
         fi
@@ -635,7 +636,6 @@ function replace_seabios_clues_public() {
     done
 }
 
-
 function qemu_func() {
     cd /tmp || return
 
@@ -670,7 +670,7 @@ function qemu_func() {
         apt-get install debhelper ibusb-1.0-0-dev libxen-dev uuid-dev xfslibs-dev libjpeg-dev libusbredirparser-dev device-tree-compiler texinfo libbluetooth-dev libbrlapi-dev libcap-ng-dev libcurl4-gnutls-dev libfdt-dev gnutls-dev libiscsi-dev libncurses5-dev libnuma-dev libcacard-dev librados-dev librbd-dev libsasl2-dev libseccomp-dev libspice-server-dev \
         libaio-dev libcap-dev libattr1-dev libpixman-1-dev libgtk2.0-bin  libxml2-utils systemtap-sdt-dev texinfo -y 2>/dev/null
         # qemu docs required
-        perl -MCPAN -e install "Perl/perl-podlators"
+        PERL_MM_USE_DEFAULT=1 perl -MCPAN -e install "Perl/perl-podlators"
         pip install sphinx
         pip3 install sphinx
 
@@ -774,11 +774,11 @@ function seabios_func() {
         # make help
         # make menuconfig -> BIOS tables -> disable Include default ACPI DSDT
         # get rid of this hack
-        make -j $(nproc) 2>/dev/null
+        make -j"$(nproc)" 2>/dev/null
         # Windows 10(latest rev.) is uninstallable without ACPI_DSDT
         # sed -i 's/CONFIG_ACPI_DSDT=y/CONFIG_ACPI_DSDT=n/g' .config
         sed -i 's/CONFIG_XEN=y/CONFIG_XEN=n/g' .config
-        if make -j $(nproc); then
+        if make -j "$(nproc)"; then
             echo '[+] Replacing old bios.bin to new out/bios.bin'
             bios=0
             FILES=(
@@ -948,7 +948,7 @@ function cloning() {
                 worked=0
             fi
         done
-        echo "<host mac='$macaddr' name='$1_$i' ip='$6.$i+1'/>"
+        echo "<host mac='$macaddr' name='$1_$i' ip='$6.[$((i+1))]'/>"
     done
 
     echo "[+] Enjoy"
