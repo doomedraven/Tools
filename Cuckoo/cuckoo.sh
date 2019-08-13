@@ -215,7 +215,7 @@ EOF
 
     systemctl enable mongodb.service
     systemctl restart mongodb.service
-
+    apt install -y libjpeg-dev zlib1g-dev
     pip install sqlalchemy sqlalchemy-utils jinja2 markupsafe bottle django==1.11.23 chardet pygal django-ratelimit rarfile jsbeautifier dpkt nose dnspython pytz requests python-magic geoip pillow java-random python-whois git+https://github.com/crackinglandia/pype32.git git+https://github.com/kbandla/pydeep.git flask flask-restful flask-sqlalchemy socks5man
     apt-get install -y openjdk-11-jdk-headless
     apt-get install -y openjdk-8-jdk-headless
