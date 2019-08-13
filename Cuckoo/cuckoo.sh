@@ -337,7 +337,7 @@ EOF
     make install-conf
 
     cd python || return
-    pytohn setup.py build
+    python setup.py build
     python setup.py install
     touch /etc/suricata/threshold.config
 
@@ -355,11 +355,14 @@ EOF
 
     # Download etupdate to update Emerging Threats Open IDS rules:
     sudo pip install suricata-update
-
-    crontab -l | { cat; echo "15 * * * * sudo /usr/bin/suricata-update"; } | crontab -
+    mkdir -p "/etc/suricata/rules"
+    crontab -l | { cat; echo "15 * * * * sudo /usr/bin/suricata-update -o /etc/suricata/rules/"; } | crontab -
     crontab -l | { cat; echo "15 * * * * /usr/bin/suricatasc -c reload-rules"; } | crontab -
 
     #change suricata yaml
+    sed -i 's|#default-rule-path: /etc/suricata/rules|default-rule-path: /var/lib/suricata/rules|g' /etc/default/suricata
+    sed -i 's/#rule-files:/rule-files:/g' /etc/suricata/suricata.yaml
+    sed -i 's/# - suricata.rules/ - suricata.rules/g' /etc/suricata/suricata.yaml
     sed -i 's/RUN=yes/RUN=no/g' /etc/default/suricata
     sed -i 's/mpm-algo: ac/mpm-algo: hs/g' /etc/suricata/suricata.yaml
     sed -i 's/mpm-algo: auto/mpm-algo: hs/g' /etc/suricata/suricata.yaml
