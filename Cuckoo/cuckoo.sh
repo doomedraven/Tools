@@ -457,7 +457,8 @@ function install_CAPE() {
     #chown -R root:cuckoo /usr/var/malheur/
     #chmod -R =rwX,g=rwX,o=X /usr/var/malheur/
     # Adapting owner permissions to the cuckoo path folder
-    chown cuckoo:cuckoo -R "$CUCKOO_ROOT"
+    chown cuckoo:cuckoo -R "/opt/CAPE"
+    sed -i "s/process_results = on/process_results = off/g" /opt/CAPE/conf/cuckoo.conf
 }
 
 function supervisor() {
@@ -465,7 +466,7 @@ function supervisor() {
     cat >> /etc/supervisor/conf.d/cuckoo.conf <<EOF
 [program:cuckoo]
 command=python cuckoo.py
-directory=$CUCKOO_ROOT/
+directory=/opt/CAPE/
 user=cuckoo
 autostart=true
 autorestart=true
@@ -474,7 +475,7 @@ stderr_logfile=/var/log/supervisor/cuckoo.err.log
 stdout_logfile=/var/log/supervisor/cuckoo.out.log
 [program:web]
 command=python manage.py runserver 0.0.0.0:8000
-directory=$CUCKOO_ROOT/web
+directory=/opt/CAPE/web
 user=cuckoo
 autostart=true
 autorestart=true
@@ -484,7 +485,7 @@ stdout_logfile=/var/log/supervisor/web.out.log
 [program:process]
 command=python process.py -p7 auto
 user=cuckoo
-directory=$CUCKOO_ROOT/utils
+directory=/opt/CAPE/utils
 autostart=true
 autorestart=true
 stopasgroup=true
@@ -492,7 +493,7 @@ stderr_logfile=/var/log/supervisor/process.err.log
 stdout_logfile=/var/log/supervisor/process.out.log
 [program:rooter]
 command=python rooter.py
-directory=$CUCKOO_ROOT/utils
+directory=/opt/CAPE/utils
 user=root
 autostart=true
 autorestart=true
