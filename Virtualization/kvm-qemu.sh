@@ -6,7 +6,7 @@
 # https://www.doomedraven.com/2016/05/kvm.html
 # Use Ubuntu 18.04 LTS
 
-#Update date: 06.08.2019
+#Update date: 16.08.2019
 
 : '
 Huge thanks to:
@@ -50,7 +50,7 @@ Huge thanks to:
 #      strs[5] = "VBoxVBoxVBox"; /* VirtualBox */
 
 #https://www.qemu.org/download/#source or https://download.qemu.org/
-qemu_version=4.0.0
+qemu_version=4.1.0
 # libvirt - https://libvirt.org/sources/
 # changelog - https://libvirt.org/news.html
 libvirt_version=5.6.0
