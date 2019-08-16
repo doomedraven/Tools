@@ -8,7 +8,6 @@
 IFACE_IP="192.168.1.1"
 # DB password
 PASSWD="SuperPuperSecret"
-CUCKOO_ROOT="/opt/CAPE/"
 
 DIST_MASTER_IP=X.X.X.X
 
@@ -459,6 +458,11 @@ function install_CAPE() {
     # Adapting owner permissions to the cuckoo path folder
     chown cuckoo:cuckoo -R "/opt/CAPE"
     sed -i "s/process_results = on/process_results = off/g" /opt/CAPE/conf/cuckoo.conf
+    sed -i "s/tor = off/tor = on/g" /opt/CAPE/conf/cuckoo.conf
+    sed -i "s/memory_dump = off/memory_dump = on/g" /opt/CAPE/conf/cuckoo.conf
+    sed -i "s/achinery = vmwareserver/achinery = kvm/g" /opt/CAPE/conf/cuckoo.conf
+    sed -i "s/interface = br0/interface = virbr1/g" /opt/CAPE/conf/aux.conf
+
 }
 
 function supervisor() {
