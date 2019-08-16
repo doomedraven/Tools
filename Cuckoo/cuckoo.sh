@@ -4,6 +4,7 @@
 
 # Static values
 # Where to place everything
+NETWORK_IFACE=virbr1
 # for tor
 IFACE_IP="192.168.1.1"
 # DB password
@@ -34,7 +35,7 @@ EOI
 
 function usage() {
 cat << EndOfHelp
-    You need to edit CUCKOO_ROOT, IFACE_IP and PASSWD for correct install
+    You need to edit NETWORK_IFACE, IFACE_IP and PASSWD for correct install
 
     Usage: $0 <command> <cuckoo_version> <iface_ip>
         Example: $0 all cape 192.168.1.1
@@ -461,7 +462,7 @@ function install_CAPE() {
     sed -i "s/tor = off/tor = on/g" /opt/CAPE/conf/cuckoo.conf
     sed -i "s/memory_dump = off/memory_dump = on/g" /opt/CAPE/conf/cuckoo.conf
     sed -i "s/achinery = vmwareserver/achinery = kvm/g" /opt/CAPE/conf/cuckoo.conf
-    sed -i "s/interface = br0/interface = virbr1/g" /opt/CAPE/conf/aux.conf
+    sed -i "s/interface = br0/interface = $NETWORK_IFACE/g" /opt/CAPE/conf/aux.conf
 
 }
 
