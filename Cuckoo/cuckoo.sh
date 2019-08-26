@@ -574,13 +574,13 @@ case "$COMMAND" in
     supervisor
     distributed
     redsocks2
-    crontab -l | { cat; echo "@reboot $CUCKOO_ROOT/utils/suricata.sh"; } | crontab -
-    crontab -l | { cat; echo "@reboot $CUCKOO_ROOT/socksproxies.sh"; } | crontab -
-    crontab -l | { cat; echo "@reboot cd $CUCKOO_ROOT/utils/ && ./smtp_sinkhole.sh"; } | crontab -
+    crontab -l | { cat; echo "@reboot /opt/CAPE/utils/suricata.sh"; } | crontab -
+    crontab -l | { cat; echo "@reboot /opt/CAPE/socksproxies.sh"; } | crontab -
+    crontab -l | { cat; echo "@reboot cd /opt/CAPE/utils/ && ./smtp_sinkhole.sh"; } | crontab -
     # suricata with socket is faster
-    cat >> $CUCKOO_ROOT/utils/suricata.sh <<EOF
+    cat >> /opt/CAPE/utils/suricata.sh <<EOF
 #!/bin/sh
-# Add "@reboot $CUCKOO_ROOT/utils/suricata.sh" to the root crontab.
+# Add "@reboot /opt/CAPE/utils/suricata.sh" to the root crontab.
 mkdir /var/run/suricata
 chown cuckoo:cuckoo /var/run/suricata
 LD_LIBRARY_PATH=/usr/local/lib /usr/bin/suricata -c /etc/suricata/suricata.yaml --unix-socket -k none -D
