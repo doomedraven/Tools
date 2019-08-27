@@ -159,15 +159,15 @@ function install_suricata() {
     sqlite3 libsqlite3-dev libreadline-dev
 
     # install pcre
-    #sudo apt-get install libbz2-1.0 libbz2-dev libbz2-ocaml libbz2-ocaml-dev
+    #sudo apt-get -y install libbz2-1.0 libbz2-dev libbz2-ocaml libbz2-ocaml-dev
     #wget https://ftp.pcre.org/pub/pcre/pcre-8.43.zip
-    #unzip pcre-8.43.zip && pcre-8.43
+    #unzip pcre-8.43.zip && cd pcre-8.43
     #./configure --prefix=/usr --docdir=/usr/share/doc/pcre-8.43 --enable-unicode-propertiess --enable-pcre16s --enable-pcre32s --enable-pcregrep-libzs --enable-pcregrep-libbz2s --enable-pcretest-libreadlines --disable-static
-
-    make -j"$(nproc)"
-    sudo checkinstall -D --pkgname=pcre --pkgversion=8.43 --default
-    mv -v /usr/lib/libpcre.so.* /lib &&
-    ln -sfv ../../lib/$(readlink /usr/lib/libpcre.so) /usr/lib/libpcre.so
+    #make -j"$(nproc)"
+    #sudo checkinstall -D --pkgname=pcre --pkgversion=8.43 --default
+    #sudo dpkg -i --force-overwrite pcre_8.43-1_amd64.deb
+    #sudo mv -v /usr/lib/libpcre.so.* /lib
+    #sudo ln -sfv ../../lib/$(readlink /usr/lib/libpcre.so) /usr/lib/libpcre.so
     #ToDo
     # -- Checking for module 'libpcre>=8.41'
     # Speedup suricata >= 3.1
