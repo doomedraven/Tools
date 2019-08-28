@@ -281,6 +281,32 @@ function install_suricata() {
     chown cuckoo:cuckoo -R /etc/suricata
 }
 
+
+function install_yara() {
+    echo '[+] Installing Yara'
+    apt-get install libtool libjansson-dev libmagic1 libmagic-dev jq autoconf checkinstall -y
+    cd /tmp/ || return
+    yara_info=$(curl -s https://api.github.com/repos/VirusTotal/yara/releases/latest)
+    yara_version=$(echo $yara_info |jq .tag_name|sed "s/\"//g")
+    yara_repo_url=$(echo $yara_info | jq ".zipball_url" | sed "s/\"//g")
+    wget -q $yara_repo_url
+    unzip $yara_version
+    #wget "https://github.com/VirusTotal/yara/archive/v$yara_version.zip" && unzip "v$yara_version.zip"
+    directory=`ls | grep "VirusTotal-yara-*"`
+    cd $directory || return
+    ./bootstrap.sh
+    ./configure --enable-cuckoo --enable-magic --enable-dotnet --enable-profiling
+    make -j"$(getconf _NPROCESSORS_ONLN)"
+    checkinstall -D --pkgname="yara-$yara_version" --pkgversion="$yara_version|cut -c 2-" --default
+    ldconfig
+    cd ..
+    rm "VirusTotal-yara-*.zip"
+    git clone --recursive https://github.com/VirusTotal/yara-python
+    cd yara-python || return
+    pip install .
+    pip3 install .
+}
+
 function dependencies() {
     sudo timedatectl set-timezone UTC
 
@@ -359,29 +385,6 @@ EOF
     sudo -u postgres -H sh -c "psql -c \"CREATE DATABASE cuckoo\"";
     sudo -u postgres -H sh -c "psql -d \"cuckoo\" -c \"GRANT ALL PRIVILEGES ON DATABASE cuckoo to cuckoo;\""
     #exit
-
-    echo '[+] Installing Yara'
-    apt-get install libtool libjansson-dev libmagic1 libmagic-dev jq autoconf checkinstall -y
-    cd /tmp/ || return
-    yara_info=$(curl -s https://api.github.com/repos/VirusTotal/yara/releases/latest)
-    yara_version=$(echo $yara_info |jq .tag_name|sed "s/\"//g")
-    yara_repo_url=$(echo $yara_info | jq ".zipball_url" | sed "s/\"//g")
-    wget -q $yara_repo_url
-    unzip $yara_version
-    #wget "https://github.com/VirusTotal/yara/archive/v$yara_version.zip" && unzip "v$yara_version.zip"
-    directory=`ls | grep "VirusTotal-yara-*"`
-    cd $directory || return
-    ./bootstrap.sh
-    ./configure --enable-cuckoo --enable-magic --enable-dotnet --enable-profiling
-    make -j"$(getconf _NPROCESSORS_ONLN)"
-    checkinstall -D --pkgname="yara-$yara_version" --pkgversion="$yara_version|cut -c 2-" --default
-    ldconfig
-    cd ..
-    rm "VirusTotal-yara-*.zip"
-    git clone --recursive https://github.com/VirusTotal/yara-python
-    cd yara-python || return
-    pip install .
-    pip3 install .
 
     # elastic as reporting module is incomplate
     #java + elastic
@@ -614,6 +617,7 @@ case "$COMMAND" in
 'all')
     dependencies
     install_suricata
+    install_yara
     if [ "$cuckoo_version" = "v2" ]; then
         pip install cuckoo
     else
@@ -641,6 +645,8 @@ EOF
     supervisor;;
 'suricata')
     install_suricata;;
+'yara')
+    install_yara;;
 'cuckoo')
     if [ "$cuckoo_version" = "v2" ]; then
         pip install cuckoo
