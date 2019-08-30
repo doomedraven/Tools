@@ -177,7 +177,7 @@ function install_libguestfs() {
     echo "[+] Check for previous version of LibGuestFS"
     sudo dpkg --purge --force-all "libguestfs-*" 2>/dev/null
 
-    sudo apt install erlang-dev gperf flex bison libaugeas-dev libhivex-dev supermin ocaml-nox libhivex-ocaml genisoimage libhivex-ocaml-dev libmagic-dev libjansson-dev gnulib -y 2>/dev/null
+    sudo apt install libyara3 erlang-dev gperf flex bison libaugeas-dev libhivex-dev supermin ocaml-nox libhivex-ocaml genisoimage libhivex-ocaml-dev libmagic-dev libjansson-dev gnulib -y 2>/dev/null
 
     if [ ! -d libguestfs ]; then
         git clone https://github.com/libguestfs/libguestfs
