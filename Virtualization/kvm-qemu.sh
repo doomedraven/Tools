@@ -870,6 +870,15 @@ cat << EndOfHelp
         * usermod -G libvirt -a username
         * log out and log in
 
+    * Error:
+        yara: error while loading shared libraries: libyara.so.3: cannot open shared object file: No such file or directory
+
+    Solution 1:
+        apt install libyara3
+    Solution 2:
+        sudo echo “/usr/local/lib” >> /etc/ld.so.conf
+        sudo ldconfig
+
     # Fixes from http://ask.xmodulo.com/compile-virt-manager-debian-ubuntu.html
     1. ImportError: No module named libvirt
     $ ./kvm-qemu.sh libvirt
