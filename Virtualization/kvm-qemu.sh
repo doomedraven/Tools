@@ -6,7 +6,7 @@
 # https://www.doomedraven.com/2016/05/kvm.html
 # Use Ubuntu 18.04 LTS
 
-#Update date: 16.08.2019
+#Update date: 03.09.2019
 
 : '
 Huge thanks to:
@@ -59,6 +59,8 @@ libvirt_version=5.6.0
 OS=""
 username=""
 
+# if you want all arches support in QEMU, just set QTARGETS to empty
+QTARGETS="--target-list=i386-softmmu,x86_64-softmmu,i386-linux-user,x86_64-linux-user"
 
 # ToDO add to see if cpu supports VTx
 # egrep '(vmx|svm)' --color=always /proc/cpuinfo
@@ -186,8 +188,8 @@ function install_libguestfs() {
     ./bootstrap
     ./autogen.sh
     make -j"$(nproc)"
-    echo "[+] ./run --help"
-    echo "[+] ./run ./sparsify/virt-sparsify"
+    echo "[+] cd /opt/libguestfs/ && ./run --help"
+    echo "[+] cd /opt/libguestfs/ && ./run ./sparsify/virt-sparsify"
 }
 
 
@@ -530,7 +532,7 @@ function install_virt_manager() {
     fi
 }
 
-function install_kvm_linux_apt() {
+function install_kvm_linux() {
     sed -i 's/# deb-src/deb-src/g' /etc/apt/sources.list
     apt-get update 2>/dev/null
     apt-get install build-essential python-pip python3-pip gcc pkg-config cpu-checker intltool -y 2>/dev/null
@@ -561,6 +563,14 @@ function install_kvm_linux_apt() {
     if [ ! -f /etc/udev/rules.d/50-qemu-kvm.rules ]; then
         echo 'KERNEL=="kvm", GROUP="kvm", MODE="0660"' >> /etc/udev/rules.d/50-qemu-kvm.rules
     fi
+
+    echo 1 > /sys/module/kvm/parameters/ignore_msrs
+    echo 0 > /sys/module/kvm/parameters/report_ignored_msrs
+
+    echo >> /etc/modprobe.d/kvm.conf << EOF
+options kvm ignore_msrs=Y
+options kvm report_ignored_msrs=N
+EOF
 }
 
 
@@ -584,6 +594,7 @@ function replace_qemu_clues_public() {
     #_sed_aux 's/Microsoft Hv/GenuineIntel/g' qemu*/target/i386/kvm.c 'Microsoft Hv was not replaced in target/i386/kvm.c'
     #_sed_aux 's/Bochs\/Plex86/<WOOT>\/FIRM64/g' qemu*/roms/vgabios/vbe.c 'BOCHS was not replaced in roms/vgabios/vbe.c'
 }
+
 
 function replace_seabios_clues_public() {
     echo "[+] Generating SeaBios Kconfig"
@@ -636,6 +647,7 @@ function replace_seabios_clues_public() {
     done
 }
 
+
 function qemu_func() {
     cd /tmp || return
 
@@ -665,7 +677,7 @@ function qemu_func() {
     if [ "$OS" = "Linux" ]; then
         apt-get install software-properties-common
         add-apt-repository universe
-        apt-get update
+        apt-get update 2>/dev/null
         apt-get install checkinstall openbios-* libssh2-1-dev vde2 liblzo2-dev libghc-gtk3-dev libsnappy-dev libbz2-dev libxml2-dev google-perftools libgoogle-perftools-dev libvde-dev python-pip -y 2>/dev/null
         apt-get install debhelper ibusb-1.0-0-dev libxen-dev uuid-dev xfslibs-dev libjpeg-dev libusbredirparser-dev device-tree-compiler texinfo libbluetooth-dev libbrlapi-dev libcap-ng-dev libcurl4-gnutls-dev libfdt-dev gnutls-dev libiscsi-dev libncurses5-dev libnuma-dev libcacard-dev librados-dev librbd-dev libsasl2-dev libseccomp-dev libspice-server-dev \
         libaio-dev libcap-dev libattr1-dev libpixman-1-dev libgtk2.0-bin  libxml2-utils systemtap-sdt-dev texinfo -y 2>/dev/null
@@ -695,11 +707,10 @@ function qemu_func() {
             # remove --target-list=i386-softmmu,x86_64-softmmu,i386-linux-user,x86_64-linux-user  if you want all targets
             if [ "$OS" = "Linux" ]; then
             #    # --enable-sparse
-                #QTARGETS="--target-list=i386-softmmu,x86_64-softmmu,i386-linux-user,x86_64-linux-user"
                 #if [[ -n "$QEMU_TARGERS" ]]; then
                 #    QTARGETS=""
                 #fi
-                ./configure --prefix=/usr --libexecdir=/usr/lib/qemu --localstatedir=/var --bindir=/usr/bin/ --enable-gnutls --enable-docs --enable-gtk --enable-vnc --enable-vnc-sasl --enable-vnc-png --enable-vnc-jpeg --enable-curl --enable-kvm  --enable-linux-aio --enable-cap-ng --enable-vhost-net --enable-vhost-crypto --enable-spice --enable-usb-redir --enable-lzo --enable-snappy --enable-bzip2 --enable-coroutine-pool --enable-libxml2 --enable-tcmalloc --enable-replication --enable-tools --enable-capstone
+                ./configure $QTARGETS --prefix=/usr --libexecdir=/usr/lib/qemu --localstatedir=/var --bindir=/usr/bin/ --enable-gnutls --enable-docs --enable-gtk --enable-vnc --enable-vnc-sasl --enable-vnc-png --enable-vnc-jpeg --enable-curl --enable-kvm  --enable-linux-aio --enable-cap-ng --enable-vhost-net --enable-vhost-crypto --enable-spice --enable-usb-redir --enable-lzo --enable-snappy --enable-bzip2 --enable-coroutine-pool --enable-libxml2 --enable-tcmalloc --enable-replication --enable-tools --enable-capstone
             elif [ "$OS" = "Darwin" ]; then
                 # --enable-vhost-net --enable-vhost-crypto
                 ./configure --prefix=/usr --libexecdir=/usr/lib/qemu --localstatedir=/var --bindir=/usr/bin/ --enable-gnutls --enable-docs  --enable-vnc --enable-vnc-sasl --enable-vnc-png --enable-vnc-jpeg --enable-curl --enable-hax --enable-usb-redir --enable-lzo --enable-snappy --enable-bzip2 --enable-coroutine-pool  --enable-libxml2 --enable-tcmalloc --enable-replication --enable-tools --enable-capstone
@@ -911,7 +922,8 @@ EndOfHelp
 }
 
 function install_WebVirtCloud(){
-    sudo apt-get -y install git virtualenv python-virtualenv python-dev python-lxml libvirt-dev zlib1g-dev libxslt1-dev nginx supervisor libsasl2-modules gcc pkg-config python-guestfs
+    sudo apt-get -y install git virtualenv python-virtualenv python-dev python-lxml libvirt-dev zlib1g-dev libxslt1-dev nginx libsasl2-modules gcc pkg-config python-guestfs
+    pip install supervisor
     git clone https://github.com/retspen/webvirtcloud
     cd webvirtcloud || return
     cp webvirtcloud/settings.py.template webvirtcloud/settings.py
@@ -957,7 +969,7 @@ function cloning() {
                 worked=0
             fi
         done
-        echo "<host mac='$macaddr' name='$1_$i' ip='$6.[$((i+1))]'/>"
+        echo "<host mac='$macaddr' name='$1_$i' ip='$6.$((i+1))'/>"
     done
 
     echo "[+] Enjoy"
@@ -1002,7 +1014,7 @@ case "$COMMAND" in
     qemu_func
     seabios_func
     if [ "$OS" = "Linux" ]; then
-        install_kvm_linux_apt
+        install_kvm_linux
         install_virt_manager
         install_libguestfs
         # check if all features enabled
@@ -1020,7 +1032,7 @@ case "$COMMAND" in
 'seabios')
     seabios_func;;
 'kvm')
-    install_kvm_linux_apt;;
+    install_kvm_linux;;
 'haxm')
     install_haxm_mac;;
 'libguestfs')
