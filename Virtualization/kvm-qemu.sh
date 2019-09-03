@@ -567,10 +567,13 @@ function install_kvm_linux() {
     echo 1 > /sys/module/kvm/parameters/ignore_msrs
     echo 0 > /sys/module/kvm/parameters/report_ignored_msrs
 
-    echo >> /etc/modprobe.d/kvm.conf << EOF
+    if [ ! -f /etc/modprobe.d/kvm.conf ]; then
+        echo >> /etc/modprobe.d/kvm.conf << EOF
 options kvm ignore_msrs=Y
 options kvm report_ignored_msrs=N
 EOF
+
+    fi
 }
 
 
