@@ -492,7 +492,7 @@ EOF
 
 function install_CAPE() {
     cd /opt || return
-    git clone https://github.com/ctxis/CAPE/ CAPE
+    git clone https://github.com/kevoreilly/CAPE/ CAPE
     sed -i 's/libvirt-python//g' CAPE/requirements.txt
     sed -i 's/clamd//g' CAPE/requirements.txt
     pip install -r CAPE/requirements.txt
