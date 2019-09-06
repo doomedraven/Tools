@@ -34,6 +34,7 @@ Problems with Django importlib
 
 Problem with pillow:
     * ValueError: jpeg is required unless explicitly disabled using --disable-jpeg, aborting
+    * ValueError: zlib is required unless explicitly disabled using --disable-zlib, aborting
 Solution:
     # https://askubuntu.com/a/1094768
     # you may need to adjust version of libjpeg-turbo8
