@@ -1,6 +1,5 @@
 #!/bin/bash
 # By @doomedraven - https://twitter.com/D00m3dR4v3n
-# minfds=1048576
 
 # Huge thanks to: @NaxoneZ
 
@@ -32,6 +31,13 @@ Problems with Django importlib
     except ImportError:
         # Django versions < 1.9
         from django.utils.importlib import import_module
+
+Problem with pillow:
+    * ValueError: jpeg is required unless explicitly disabled using --disable-jpeg, aborting
+Solution:
+    # https://askubuntu.com/a/1094768
+    # you may need to adjust version of libjpeg-turbo8
+    sudo apt-get install libjpeg-turbo8-dev libjpeg-turbo8=1.5.2-0ubuntu5
 EOI
 }
 
@@ -318,7 +324,7 @@ function dependencies() {
     #sudo canonical-livepatch enable APITOKEN
 
     # deps
-    apt-get install jq sqlite3 tmux net-tools checkinstall graphviz git numactl python python-dev python-pip python-m2crypto swig upx-ucl libssl-dev wget zip unzip p7zip-full rar unrar unace-nonfree cabextract geoip-database libgeoip-dev libjpeg-dev mono-utils ssdeep libfuzzy-dev exiftool checkinstall ssdeep uthash-dev libconfig-dev libarchive-dev libtool autoconf automake privoxy software-properties-common wkhtmltopdf xvfb xfonts-100dpi tcpdump libcap2-bin -y
+    apt-get install psmisc jq sqlite3 tmux net-tools checkinstall graphviz git numactl python python-dev python-pip python-m2crypto swig upx-ucl libssl-dev wget zip unzip p7zip-full rar unrar unace-nonfree cabextract geoip-database libgeoip-dev libjpeg-dev mono-utils ssdeep libfuzzy-dev exiftool checkinstall ssdeep uthash-dev libconfig-dev libarchive-dev libtool autoconf automake privoxy software-properties-common wkhtmltopdf xvfb xfonts-100dpi tcpdump libcap2-bin -y
     apt-get install python-pil subversion python-capstone uwsgi uwsgi-plugin-python python-pyelftools -y
     #clamav clamav-daemon clamav-freshclam
     # if broken sudo python -m pip uninstall pip && sudo apt install python-pip --reinstall
