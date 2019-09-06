@@ -37,7 +37,7 @@ Problem with pillow:
 Solution:
     # https://askubuntu.com/a/1094768
     # you may need to adjust version of libjpeg-turbo8
-    sudo apt-get install libjpeg-turbo8-dev libjpeg-turbo8=1.5.2-0ubuntu5
+    sudo apt-get install zlib1g-dev libjpeg-turbo8-dev libjpeg-turbo8=1.5.2-0ubuntu5
 EOI
 }
 
