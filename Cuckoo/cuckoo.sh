@@ -71,7 +71,8 @@ function install_logrotate() {
     # du -sh /var/log/* | sort -hr | head -n10
     # thanks digitalocean.com for the manual
     # https://www.digitalocean.com/community/tutorials/how-to-manage-logfiles-with-logrotate-on-ubuntu-16-04
-    cat >>/etc/logrotate.d/doomedraven.conf << EOF
+    if [ ! -f /etc/logrotate.d/doomedraven.conf ]
+            cat >> /etc/logrotate.d/doomedraven.conf << EOF
 /var/log/*.log {
     daily
     missingok
@@ -91,6 +92,7 @@ function install_logrotate() {
     maxsize 500M
 }
 EOF
+fi
 
     sudo /usr/sbin/logrotate --force /etc/logrotate.conf
     du -sh /var/log/* | sort -hr | head -n10
