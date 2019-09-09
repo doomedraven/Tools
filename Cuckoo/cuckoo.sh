@@ -55,6 +55,7 @@ cat << EndOfHelp
         Supervisor - Install supervisor config for CAPE; for v2 use cuckoo --help ;)
         Dist - will install CAPE distributed stuff
         redsocks2 - install redsocks2
+        logrotate - install logrotate config to rotate daily or 10G logs
         Issues - show some known possible bugs/solutions
 
     Useful links - THEY CAN BE OUTDATED; RTFM!!!
@@ -64,6 +65,37 @@ cat << EndOfHelp
     Cuckoo V2 customizations neat howto
         * https://www.adlice.com/cuckoo-sandbox-customization-v2/
 EndOfHelp
+}
+
+function install_logrotate() {
+    # du -sh /var/log/* | sort -hr | head -n10
+    # thanks digitalocean.com for the manual
+    # https://www.digitalocean.com/community/tutorials/how-to-manage-logfiles-with-logrotate-on-ubuntu-16-04
+    cat >>/etc/logrotate.d/doomedraven.conf << EOF
+/var/log/*.log {
+    daily
+    missingok
+    rotate 7
+    compress
+    create
+    maxsize 10G
+}
+
+
+/var/log/supervisor/*.log {
+    daily
+    missingok
+    rotate 7
+    compress
+    create
+    maxsize 500M
+}
+EOF
+
+    sudo /usr/sbin/logrotate --force /etc/logrotate.conf
+    du -sh /var/log/* | sort -hr | head -n10
+    # wipe kern.log
+    # cat /dev/null | sudo tee /var/log/kern.log
 }
 
 function redsocks2() {
@@ -633,6 +665,7 @@ case "$COMMAND" in
     supervisor
     distributed
     redsocks2
+    install_logrotate
     crontab -l | { cat; echo "@reboot /opt/CAPE/utils/suricata.sh"; } | crontab -
     crontab -l | { cat; echo "@reboot /opt/CAPE/socksproxies.sh"; } | crontab -
     crontab -l | { cat; echo "@reboot cd /opt/CAPE/utils/ && ./smtp_sinkhole.sh"; } | crontab -
@@ -667,6 +700,8 @@ EOF
     redsocks2;;
 'dependencies')
     dependencies;;
+'logrotate')
+    install_logrotate;;
 'issues')
     issues;;
 *)
