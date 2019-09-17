@@ -114,6 +114,7 @@ cat << EndOfHelp
         Replace_seabios <path> - only fix antivms in SeaBios source
         Issues - will give you error - solution list
         noip - Install No-ip deamon and enable on boot
+        SysRQ - enable SysRQ - https://sites.google.com/site/syscookbook/rhel/rhel-sysrq-key
 
     Tips:
         * Latest kernels having some KVM features :)
@@ -602,6 +603,7 @@ function replace_qemu_clues_public() {
 }
 
 
+
 function replace_seabios_clues_public() {
     echo "[+] Generating SeaBios Kconfig"
     echo "[+] Fixing SeaBios antivms"
@@ -820,6 +822,12 @@ function seabios_func() {
     fi
 }
 
+function enable_sysreq(){
+    if ! grep -q -E '^ernel.sysrq=1' /etc/sysctl.conf; then
+        echo "kernel.sysrq=1" >> /etc/sysctl.conf
+    fi
+}
+
 function issues(){
 cat << EndOfHelp
 ### Links:
@@ -1029,6 +1037,7 @@ case "$COMMAND" in
         systemctl restart libvirtd libvirt-guests.service
         _enable_tcp_bbr
         grub_iommu
+        enable_sysreq
     elif [ "$OS" = "Darwin" ]; then
         install_haxm_mac
     fi
@@ -1052,6 +1061,8 @@ case "$COMMAND" in
         replace_qemu_clues_public
     fi
     ;;
+'sysreq')
+    enable_sysreq;;
 'libvirt')
     install_libvirt;;
 'libvmi')
