@@ -1,5 +1,8 @@
 #!/bin/bash
 # By @doomedraven - https://twitter.com/D00m3dR4v3n
+# Copyright (C) 2011-2019 DoomedRaven.
+# This file is part of Tools - https://github.com/doomedraven/Tools
+# See the file 'LICENSE.md' for copying permission.
 
 # Huge thanks to: @NaxoneZ
 
