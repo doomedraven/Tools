@@ -823,7 +823,7 @@ function seabios_func() {
 }
 
 function enable_sysreq(){
-    if ! grep -q -E '^ernel.sysrq=1' /etc/sysctl.conf; then
+    if ! grep -q -E '^kernel.sysrq=1' /etc/sysctl.conf; then
         echo "kernel.sysrq=1" >> /etc/sysctl.conf
     fi
 }
