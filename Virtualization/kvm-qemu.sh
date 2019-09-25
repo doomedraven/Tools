@@ -53,7 +53,7 @@ Huge thanks to:
 qemu_version=4.1.0
 # libvirt - https://libvirt.org/sources/
 # changelog - https://libvirt.org/news.html
-libvirt_version=5.6.0
+libvirt_version=5.7.0
 # virt-manager - https://github.com/virt-manager/virt-manager/releases
 # autofilled
 OS=""
