@@ -1,10 +1,11 @@
 #!/bin/bash
 # By @doomedraven - https://twitter.com/D00m3dR4v3n
+
 # Copyright (C) 2011-2019 DoomedRaven.
 # This file is part of Tools - https://github.com/doomedraven/Tools
 # See the file 'LICENSE.md' for copying permission.
 
-# Huge thanks to: @NaxoneZ
+# Huge thanks to: @NaxoneZ @kevoreilly @ENZOK
 
 
 # Static values
@@ -56,6 +57,9 @@ cat << EndOfHelp
         Cuckoo - Install V2/CAPE Cuckoo
         Dependencies - Install all dependencies with performance tricks
         Supervisor - Install supervisor config for CAPE; for v2 use cuckoo --help ;)
+        Suricata - Install latest suricata with performance boost
+        Yara - Install latest yara
+        Mongo - Install latest mongodb
         Dist - will install CAPE distributed stuff
         redsocks2 - install redsocks2
         logrotate - install logrotate config to rotate daily or 10G logs
@@ -68,6 +72,19 @@ cat << EndOfHelp
     Cuckoo V2 customizations neat howto
         * https://www.adlice.com/cuckoo-sandbox-customization-v2/
 EndOfHelp
+}
+
+function install_fail2ban() {
+    sudo apt install fail2ban -y
+
+    sudo cp /etc/fail2ban/jail.conf /etc/fail2ban/jail.local
+    sudo sed -i /etc/fail2ban/jail.local
+
+    systemctl start fail2ban
+    systemctl enable fail2ban
+
+
+    #https://kifarunix.com/how-to-protect-ssh-server-authentication-with-fail2ban-on-ubuntu-18-04/2/
 }
 
 function install_logrotate() {
@@ -92,7 +109,7 @@ function install_logrotate() {
     rotate 7
     compress
     create
-    maxsize 500M
+    maxsize 50M
 }
 EOF
 fi
@@ -196,6 +213,10 @@ fi
     systemctl start mongos.service
 
     echo -e "\n\n\n[+] CAPE distributed documentation: https://github.com/kevoreilly/CAPE/blob/master/docs/book/src/usage/dist.rst"
+    echo -e "\t https://docs.mongodb.com/manual/tutorial/enable-authentication/"
+    echo -e "\t https://docs.mongodb.com/manual/administration/security-checklist/"
+    echo -e "\t https://docs.mongodb.com/manual/core/security-users/#sharding-security"
+
 }
 
 function install_suricata() {
@@ -351,44 +372,29 @@ function install_yara() {
     pip3 install .
 }
 
-function dependencies() {
-    sudo timedatectl set-timezone UTC
-
-    export LANGUAGE=en_US.UTF-8
-    export LANG=en_US.UTF-8
-    export LC_ALL=en_US.UTF-8
-
-    sudo snap install canonical-livepatch
-    #sudo canonical-livepatch enable APITOKEN
-
-    # deps
-    apt-get install psmisc jq sqlite3 tmux net-tools checkinstall graphviz git numactl python python-dev python-pip python-m2crypto swig upx-ucl libssl-dev wget zip unzip p7zip-full rar unrar unace-nonfree cabextract geoip-database libgeoip-dev libjpeg-dev mono-utils ssdeep libfuzzy-dev exiftool checkinstall ssdeep uthash-dev libconfig-dev libarchive-dev libtool autoconf automake privoxy software-properties-common wkhtmltopdf xvfb xfonts-100dpi tcpdump libcap2-bin -y
-    apt-get install python-pil subversion python-capstone uwsgi uwsgi-plugin-python python-pyelftools -y
-    #clamav clamav-daemon clamav-freshclam
-    # if broken sudo python -m pip uninstall pip && sudo apt install python-pip --reinstall
-    #pip install --upgrade pip
-    # /usr/bin/pip
-    # from pip import __main__
-    # if __name__ == '__main__':
-    #     sys.exit(__main__._main())
-    pip install supervisor requests[security] pyOpenSSL pefile tldextract httpreplay imagehash oletools olefile capstone PyCrypto voluptuous xmltodict future python-dateutil requests_file -U
-    pip install git+https://github.com/doomedraven/socks5man.git
-    pip install git+https://github.com/doomedraven/sflock.git
-    # re2
-    apt-get install libre2-dev -y
-    pip install re2
-
-    sudo pip install matplotlib==2.2.2 numpy==1.15.0 six==1.11.0 statistics==1.0.3.5 lief==0.9.0
-
+function install_mongo(){
     echo "[+] Installing MongoDB"
-    sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 9DA31620334BD75D9DCB49F368818C72E52529D4
-    echo "deb [ arch=amd64 ] https://repo.mongodb.org/apt/ubuntu $(lsb_release -cs)/mongodb-org/4.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb.list
+    wget -qO - https://www.mongodb.org/static/pgp/server-4.2.asc | sudo apt-key add -
+    echo "deb [ arch=amd64 ] https://repo.mongodb.org/apt/ubuntu $(lsb_release -cs)/mongodb-org/4.2 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb.list
 
     sudo apt-get update
     sudo apt-get install -y mongodb-org-mongos mongodb-org-server mongodb-org-shell mongodb-org-tools
     pip install pymongo -U
 
-    cat >> /etc/systemd/system/mongodb.service <<EOF
+     if ! grep -q -E '^kernel/mm/transparent_hugepage/enabled' /etc/sysfs.conf; then
+        apt install sysfsutils
+        echo "kernel/mm/transparent_hugepage/enabled = never" >> /etc/sysfs.conf
+        echo "kernel/mm/transparent_hugepage/defrag = never" >> /etc/sysfs.conf
+    fi
+
+
+    if if [ -f /etc/systemd/system/mongod.service ]; then
+        systemctl stop mongod.service
+        rm /etc/systemd/system/mongod.service
+    fi
+
+    if [ ! -f /etc/systemd/system/mongodb.service ]; then
+        cat >> /etc/systemd/system/mongodb.service <<EOF
 [Unit]
 Description=High-performance, schema-free document-oriented database
 Wants=network.target
@@ -410,8 +416,38 @@ SyslogIdentifier=mongodb
 WantedBy=multi-user.target
 EOF
 
+    fi
     systemctl enable mongodb.service
     systemctl restart mongodb.service
+}
+
+function dependencies() {
+    sudo timedatectl set-timezone UTC
+
+    export LANGUAGE=en_US.UTF-8
+    export LANG=en_US.UTF-8
+    export LC_ALL=en_US.UTF-8
+
+    sudo snap install canonical-livepatch
+    #sudo canonical-livepatch enable APITOKEN
+
+    # deps
+    apt-get install psmisc jq sqlite3 tmux net-tools checkinstall graphviz git numactl python python-dev python-pip python-m2crypto swig upx-ucl libssl-dev wget zip unzip p7zip-full rar unrar unace-nonfree cabextract geoip-database libgeoip-dev libjpeg-dev mono-utils ssdeep libfuzzy-dev exiftool checkinstall ssdeep uthash-dev libconfig-dev libarchive-dev libtool autoconf automake privoxy software-properties-common wkhtmltopdf xvfb xfonts-100dpi tcpdump libcap2-bin -y
+    apt-get install python-pil subversion python-capstone uwsgi uwsgi-plugin-python python-pyelftools -y
+    #clamav clamav-daemon clamav-freshclam
+    # if broken sudo python -m pip uninstall pip && sudo apt install python-pip --reinstall
+    #pip install --upgrade pip
+    # /usr/bin/pip
+    # from pip import __main__
+    # if __name__ == '__main__':
+    #     sys.exit(__main__._main())
+    pip install supervisor requests[security] pyOpenSSL pefile tldextract httpreplay imagehash oletools olefile capstone PyCrypto voluptuous xmltodict future python-dateutil requests_file socks5man -U
+    pip install git+https://github.com/doomedraven/sflock.git
+    # re2
+    apt-get install libre2-dev -y
+    pip install re2
+
+    sudo pip install matplotlib==2.2.2 numpy==1.15.0 six==1.11.0 statistics==1.0.3.5 lief==0.9.0
 
     apt install -y libjpeg-dev zlib1g-dev
     pip install sqlalchemy sqlalchemy-utils jinja2 markupsafe bottle django==1.11.23 chardet pygal django-ratelimit rarfile jsbeautifier dpkt nose dnspython pytz requests python-magic geoip pillow java-random python-whois git+https://github.com/crackinglandia/pype32.git git+https://github.com/kbandla/pydeep.git flask flask-restful flask-sqlalchemy socks5man
@@ -660,6 +696,7 @@ OS="$(uname -s)"
 case "$COMMAND" in
 'all')
     dependencies
+    install_mongo
     install_suricata
     install_yara
     if [ "$cuckoo_version" = "v2" ]; then
@@ -675,7 +712,8 @@ case "$COMMAND" in
     crontab -l | { cat; echo "@reboot /opt/CAPE/socksproxies.sh"; } | crontab -
     crontab -l | { cat; echo "@reboot cd /opt/CAPE/utils/ && ./smtp_sinkhole.sh"; } | crontab -
     # suricata with socket is faster
-    cat >> /opt/CAPE/utils/suricata.sh <<EOF
+    if [ ! -f /opt/CAPE/utils/suricata.sh ]; then
+        cat >> /opt/CAPE/utils/suricata.sh <<EOF
 #!/bin/sh
 # Add "@reboot /opt/CAPE/utils/suricata.sh" to the root crontab.
 mkdir /var/run/suricata
@@ -685,6 +723,7 @@ while [ ! -e /var/run/suricata/suricata-command.socket ]; do
     sleep 1
 done
 EOF
+    fi
     ;;
 'supervisor')
     supervisor;;
@@ -701,6 +740,10 @@ EOF
     fi;;
 'dist')
     distributed;;
+'fail2ban')
+    install_fail2ban;;
+'mongo')
+    install_mongo;;
 'redsocks2')
     redsocks2;;
 'dependencies')
