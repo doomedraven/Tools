@@ -59,6 +59,7 @@ cat << EndOfHelp
         Supervisor - Install supervisor config for CAPE; for v2 use cuckoo --help ;)
         Suricata - Install latest suricata with performance boost
         Yara - Install latest yara
+        PostgreSQL - Install latest PostgresSQL
         Mongo - Install latest mongodb
         Dist - will install CAPE distributed stuff
         redsocks2 - install redsocks2
@@ -422,6 +423,17 @@ EOF
     systemctl restart mongodb.service
 }
 
+def install_postgreslq() {
+    # Postgresql 12
+    wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+    echo "deb http://apt.postgresql.org/pub/repos/apt/ `lsb_release -cs`-pgdg main" |sudo tee  /etc/apt/sources.list.d/pgdg.list
+
+    sudo apt update -y
+    sudo apt -y install libpq-dev postgresql-12 postgresql-client-12
+
+    pip install psycopg2
+}
+
 function dependencies() {
     sudo timedatectl set-timezone UTC
 
@@ -456,9 +468,7 @@ function dependencies() {
     apt-get install -y openjdk-8-jdk-headless
     pip install distorm3 openpyxl git+https://github.com/volatilityfoundation/volatility.git PyCrypto #git+https://github.com/buffer/pyv8
 
-    # Postgresql
-    apt-get install postgresql libpq-dev -y
-    pip install psycopg2
+    install_postgreslq
 
     # sudo su - postgres
     #psql
@@ -733,6 +743,8 @@ EOF
     install_suricata;;
 'yara')
     install_yara;;
+'postgresql')
+    install_postgreslq;;
 'cuckoo')
     if [ "$cuckoo_version" = "v2" ]; then
         pip install cuckoo
