@@ -391,6 +391,7 @@ function install_mongo(){
     if if [ -f /etc/systemd/system/mongod.service ]; then
         systemctl stop mongod.service
         rm /etc/systemd/system/mongod.service
+        systemctl daemon-reload
     fi
 
     if [ ! -f /etc/systemd/system/mongodb.service ]; then
@@ -401,7 +402,7 @@ Wants=network.target
 After=network.target
 [Service]
 # https://www.tutorialspoint.com/mongodb/mongodb_replication.htm
-ExecStart=/usr/bin/numactl --interleave=all /usr/bin/mongod --quiet --shardsvr --bind_ip 0.0.0.0 --port 27017
+ExecStart=/usr/bin/numactl --interleave=all /usr/bin/mongod --quiet --shardsvr --bind_ip_all --port 27017
 # --replSet rs0
 ExecReload=/bin/kill -HUP $MAINPID
 Restart=always
@@ -582,6 +583,7 @@ function install_CAPE() {
     chown cuckoo:cuckoo -R "/opt/CAPE/"
 
     sed -i "s/process_results = on/process_results = off/g" /opt/CAPE/conf/cuckoo.conf
+    sed -i "s/connection =/connection = postgresql://cuckoo:$PASSWD@localhost:5432/cuckoo/g" /opt/CAPE/conf/cuckoo.conf
     sed -i "s/tor = off/tor = on/g" /opt/CAPE/conf/cuckoo.conf
     sed -i "s/memory_dump = off/memory_dump = on/g" /opt/CAPE/conf/cuckoo.conf
     sed -i "s/achinery = vmwareserver/achinery = kvm/g" /opt/CAPE/conf/cuckoo.conf
