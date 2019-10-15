@@ -222,7 +222,7 @@ fi
 
 function install_suricata() {
     sudo apt install -y checkinstall libssl-dev liblzma-dev python3 python3-pip python3-distutils libnspr4-dev libnss3-dev jq unzip \
-    sqlite3 libsqlite3-dev libreadline-dev
+    sqlite3 libsqlite3-dev libreadline-dev  libmaxminddb-dev
 
     # install pcre
     #sudo apt-get -y install libbz2-1.0 libbz2-dev libbz2-ocaml libbz2-ocaml-dev
@@ -287,7 +287,10 @@ function install_suricata() {
     #make -j"$(getconf _NPROCESSORS_ONLN)"
     # https://redmine.openinfosecfoundation.org/projects/suricata/wiki/Ubuntu_Installation
     cd /tmp || return
-    wget https://www.openinfosecfoundation.org/download/suricata-5.0.0-beta1.tar.gz && tar xf suricata-5.0.0-beta1.tar.gz && cd suricata-5.0.0-beta1
+    if [ ! -f suricata-5.0.0.tar.gz ]; then
+        wget https://www.openinfosecfoundation.org/download/suricata-5.0.0.tar.gz && tar xf suricata-5.0.0.tar.gz
+    fi
+    cd suricata-5.0.0
     #wget "https://www.openinfosecfoundation.org/download/suricata-current.tar.gz"
     #wget "https://www.openinfosecfoundation.org/download/suricata-current.tar.gz.sig"
     #gpg --verify "suricata-current.tar.gz.sig"
