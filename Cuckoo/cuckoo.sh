@@ -301,8 +301,9 @@ function install_suricata() {
     #cd $directory || return
     ./configure --enable-nfqueue --prefix=/usr --sysconfdir=/etc --localstatedir=/var --with-libhs-includes=/usr/local/include/hs/ --with-libhs-libraries=/usr/local/lib/ --enable-profiling --enable-geoip
     make -j"$(getconf _NPROCESSORS_ONLN)" install-full
-    sudo checkinstall -D --pkgname=suricata --default
-    suricata --build-info|grep Hyperscan
+    #rust fails with
+    #sudo checkinstall -D --pkgname=suricata --default
+    LD_LIBRARY_PATH=/usr/lib /usr/bin/suricata --build-info|grep Hyperscan
     make install-conf
 
     cd python || return
