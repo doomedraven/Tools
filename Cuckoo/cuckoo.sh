@@ -270,7 +270,7 @@ function install_suricata() {
     python python-pip libgeoip-dev
 
     # install rust, cargo
-    curl https://sh.rustup.rs -sSf | sh
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
     source $HOME/.cargo/env
     cargo install cargo-vendor
 
@@ -297,8 +297,8 @@ function install_suricata() {
 
     #tar -xzf "suricata-current.tar.gz"
     #rm "suricata-current.tar.gz"
-    directory=`ls -p | grep suricata*/`
-    cd $directory || return
+    #directory=`ls -p | grep suricata*/`
+    #cd $directory || return
     ./configure --enable-nfqueue --prefix=/usr --sysconfdir=/etc --localstatedir=/var --with-libhs-includes=/usr/local/include/hs/ --with-libhs-libraries=/usr/local/lib/ --enable-profiling --enable-geoip
     make -j"$(getconf _NPROCESSORS_ONLN)" install-full
     sudo checkinstall -D --pkgname=suricata --default
