@@ -386,7 +386,7 @@ function install_mongo(){
     sudo apt-get install -y mongodb-org-mongos mongodb-org-server mongodb-org-shell mongodb-org-tools
     pip install pymongo -U
 
-     if ! grep -q -E '^kernel/mm/transparent_hugepage/enabled' /etc/sysfs.conf; then
+    if ! grep -q -E '^kernel/mm/transparent_hugepage/enabled' /etc/sysfs.conf; then
         apt install sysfsutils
         echo "kernel/mm/transparent_hugepage/enabled = never" >> /etc/sysfs.conf
         echo "kernel/mm/transparent_hugepage/defrag = never" >> /etc/sysfs.conf
