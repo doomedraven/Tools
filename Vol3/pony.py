@@ -9,7 +9,7 @@ Created on 23 Oct 2019
 This is demo plugin of volatility3 to show community how to easilly upgrade/make an vol3 plugin
 Special huge thanks to @ikelos and @xabiugarte for help/fixes
 
-https://github.com/doomedraven/Tools/vol3/pony.py
+https://github.com/doomedraven/Tools/Vol3/pony.py
 '''
 
 import os
