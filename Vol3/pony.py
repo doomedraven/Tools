@@ -208,7 +208,7 @@ class Pony(interfaces.plugins.PluginInterface):
         return None, None, None
 
     def run(self):
-        # sexy output isn't done yet
+        # output isn't done yet
         return renderers.TreeGrid([('Offset', format_hints.Hex), ('PID', int), ('Config', str)], self._generator())
 
 if __name__ == '__main__':
