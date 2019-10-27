@@ -2,10 +2,14 @@
 '''
 Created on 23 Oct 2019
 
-@author: doomedraven
+# Copyright (C) 2011-2019 DoomedRaven.
+# This file is part of Tools - https://github.com/doomedraven/Tools
+# See the file 'LICENSE.md' for copying permission.
 
 This is demo plugin of volatility3 to show community how to easilly upgrade/make an vol3 plugin
 Special huge thanks to @ikelos and @xabiugarte for help/fixes
+
+https://github.com/doomedraven/Tools/Vol3/pony.py
 '''
 
 import os
