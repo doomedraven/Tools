@@ -2,14 +2,10 @@
 '''
 Created on 23 Oct 2019
 
-# Copyright (C) 2011-2019 DoomedRaven.
-# This file is part of Tools - https://github.com/doomedraven/Tools
-# See the file 'LICENSE.md' for copying permission.
+@author: doomedraven
 
 This is demo plugin of volatility3 to show community how to easilly upgrade/make an vol3 plugin
 Special huge thanks to @ikelos and @xabiugarte for help/fixes
-
-https://github.com/doomedraven/Tools/Vol3/pony.py
 '''
 
 import os
@@ -59,7 +55,8 @@ class Pony(interfaces.plugins.PluginInterface):
             requirements.IntRequirement(name='pid',
                                         description="Process ID to include (all other processes are excluded)",
                                         optional=True),
-            requirements.URIRequirement(name="yara_file", description="Yara rules (as a file)", optional = True),
+            requirements.URIRequirement(name="yara_file", description="Yara rules (as a file)", optional=True),
+             requirements.PluginRequirement(name="vadyarascan", plugin=vadyarascan.VadYaraScan, version=(1, 0, 0)),
         ]
 
     @staticmethod
@@ -100,13 +97,28 @@ class Pony(interfaces.plugins.PluginInterface):
         config["downloads"] = list(set(config["downloads"]))
         return config
 
+    @staticmethod
+    def carve_data(vad_start, vad_end, proc_layer):
+        chunk_size = 1024 * 1024 * 10
+        full_pe = b""
+        out_of_range = vad_start + vad_end
+        tmp_offset = vad_start
+        while vad_start < out_of_range:
+                to_read = min(chunk_size, out_of_range - tmp_offset)
+                data = proc_layer.read(tmp_offset, to_read, pad=True)
+                if not data:
+                    break
+                full_pe += data
+                tmp_offset += to_read
+
+        return full_pe
+
     def _generator(self):
         if not has_yara:
             log.error("You must install yara")
             return
 
         config = dict()
-        chunk_size = 1024 * 1024 * 10
 
         if self.config.get('yara_file', None) is not None:
             RULES = yara.compile(file=resources.ResourceAccessor().open(self.config['yara_file'], "rb"))
@@ -148,7 +160,7 @@ class Pony(interfaces.plugins.PluginInterface):
             for offset, name in proc_layer.scan(
                     context=self.context,
                     scanner=yarascan.YaraScanner(rules=RULES),
-                    sections=self.get_vad_maps(task)):
+                    sections=vadyarascan.VadYaraScan.get_vad_maps(task)):
 
                 log.debug("Got a Yara match!")
 
@@ -156,16 +168,8 @@ class Pony(interfaces.plugins.PluginInterface):
                 if vad is None:
                     log.debug("VAD not found")
                     return
-                full_pe = b""
-                out_of_range = vad_start + vad_end
-                tmp_offset = vad_start
-                while vad_start < out_of_range:
-                        to_read = min(chunk_size, out_of_range - tmp_offset)
-                        data = proc_layer.read(tmp_offset, to_read, pad=True)
-                        if not data:
-                            break
-                        full_pe += data
-                        tmp_offset += to_read
+
+                full_pe = self.carve_data(vad_start, vad_end, proc_layer)
 
                 config = self.get_config(full_pe)
                 if not config:
@@ -173,21 +177,6 @@ class Pony(interfaces.plugins.PluginInterface):
                     continue
 
                 yield (0, (format_hints.Hex(offset), task.UniqueProcessId, str(config)))
-
-    @staticmethod
-    def get_vad_maps(task: interfaces.objects.ObjectInterface) -> Iterable[Tuple[int, int]]:
-        """Creates a map of start/end addresses within a virtual address
-        descriptor tree.
-        Args:
-            task: The EPROCESS object of which to traverse the vad tree
-        Returns:
-            An iterable of tuples containing start and end addresses for each descriptor
-        """
-        vad_root = task.get_vad_root()
-        for vad in vad_root.traverse():
-            end = vad.get_end()
-            start = vad.get_start()
-            yield (start, end - start)
 
     #replace with list_vads and write correct filter func
     @staticmethod
