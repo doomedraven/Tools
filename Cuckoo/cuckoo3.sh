@@ -163,6 +163,7 @@ Wants=network.target
 After=network.target
 
 [Service]
+PermissionsStartOnly=true
 ExecStartPre=/bin/mkdir -p /data/db
 ExecStartPre=/bin/chown mongodb:mongodb /data/db -R
 # https://www.tutorialspoint.com/mongodb/mongodb_replication.htm
