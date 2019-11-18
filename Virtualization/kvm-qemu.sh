@@ -186,7 +186,7 @@ function install_libguestfs() {
     sudo apt install libyara3 erlang-dev gperf flex bison libaugeas-dev libhivex-dev supermin ocaml-nox libhivex-ocaml genisoimage libhivex-ocaml-dev libmagic-dev libjansson-dev gnulib -y 2>/dev/null
 
     if [ ! -d libguestfs ]; then
-        git clone https://github.com/libguestfs/libguestfs
+        git clone --recursive https://github.com/libguestfs/libguestfs
     fi
     cd libguestfs || return
     ./bootstrap
