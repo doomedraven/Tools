@@ -927,7 +927,8 @@ cat << EndOfHelp
     $ apt-get install python-ipaddr
 
     8. Namespace Gtk not available: Could not open display: localhost:10.0
-    $ apt-get install libgtk-3-dev
+    ValueError: Namespace GtkSource not available
+    $ apt-get install libgtk-3-dev libgtksourceview-3.0-dev
 
     9. ImportError: cannot import name Vte
     $ apt-get install gir1.2-vte-2.90
