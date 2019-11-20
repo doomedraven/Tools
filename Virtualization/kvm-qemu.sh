@@ -932,6 +932,9 @@ cat << EndOfHelp
 
     9. ImportError: cannot import name Vte
     $ apt-get install gir1.2-vte-2.90
+    
+    10. TypeError: Couldn't find foreign struct converter for 'cairo.Context'
+    $ apt-get install python3-gi-cairo
 
 EndOfHelp
 }
