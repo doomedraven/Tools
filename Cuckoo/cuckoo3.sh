@@ -595,14 +595,14 @@ function install_CAPE() {
     #chown -R root:cuckoo /usr/var/malheur/
     #chmod -R =rwX,g=rwX,o=X /usr/var/malheur/
     # Adapting owner permissions to the cuckoo path folder
-    chown cuckoo:cuckoo -R "/opt/CAPE/"
+    chown cuckoo:cuckoo -R "/opt/CAPEv2/"
 
-    sed -i "s/process_results = on/process_results = off/g" /opt/CAPE/conf/cuckoo.conf
-    sed -i "s/connection =/connection = postgresql://cuckoo:$PASSWD@localhost:5432/cuckoo/g" /opt/CAPE/conf/cuckoo.conf
-    sed -i "s/tor = off/tor = on/g" /opt/CAPE/conf/cuckoo.conf
-    sed -i "s/memory_dump = off/memory_dump = on/g" /opt/CAPE/conf/cuckoo.conf
-    sed -i "s/achinery = vmwareserver/achinery = kvm/g" /opt/CAPE/conf/cuckoo.conf
-    sed -i "s/interface = br0/interface = $NETWORK_IFACE/g" /opt/CAPE/conf/aux.conf
+    sed -i "s/process_results = on/process_results = off/g" /opt/CAPEv2/conf/cuckoo.conf
+    sed -i "s/connection =/connection = postgresql://cuckoo:$PASSWD@localhost:5432/cuckoo/g" /opt/CAPEv2/conf/cuckoo.conf
+    sed -i "s/tor = off/tor = on/g" /opt/CAPEv2/conf/cuckoo.conf
+    sed -i "s/memory_dump = off/memory_dump = on/g" /opt/CAPEv2/conf/cuckoo.conf
+    sed -i "s/achinery = vmwareserver/achinery = kvm/g" /opt/CAPEv2/conf/cuckoo.conf
+    sed -i "s/interface = br0/interface = $NETWORK_IFACE/g" /opt/CAPEv2/conf/aux.conf
 
 }
 
@@ -634,7 +634,7 @@ EOF
     cat >> /etc/supervisor/conf.d/cuckoo.conf <<EOF
 [program:cuckoo]
 command=python3 cuckoo.py
-directory=/opt/CAPE/
+directory=/opt/CAPEv2/
 user=cuckoo
 priority=200
 autostart=true
@@ -645,7 +645,7 @@ stdout_logfile=/var/log/supervisor/cuckoo.out.log
 
 [program:web]
 command=python3 manage.py runserver 0.0.0.0:8000
-directory=/opt/CAPE/web
+directory=/opt/CAPEv2/web
 user=cuckoo
 priority=500
 autostart=true
@@ -658,7 +658,7 @@ stdout_logfile=/var/log/supervisor/web.out.log
 command=python3 process.py -p7 auto
 user=cuckoo
 priority=300
-directory=/opt/CAPE/utils
+directory=/opt/CAPEv2/utils
 autostart=true
 autorestart=true
 stopasgroup=true
@@ -667,7 +667,7 @@ stdout_logfile=/var/log/supervisor/process.out.log
 
 [program:rooter]
 command=python3 rooter.py
-directory=/opt/CAPE/utils
+directory=/opt/CAPEv2/utils
 user=root
 startsecs=10
 priority = 100
@@ -763,9 +763,9 @@ case "$COMMAND" in
     distributed
     redsocks2
     install_logrotate
-    crontab -l | { cat; echo "@reboot /opt/CAPE/utils/suricata.sh"; } | crontab -
-    crontab -l | { cat; echo "@reboot /opt/CAPE/socksproxies.sh"; } | crontab -
-    crontab -l | { cat; echo "@reboot cd /opt/CAPE/utils/ && ./smtp_sinkhole.sh"; } | crontab -
+    #socksproxies is to start redsocks stuff
+    crontab -l | { cat; echo "@reboot /opt/CAPEv2/socksproxies.sh"; } | crontab -
+    crontab -l | { cat; echo "@reboot cd /opt/CAPEv2/utils/ && ./smtp_sinkhole.sh"; } | crontab -
 
     ;;
 'supervisor')
