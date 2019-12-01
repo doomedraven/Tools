@@ -131,7 +131,7 @@ function distributed() {
     plugins = python
     callable = application
     ;change this patch if is different
-    chdir = /opt/CAPE/utils
+    chdir = /opt/CAPEv2/utils
     master = true
     mount = /=api.py
     processes = 5
@@ -205,7 +205,7 @@ fi
     systemctl start mongod.service
     systemctl start mongos.service
 
-    echo -e "\n\n\n[+] CAPE distributed documentation: https://github.com/kevoreilly/CAPE/blob/master/docs/book/src/usage/dist.rst"
+    echo -e "\n\n\n[+] CAPE distributed documentation: https://github.com/kevoreilly/CAPEv2/blob/master/docs/book/src/usage/dist.rst"
     echo -e "\t https://docs.mongodb.com/manual/tutorial/enable-authentication/"
     echo -e "\t https://docs.mongodb.com/manual/administration/security-checklist/"
     echo -e "\t https://docs.mongodb.com/manual/core/security-users/#sharding-security"
@@ -588,10 +588,7 @@ EOF
 
 function install_CAPE() {
     cd /opt || return
-    git clone https://github.com/kevoreilly/CAPE/ CAPE
-    sed -i 's/libvirt-python//g' CAPE/requirements.txt
-    sed -i 's/clamd//g' CAPE/requirements.txt
-    pip3 install -r CAPE/requirements.txt
+    git clone https://github.com/kevoreilly/CAPEv2/
     #chown -R root:cuckoo /usr/var/malheur/
     #chmod -R =rwX,g=rwX,o=X /usr/var/malheur/
     # Adapting owner permissions to the cuckoo path folder
