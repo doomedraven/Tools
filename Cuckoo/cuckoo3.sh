@@ -33,7 +33,7 @@ Problem with pillow:
 Solution:
     # https://askubuntu.com/a/1094768
     # you may need to adjust version of libjpeg-turbo8
-    sudo apt-get install zlib1g-dev libjpeg-turbo8-dev libjpeg-turbo8=1.5.2-0ubuntu5
+    sudo apt install zlib1g-dev libjpeg-turbo8-dev libjpeg-turbo8=1.5.2-0ubuntu5
 EOI
 }
 
@@ -41,8 +41,8 @@ function usage() {
 cat << EndOfHelp
     You need to edit NETWORK_IFACE, IFACE_IP and PASSWD for correct install
 
-    Usage: $0 <command> <cuckoo_version> <iface_ip>
-        Example: $0 all cape 192.168.1.1
+    Usage: $0 <command> <cuckoo_version> <iface_ip> | tee $0.log
+        Example: $0 all cape 192.168.1.1 | tee $0.log
     Commands - are case insensitive:
         All - Installs dependencies, V2/CAPE, sets supervisor
         Cuckoo - Install V2/CAPE Cuckoo
@@ -164,8 +164,8 @@ After=network.target
 
 [Service]
 PermissionsStartOnly=true
-ExecStartPre=/bin/mkdir -p /data/db
-ExecStartPre=/bin/chown mongodb:mongodb /data/db -R
+ExecStartPre=/bin/mkdir -p /data/{config,}db
+ExecStartPre=/bin/chown mongodb:mongodb /data -R
 # https://www.tutorialspoint.com/mongodb/mongodb_replication.htm
 ExecStart=/usr/bin/numactl --interleave=all /usr/bin/mongod --quiet --shardsvr --port 27017
 # --replSet rs0
@@ -217,7 +217,7 @@ function install_suricata() {
     sqlite3 libsqlite3-dev libreadline-dev libmaxminddb-dev
 
     # install pcre
-    #sudo apt-get -y install libbz2-1.0 libbz2-dev libbz2-ocaml libbz2-ocaml-dev
+    #sudo apt -y install libbz2-1.0 libbz2-dev libbz2-ocaml libbz2-ocaml-dev
     #wget https://ftp.pcre.org/pub/pcre/pcre-8.43.zip
     #unzip pcre-8.43.zip && cd pcre-8.43
     #./configure --prefix=/usr --docdir=/usr/share/doc/pcre-8.43 --enable-unicode-propertiess --enable-pcre16s --enable-pcre32s --enable-pcregrep-libzs --enable-pcregrep-libbz2s --enable-pcretest-libreadlines --disable-static
@@ -242,7 +242,7 @@ function install_suricata() {
     #cd hyperscan/ || return
     mkdir builded
     cd builded || return
-    sudo apt-get install cmake libboost-dev ragel libhtp2 -y
+    sudo apt install cmake libboost-dev ragel libhtp2 -y
     # doxygen sphinx-common libpcap-dev
     cmake -DBUILD_STATIC_AND_SHARED=1 ../
     # tests
@@ -255,7 +255,7 @@ function install_suricata() {
     sudo chown cuckoo:cuckoo /var/run/suricata -R
 
     # if we wan suricata with hyperscan:
-    sudo apt-get -y install libpcre3 libpcre3-dbg \
+    sudo apt -y install libpcre3 libpcre3-dbg \
     build-essential autoconf automake libtool libpcap-dev libnet1-dev \
     libyaml-0-2 libyaml-dev zlib1g zlib1g-dev libcap-ng-dev libcap-ng0 \
     make libmagic-dev libjansson-dev libjansson4 pkg-config liblz4-dev \
@@ -266,7 +266,7 @@ function install_suricata() {
     source $HOME/.cargo/env
     cargo install cargo-vendor
 
-    sudo apt-get -y install libnetfilter-queue-dev libnetfilter-queue1 libnfnetlink-dev libnfnetlink0
+    sudo apt -y install libnetfilter-queue-dev libnetfilter-queue1 libnfnetlink-dev libnfnetlink0
     pip3 install pyyaml
     echo "/usr/local/lib" | sudo tee --append /etc/ld.so.conf.d/usrlocal.conf
     sudo ldconfig
@@ -346,7 +346,7 @@ function install_suricata() {
 
 function install_yara() {
     echo '[+] Installing Yara'
-    apt-get install libtool libjansson-dev libmagic1 libmagic-dev jq autoconf checkinstall -y
+    apt install libtool libjansson-dev libmagic1 libmagic-dev jq autoconf checkinstall -y
     cd /tmp/ || return
     yara_info=$(curl -s https://api.github.com/repos/VirusTotal/yara/releases/latest)
     yara_version=$(echo $yara_info |jq .tag_name|sed "s/\"//g")
@@ -374,16 +374,18 @@ function install_mongo(){
     wget -qO - https://www.mongodb.org/static/pgp/server-4.2.asc | sudo apt-key add -
     echo "deb [ arch=amd64 ] https://repo.mongodb.org/apt/ubuntu $(lsb_release -cs)/mongodb-org/4.2 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb.list
 
-    sudo apt-get update
-    sudo apt-get install -y mongodb-org-mongos mongodb-org-server mongodb-org-shell mongodb-org-tools
+    sudo apt update
+    sudo apt install -y mongodb-org-mongos mongodb-org-server mongodb-org-shell mongodb-org-tools
     pip3 install pymongo -U
 
-     if ! grep -q -E '^kernel/mm/transparent_hugepage/enabled' /etc/sysfs.conf; then
-        apt install sysfsutils
+    sudo apt install -y ntp
+    sudo systemctl start ntp.service && sudo systemctl enable ntp.service
+
+    if ! grep -q -E '^kernel/mm/transparent_hugepage/enabled' /etc/sysfs.conf; then
+        sudo apt install sysfsutils -y
         echo "kernel/mm/transparent_hugepage/enabled = never" >> /etc/sysfs.conf
         echo "kernel/mm/transparent_hugepage/defrag = never" >> /etc/sysfs.conf
     fi
-
 
     if [ -f /etc/systemd/system/mongod.service ]; then
         systemctl stop mongod.service
@@ -417,6 +419,8 @@ EOF
     fi
     systemctl enable mongodb.service
     systemctl restart mongodb.service
+
+    echo -n "https://www.percona.com/blog/2016/08/12/tuning-linux-for-mongodb/"
 }
 
 function install_postgresql() {
@@ -441,8 +445,8 @@ function dependencies() {
     #sudo canonical-livepatch enable APITOKEN
 
     # deps
-    apt-get install psmisc jq sqlite3 tmux net-tools checkinstall graphviz git numactl python python-dev python-pip python-m2crypto swig upx-ucl libssl-dev wget zip unzip p7zip-full rar unrar unace-nonfree cabextract geoip-database libgeoip-dev libjpeg-dev mono-utils ssdeep libfuzzy-dev exiftool checkinstall ssdeep uthash-dev libconfig-dev libarchive-dev libtool autoconf automake privoxy software-properties-common wkhtmltopdf xvfb xfonts-100dpi tcpdump libcap2-bin -y
-    apt-get install python-pil subversion python-capstone uwsgi uwsgi-plugin-python python-pyelftools -y
+    apt install psmisc jq sqlite3 tmux net-tools checkinstall graphviz>=0.8.4 pydot>=1.2.4 git numactl python python-dev python-pip python-m2crypto swig upx-ucl libssl-dev wget zip unzip p7zip-full rar unrar unace-nonfree cabextract geoip-database libgeoip-dev libjpeg-dev mono-utils ssdeep libfuzzy-dev exiftool checkinstall ssdeep uthash-dev libconfig-dev libarchive-dev libtool autoconf automake privoxy software-properties-common wkhtmltopdf xvfb xfonts-100dpi tcpdump libcap2-bin -y
+    apt install python-pil subversion python-capstone uwsgi uwsgi-plugin-python python-pyelftools -y
     #clamav clamav-daemon clamav-freshclam
     # if broken sudo python -m pip uninstall pip && sudo apt install python-pip --reinstall
     #pip3 install --upgrade pip
@@ -450,10 +454,10 @@ function dependencies() {
     # from pip import __main__
     # if __name__ == '__main__':
     #     sys.exit(__main__._main())
-    pip3 install supervisor requests[security] pyOpenSSL pefile tldextract httpreplay imagehash oletools olefile capstone PyCrypto voluptuous xmltodict future python-dateutil requests_file socks5man -U
-    pip3 install git+https://github.com/doomedraven/sflock.git
+    pip3 install supervisor requests[security] pyOpenSSL pefile tldextract httpreplay imagehash oletools olefile networkx>=2.1 mixbox capstone PyCrypto voluptuous xmltodict future python-dateutil requests_file socks5man "gevent>=1.2, <1.3" simplejson pyvmomi pyinstaller maec regex xmltodict -U
+    pip3 install git+https://github.com/doomedraven/sflock.git git+https://github.com/doomedraven/socks5man.git git+https://github.com/swimlane/pyattck.git git+https://github.com/Defense-Cyber-Crime-Center/DC3-MWCP
     # re2
-    apt-get install libre2-dev -y
+    apt install libre2-dev -y
     #re2 for py3
     pip3 install cython
     pip3 install https://github.com/andreasvc/pyre2/archive/master.zip
@@ -462,11 +466,12 @@ function dependencies() {
     sudo pip3 install matplotlib==2.2.2 numpy==1.15.0 six==1.11.0 statistics==1.0.3.5 lief==0.9.0
 
     apt install -y libjpeg-dev zlib1g-dev
-    pip3 install django==2.2.6 django-ratelimit
-    pip3 install sqlalchemy sqlalchemy-utils jinja2 markupsafe bottle chardet pygal rarfile jsbeautifier dpkt nose dnspython pytz requests python-magic geoip pillow java-random python-whois git+https://github.com/crackinglandia/pype32.git git+https://github.com/kbandla/pydeep.git flask flask-restful flask-sqlalchemy socks5man
-    apt-get install -y openjdk-11-jdk-headless
-    apt-get install -y openjdk-8-jdk-headless
-    pip3 install distorm3 openpyxl git+https://github.com/volatilityfoundation/volatility.git PyCrypto #git+https://github.com/buffer/pyv8
+    pip3 install "django>=2.2.6, <3" git+git+https://github.com/jsocol/django-ratelimit
+    pip3 install sqlalchemy sqlalchemy-utils jinja2 markupsafe bottle chardet pygal rarfile jsbeautifier dpkt nose dnspython pytz requests[socks] python-magic geoip pillow java-random python-whois bs4 git+https://github.com/crackinglandia/pype32.git git+https://github.com/kbandla/pydeep.git flask flask-restful flask-sqlalchemy pyvmomi
+    apt install -y openjdk-11-jdk-headless
+    apt install -y openjdk-8-jdk-headless
+    pip3 install distorm3 openpyxl PyCrypto #git+https://github.com/buffer/pyv8
+    #add vol3 git+https://github.com/volatilityfoundation/volatility.git
 
     install_postgresql
 
@@ -482,12 +487,12 @@ function dependencies() {
     #add-apt-repository ppa:webupd8team/java -y
     #wget -qO - https://packages.elastic.co/GPG-KEY-elasticsearch | sudo apt-key add -
     #echo "deb http://packages.elastic.co/elasticsearch/2.x/debian stable main" | sudo tee -a /etc/apt/sources.list.d/elasticsearch-2.x.list
-    #apt-get update
-    #apt-get install oracle-java8-installer -y
-    #apt-get install elasticsearch -y
+    #apt update
+    #apt install oracle-java8-installer -y
+    #apt install elasticsearch -y
     #/etc/init.d/elasticsearch start
 
-    sudo apt-get install apparmor-utils -y
+    sudo apt install apparmor-utils -y
     sudo aa-disable /usr/sbin/tcpdump
     # ToDo check if user exits
 
@@ -512,12 +517,12 @@ function dependencies() {
     # https://www.torproject.org/docs/debian.html.en
     echo "deb http://deb.torproject.org/torproject.org $(lsb_release -cs) main" >> /etc/apt/sources.list
     echo "deb-src http://deb.torproject.org/torproject.org $(lsb_release -cs) main" >> /etc/apt/sources.list
-    sudo apt-get install gnupg2 -y
+    sudo apt install gnupg2 -y
     gpg --keyserver keys.gnupg.net --recv A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89
     #gpg2 --recv A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89
     #gpg2 --export A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89 | apt-key add -
     wget -qO - https://deb.torproject.org/torproject.org/A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89.asc | sudo apt-key add -
-    sudo apt-get update 2>/dev/null
+    sudo apt update 2>/dev/null
     apt install tor deb.torproject.org-keyring libzstd1 -y
 
     sed -i 's/#RunAsDaemon 1/RunAsDaemon 1/g' /etc/tor/torrc
@@ -551,7 +556,7 @@ EOF
     sudo sysctl -p
 
     ### PDNS
-    sudo apt-get install git binutils-dev libldns-dev libpcap-dev libdate-simple-perl libdatetime-perl libdbd-mysql-perl -y
+    sudo apt install git binutils-dev libldns-dev libpcap-dev libdate-simple-perl libdatetime-perl libdbd-mysql-perl -y
     cd /tmp || return
     git clone git://github.com/gamelinux/passivedns.git
     cd passivedns/ || return
@@ -573,7 +578,7 @@ EOF
 
     cd /tmp || return
     git clone https://github.com/unicorn-engine/unicorn.git
-    sudo apt-get install libglib2.0-dev -y
+    sudo apt install libglib2.0-dev -y
     cd unicorn || return
     ./make.sh
     sudo ./make.sh install
@@ -602,7 +607,30 @@ function install_CAPE() {
 }
 
 function supervisor() {
+    pip3 install supervisor -U
     #### Cuckoo Start at boot
+
+    if [ ! -f /etc/systemd/system/supervisor.service]; then
+        cat >> /etc/systemd/system/supervisor.service <<EOF
+[Unit]
+Description=Supervisor process control system for UNIX
+Documentation=http://supervisord.org
+After=network.target
+
+[Service]
+ExecStart=/usr/local/bin/supervisord -n -c /etc/supervisor/supervisord.conf
+ExecStop=/usr/local/bin/supervisorctl $OPTIONS shutdown
+ExecReload=/usr/local/bin/supervisorctl -c /etc/supervisor/supervisord.conf $OPTIONS reload
+KillMode=process
+Restart=on-failure
+RestartSec=50s
+
+[Install]
+WantedBy=multi-user.target
+EOF
+    fi
+
+
     cat >> /etc/supervisor/conf.d/cuckoo.conf <<EOF
 [program:cuckoo]
 command=python3 cuckoo.py
@@ -664,6 +692,7 @@ stdout_logfile=/var/log/supervisor/suricata.out.log
 [program:socks5man]
 command=/usr/local/bin/socks5man verify --repeated
 autostart=false
+user=cuckoo
 autorestart=true
 stopasgroup=true
 stderr_logfile=/var/log/supervisor/socks5man.err.log
@@ -673,6 +702,7 @@ EOF
 
     # fix for too many open files
     python -c "pa = '/etc/supervisor/supervisord.conf';q=open(pa, 'rb').read().replace('[supervisord]\nlogfile=', '[supervisord]\nminfds=1048576 ;\nlogfile=');open(pa, 'wb').write(q);"
+
     sudo systemctl enable supervisor
     sudo systemctl start supervisor
 
@@ -736,19 +766,7 @@ case "$COMMAND" in
     crontab -l | { cat; echo "@reboot /opt/CAPE/utils/suricata.sh"; } | crontab -
     crontab -l | { cat; echo "@reboot /opt/CAPE/socksproxies.sh"; } | crontab -
     crontab -l | { cat; echo "@reboot cd /opt/CAPE/utils/ && ./smtp_sinkhole.sh"; } | crontab -
-    # suricata with socket is faster
-    if [ ! -f /opt/CAPE/utils/suricata.sh ]; then
-        cat >> /opt/CAPE/utils/suricata.sh <<EOF
-#!/bin/sh
-# Add "@reboot /opt/CAPE/utils/suricata.sh" to the root crontab.
-mkdir /var/run/suricata
-chown cuckoo:cuckoo /var/run/suricata
-LD_LIBRARY_PATH=/usr/local/lib /usr/bin/suricata -c /etc/suricata/suricata.yaml --unix-socket -k none -D
-while [ ! -e /var/run/suricata/suricata-command.socket ]; do
-    sleep 1
-done
-EOF
-    fi
+
     ;;
 'supervisor')
     supervisor;;
