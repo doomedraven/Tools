@@ -455,7 +455,9 @@ function dependencies() {
     # if __name__ == '__main__':
     #     sys.exit(__main__._main())
     pip3 install supervisor requests[security] pyOpenSSL pefile tldextract httpreplay imagehash oletools olefile networkx>=2.1 mixbox capstone PyCrypto voluptuous xmltodict future python-dateutil requests_file socks5man "gevent>=1.2, <1.3" simplejson pyvmomi pyinstaller maec regex xmltodict -U
-    pip3 install git+https://github.com/doomedraven/sflock.git git+https://github.com/doomedraven/socks5man.git git+https://github.com/swimlane/pyattck.git git+https://github.com/Defense-Cyber-Crime-Center/DC3-MWCP
+    pip3 install git+https://github.com/doomedraven/sflock.git git+https://github.com/doomedraven/socks5man.git git+https://github.com/swimlane/pyattck.git
+    #config parsers
+    pip3 install git+https://github.com/Defense-Cyber-Crime-Center/DC3-MWCP.git https://github.com/kevthehermit/RATDecoders.git
     # re2
     apt install libre2-dev -y
     #re2 for py3
@@ -471,7 +473,7 @@ function dependencies() {
     apt install -y openjdk-11-jdk-headless
     apt install -y openjdk-8-jdk-headless
     pip3 install distorm3 openpyxl PyCrypto #git+https://github.com/buffer/pyv8
-    #add vol3 git+https://github.com/volatilityfoundation/volatility.git
+    pip3 install git+https://github.com/volatilityfoundation/volatility3
 
     install_postgresql
 
@@ -641,7 +643,7 @@ stderr_logfile=/var/log/supervisor/cuckoo.err.log
 stdout_logfile=/var/log/supervisor/cuckoo.out.log
 
 [program:web]
-command=python3 manage.py runserver 0.0.0.0:8000
+command=python3 manage.py runserver 0.0.0.0:8000 --insecure
 directory=/opt/CAPEv2/web
 user=cuckoo
 priority=500
