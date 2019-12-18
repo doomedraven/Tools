@@ -31,7 +31,7 @@ Problem with pillow:
     * ValueError: jpeg is required unless explicitly disabled using --disable-jpeg, aborting
     * ValueError: zlib is required unless explicitly disabled using --disable-zlib, aborting
 Solution:
-    # https://askubuntu.com/a/1094768
+    # https://askubuntu.com/a/1094768
     # you may need to adjust version of libjpeg-turbo8
     sudo apt install zlib1g-dev libjpeg-turbo8-dev libjpeg-turbo8=1.5.2-0ubuntu5
 EOI
@@ -80,9 +80,9 @@ function install_fail2ban() {
 }
 
 function install_logrotate() {
-    # du -sh /var/log/* | sort -hr | head -n10
+    # du -sh /var/log/* | sort -hr | head -n10
     # thanks digitalocean.com for the manual
-    # https://www.digitalocean.com/community/tutorials/how-to-manage-logfiles-with-logrotate-on-ubuntu-16-04
+    # https://www.digitalocean.com/community/tutorials/how-to-manage-logfiles-with-logrotate-on-ubuntu-16-04
     if [ ! -f /etc/logrotate.d/doomedraven.conf ]; then
             cat >> /etc/logrotate.d/doomedraven.conf << EOF
 /var/log/*.log {
@@ -166,13 +166,13 @@ After=network.target
 PermissionsStartOnly=true
 ExecStartPre=/bin/mkdir -p /data/{config,}db
 ExecStartPre=/bin/chown mongodb:mongodb /data -R
-# https://www.tutorialspoint.com/mongodb/mongodb_replication.htm
+# https://www.tutorialspoint.com/mongodb/mongodb_replication.htm
 ExecStart=/usr/bin/numactl --interleave=all /usr/bin/mongod --quiet --shardsvr --port 27017
 # --replSet rs0
 ExecReload=/bin/kill -HUP $MAINPID
 Restart=always
 # enable on ramfs servers
-# --wiredTigerCacheSizeGB=50
+# --wiredTigerCacheSizeGB=50
 #User=mongodb
 #Group=mongodb
 #StandardOutput=syslog
@@ -374,12 +374,13 @@ function install_mongo(){
     wget -qO - https://www.mongodb.org/static/pgp/server-4.2.asc | sudo apt-key add -
     echo "deb [ arch=amd64 ] https://repo.mongodb.org/apt/ubuntu $(lsb_release -cs)/mongodb-org/4.2 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb.list
 
-    sudo apt update
-    sudo apt install -y mongodb-org-mongos mongodb-org-server mongodb-org-shell mongodb-org-tools
+    apt update 2>/dev/null
+    apt install libpcre3-dev
+    apt install -y mongodb-org-mongos mongodb-org-server mongodb-org-shell mongodb-org-tools
     pip3 install pymongo -U
 
-    sudo apt install -y ntp
-    sudo systemctl start ntp.service && sudo systemctl enable ntp.service
+    apt install -y ntp
+    systemctl start ntp.service && sudo systemctl enable ntp.service
 
     if ! grep -q -E '^kernel/mm/transparent_hugepage/enabled' /etc/sysfs.conf; then
         sudo apt install sysfsutils -y
@@ -400,6 +401,9 @@ Description=High-performance, schema-free document-oriented database
 Wants=network.target
 After=network.target
 [Service]
+PermissionsStartOnly=true
+ExecStartPre=/bin/mkdir -p /data/{config,}db
+ExecStartPre=/bin/chown mongodb:mongodb /data -R
 # https://www.tutorialspoint.com/mongodb/mongodb_replication.htm
 ExecStart=/usr/bin/numactl --interleave=all /usr/bin/mongod --quiet --shardsvr --bind_ip_all --port 27017
 # --replSet rs0
@@ -445,8 +449,10 @@ function dependencies() {
     #sudo canonical-livepatch enable APITOKEN
 
     # deps
-    apt install psmisc jq sqlite3 tmux net-tools checkinstall graphviz>=0.8.4 pydot>=1.2.4 git numactl python python-dev python-pip python-m2crypto swig upx-ucl libssl-dev wget zip unzip p7zip-full rar unrar unace-nonfree cabextract geoip-database libgeoip-dev libjpeg-dev mono-utils ssdeep libfuzzy-dev exiftool checkinstall ssdeep uthash-dev libconfig-dev libarchive-dev libtool autoconf automake privoxy software-properties-common wkhtmltopdf xvfb xfonts-100dpi tcpdump libcap2-bin -y
-    apt install python-pil subversion python-capstone uwsgi uwsgi-plugin-python python-pyelftools -y
+    apt install psmisc jq sqlite3 tmux net-tools checkinstall graphviz>=0.8.4 python3-pydot>=1.2.4 git numactl python3 python3-dev python3-pip python3-m2crypto libjpeg-dev zlib1g-dev -y
+    apt install swig upx-ucl libssl-dev wget zip unzip p7zip-full rar unrar unace-nonfree cabextract geoip-database libgeoip-dev libjpeg-dev mono-utils ssdeep libfuzzy-dev exiftool -y
+    apt install ssdeep uthash-dev libconfig-dev libarchive-dev libtool autoconf automake privoxy software-properties-common wkhtmltopdf xvfb xfonts-100dpi tcpdump libcap2-bin -y
+    apt install python3-pil subversion python3-capstone uwsgi uwsgi-plugin-python python3-pyelftools -y
     #clamav clamav-daemon clamav-freshclam
     # if broken sudo python -m pip uninstall pip && sudo apt install python-pip --reinstall
     #pip3 install --upgrade pip
@@ -455,9 +461,9 @@ function dependencies() {
     # if __name__ == '__main__':
     #     sys.exit(__main__._main())
     pip3 install supervisor requests[security] pyOpenSSL pefile tldextract httpreplay imagehash oletools olefile networkx>=2.1 mixbox capstone PyCrypto voluptuous xmltodict future python-dateutil requests_file "gevent>=1.2, <1.3" simplejson pyvmomi pyinstaller maec regex xmltodict -U
-    pip3 install git+https://github.com/doomedraven/sflock.git git+https://github.com/doomedraven/socks5man.git pyattck==1.0.4
+    pip3 install git+https://github.com/doomedraven/sflock.git git+https://github.com/doomedraven/socks5man.git pyattck==1.0.4 distorm3 openpyxl git+https://github.com/volatilityfoundation/volatility3
     #config parsers
-    pip3 install git+https://github.com/Defense-Cyber-Crime-Center/DC3-MWCP.git https://github.com/kevthehermit/RATDecoders.git
+    pip3 install git+https://github.com/Defense-Cyber-Crime-Center/DC3-MWCP.git git+https://github.com/kevthehermit/RATDecoders.git
     # re2
     apt install libre2-dev -y
     #re2 for py3
@@ -467,15 +473,12 @@ function dependencies() {
     #thanks Jurriaan <3
     pip3 install git+https://github.com/jbremer/peepdf.git
 
-    sudo pip3 install matplotlib==2.2.2 numpy==1.15.0 six==1.11.0 statistics==1.0.3.5 lief==0.9.0
+    pip3 install matplotlib==2.2.2 numpy==1.15.0 six==1.11.0 statistics==1.0.3.5 lief==0.9.0
 
-    apt install -y libjpeg-dev zlib1g-dev
-    pip3 install "django>=2.2.6, <3" git+git+https://github.com/jsocol/django-ratelimit
+    pip3 install "django>=2.2.6, <3" git+https://github.com/jsocol/django-ratelimit
     pip3 install sqlalchemy sqlalchemy-utils jinja2 markupsafe bottle chardet pygal rarfile jsbeautifier dpkt nose dnspython pytz requests[socks] python-magic geoip pillow java-random python-whois bs4 git+https://github.com/crackinglandia/pype32.git git+https://github.com/kbandla/pydeep.git flask flask-restful flask-sqlalchemy pyvmomi
     apt install -y openjdk-11-jdk-headless
     apt install -y openjdk-8-jdk-headless
-    pip3 install distorm3 openpyxl PyCrypto #git+https://github.com/buffer/pyv8
-    pip3 install git+https://github.com/volatilityfoundation/volatility3
 
     install_postgresql
 
@@ -486,21 +489,11 @@ function dependencies() {
     sudo -u postgres -H sh -c "psql -d \"cuckoo\" -c \"GRANT ALL PRIVILEGES ON DATABASE cuckoo to cuckoo;\""
     #exit
 
-    # elastic as reporting module is incomplate
-    #java + elastic
-    #add-apt-repository ppa:webupd8team/java -y
-    #wget -qO - https://packages.elastic.co/GPG-KEY-elasticsearch | sudo apt-key add -
-    #echo "deb http://packages.elastic.co/elasticsearch/2.x/debian stable main" | sudo tee -a /etc/apt/sources.list.d/elasticsearch-2.x.list
-    #apt update
-    #apt install oracle-java8-installer -y
-    #apt install elasticsearch -y
-    #/etc/init.d/elasticsearch start
-
     sudo apt install apparmor-utils -y
     sudo aa-disable /usr/sbin/tcpdump
     # ToDo check if user exits
 
-    adduser cuckoo
+    useradd -s /bin/bash -d /home/cuckoo/ -m cuckoo
     usermod -G cuckoo -a cuckoo
     groupadd pcap
     usermod -a -G pcap cuckoo
@@ -569,6 +562,7 @@ EOF
     make -j"$(getconf _NPROCESSORS_ONLN)"
     sudo checkinstall -D --pkgname=passivedns --default
 
+    #ToDo move to py3
     cd /usr/local/lib/python2.7/dist-packages/volatility || return
     mkdir resources
     cd resources || return
@@ -587,7 +581,6 @@ EOF
     ./make.sh
     sudo ./make.sh install
     pip3 install unicorn Capstone
-
 }
 
 function install_CAPE() {
@@ -632,8 +625,8 @@ EOF
     fi
 
 
-    cat >> /etc/supervisor/conf.d/cuckoo.conf <<EOF
-[program:cuckoo]
+    cat >> /etc/supervisor/conf.d/cape.conf <<EOF
+[program:cape]
 command=python3 cuckoo.py
 directory=/opt/CAPEv2/
 user=cuckoo
@@ -679,7 +672,7 @@ stderr_logfile=/var/log/supervisor/router.err.log
 stdout_logfile=/var/log/supervisor/router.out.log
 
 [group:CAPE]
-programs = rooter,web,cuckoo,process
+programs = rooter,web,cape,process
 
 [program:suricata]
 command=bash -c "mkdir /var/run/suricata; chown cuckoo:cuckoo /var/run/suricata; LD_LIBRARY_PATH=/usr/local/lib /usr/bin/suricata -c /etc/suricata/suricata.yaml --unix-socket -k none --user cuckoo --group cuckoo"
