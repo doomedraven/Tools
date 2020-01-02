@@ -26,7 +26,7 @@ from volatility.framework.configuration import requirements
 from volatility.framework.layers import resources
 from volatility.framework.renderers import format_hints
 from volatility.plugins import yarascan
-from volatility.plugins.windows import pslist, vadyarascan
+from volatility.plugins.windows import pslist, vadyarascan, vaddump
 
 log = logging.getLogger(__name__)
 
@@ -65,7 +65,7 @@ class Pony(interfaces.plugins.PluginInterface):
 
     @staticmethod
     def get_config(pe):
-        # https://github.com/Xyl2k/Pony-gate-extractor/blob/master/PonyExtractor.py
+        # https://github.com/Xyl2k/Pony-gate-extractor/blob/master/PonyExtractor.py
         config = {
             "cncs": [],
             "downloads": [],
@@ -100,22 +100,6 @@ class Pony(interfaces.plugins.PluginInterface):
         config["cncs"] = list(set(config["cncs"]))
         config["downloads"] = list(set(config["downloads"]))
         return config
-
-    @staticmethod
-    def carve_data(vad_start, vad_end, proc_layer):
-        chunk_size = 1024 * 1024 * 10
-        full_pe = b""
-        out_of_range = vad_start + vad_end
-        tmp_offset = vad_start
-        while vad_start < out_of_range:
-                to_read = min(chunk_size, out_of_range - tmp_offset)
-                data = proc_layer.read(tmp_offset, to_read, pad=True)
-                if not data:
-                    break
-                full_pe += data
-                tmp_offset += to_read
-
-        return full_pe
 
     def _generator(self):
         if not has_yara:
@@ -173,7 +157,7 @@ class Pony(interfaces.plugins.PluginInterface):
                     log.debug("VAD not found")
                     return
 
-                full_pe = self.carve_data(vad_start, vad_end, proc_layer)
+                full_pe = vaddump.vad_dump(self.context, proc_layer_name, vad)
 
                 config = self.get_config(full_pe)
                 if not config:
@@ -184,7 +168,7 @@ class Pony(interfaces.plugins.PluginInterface):
 
     #replace with list_vads and write correct filter func
     @staticmethod
-    def get_vad(task: interfaces.objects.ObjectInterface, address: int):# vad
+    def get_vad(task: interfaces.objects.ObjectInterface, address: int):# vad
         """Creates a map of start/end addresses within a virtual address
         descriptor tree.
         Args:
