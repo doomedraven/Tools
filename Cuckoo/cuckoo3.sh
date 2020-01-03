@@ -604,7 +604,19 @@ function supervisor() {
     pip3 install supervisor -U
     #### Cuckoo Start at boot
 
-    if [ ! -f /etc/systemd/system/supervisor.service]; then
+    if [ ! -d /etc/supervisor/conf.d ]; then
+	mkdir -p /etc/supervisor/conf.d
+    fi
+
+    if [ ! -d /var/log/supervisor ]; then
+	mkdir -p /var/log/supervisor
+    fi
+
+    if [ ! -f /etc/supervisor/supervisord.conf ]; then
+	echo_supervisord_conf > /etc/supervisor/supervisord.conf
+    fi
+
+    if [ ! -f /etc/systemd/system/supervisor.service ]; then
         cat >> /etc/systemd/system/supervisor.service <<EOF
 [Unit]
 Description=Supervisor process control system for UNIX
@@ -696,6 +708,9 @@ EOF
 
     # fix for too many open files
     python -c "pa = '/etc/supervisor/supervisord.conf';q=open(pa, 'rb').read().replace('[supervisord]\nlogfile=', '[supervisord]\nminfds=1048576 ;\nlogfile=');open(pa, 'wb').write(q);"
+
+    # include conf.d
+    python -c "pa = '/etc/supervisor/supervisord.conf';q=open(pa, 'rb').read().replace(';[include]\n;files = relative/directory/*.ini', '[include]\nfiles = conf.d/cape.conf');open(pa, 'wb').write(q);"
 
     sudo systemctl enable supervisor
     sudo systemctl start supervisor
