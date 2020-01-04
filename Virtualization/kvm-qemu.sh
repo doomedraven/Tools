@@ -190,7 +190,7 @@ function install_libguestfs() {
     fi
     cd libguestfs || return
     ./bootstrap
-    ./autogen.sh
+    PYTHON=/usr/bin/python3 ./autogen.sh
     make -j"$(nproc)"
     echo "[+] cd /opt/libguestfs/ && ./run --help"
     echo "[+] cd /opt/libguestfs/ && ./run ./sparsify/virt-sparsify"
