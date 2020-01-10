@@ -449,7 +449,7 @@ function dependencies() {
     #sudo canonical-livepatch enable APITOKEN
 
     # deps
-    apt install psmisc jq sqlite3 tmux net-tools checkinstall graphviz>=0.8.4 python3-pydot>=1.2.4 git numactl python3 python3-dev python3-pip python3-m2crypto libjpeg-dev zlib1g-dev -y
+    apt install psmisc jq sqlite3 tmux net-tools checkinstall graphviz python3-pydot git numactl python3 python3-dev python3-pip python3-m2crypto libjpeg-dev zlib1g-dev -y
     apt install swig upx-ucl libssl-dev wget zip unzip p7zip-full rar unrar unace-nonfree cabextract geoip-database libgeoip-dev libjpeg-dev mono-utils ssdeep libfuzzy-dev exiftool -y
     apt install ssdeep uthash-dev libconfig-dev libarchive-dev libtool autoconf automake privoxy software-properties-common wkhtmltopdf xvfb xfonts-100dpi tcpdump libcap2-bin -y
     apt install python3-pil subversion python3-capstone uwsgi uwsgi-plugin-python python3-pyelftools -y
