@@ -259,7 +259,7 @@ function install_suricata() {
     build-essential autoconf automake libtool libpcap-dev libnet1-dev \
     libyaml-0-2 libyaml-dev zlib1g zlib1g-dev libcap-ng-dev libcap-ng0 \
     make libmagic-dev libjansson-dev libjansson4 pkg-config liblz4-dev \
-    python python-pip libgeoip-dev
+    python python3-pip libgeoip-dev
 
     # install rust, cargo
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
@@ -277,12 +277,13 @@ function install_suricata() {
     #cd netmap-* || return
     #./configure
     #make -j"$(getconf _NPROCESSORS_ONLN)"
+    suricata_version=5.0.1
     # https://redmine.openinfosecfoundation.org/projects/suricata/wiki/Ubuntu_Installation
     cd /tmp || return
-    if [ ! -f suricata-5.0.0.tar.gz ]; then
-        wget https://www.openinfosecfoundation.org/download/suricata-5.0.0.tar.gz && tar xf suricata-5.0.0.tar.gz
+    if [ ! -f suricata-$suricata_version.tar.gz ]; then
+        wget https://www.openinfosecfoundation.org/download/suricata-$suricata_version.tar.gz && tar xf suricata-$suricata_version.tar.gz
     fi
-    cd suricata-5.0.0
+    cd suricata-$suricata_version
     #wget "https://www.openinfosecfoundation.org/download/suricata-current.tar.gz"
     #wget "https://www.openinfosecfoundation.org/download/suricata-current.tar.gz.sig"
     #gpg --verify "suricata-current.tar.gz.sig"
