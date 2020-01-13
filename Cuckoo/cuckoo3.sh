@@ -471,7 +471,8 @@ function dependencies() {
     pip3 install https://github.com/andreasvc/pyre2/archive/master.zip
 
     #thanks Jurriaan <3, till merge, use enzok repo
-    pip3 install v8py git+https://github.com/enzok/peepdf.git
+    #v8py hangs a lot so till it won't be fixed don't install it
+    pip3 install git+https://github.com/enzok/peepdf.git
 
     pip3 install matplotlib==2.2.2 numpy==1.15.0 six==1.11.0 statistics==1.0.3.5 lief==0.9.0
 
