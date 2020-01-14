@@ -213,6 +213,7 @@ fi
 }
 
 function install_suricata() {
+    add-apt-repository ppa:oisf/suricata-stable
     apt install suricata
     touch /etc/suricata/threshold.config
 
