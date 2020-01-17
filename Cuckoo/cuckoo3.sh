@@ -359,7 +359,7 @@ function dependencies() {
     export LANG=en_US.UTF-8
     export LC_ALL=en_US.UTF-8
 
-    sudo snap install canonical-livepatch
+    #sudo snap install canonical-livepatch
     #sudo canonical-livepatch enable APITOKEN
 
     # deps
