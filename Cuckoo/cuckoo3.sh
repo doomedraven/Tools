@@ -95,14 +95,14 @@ function install_logrotate() {
 }
 
 
-/var/log/supervisor/*.log {
-    daily
-    missingok
-    rotate 7
-    compress
-    create
-    maxsize 50M
-}
+#/var/log/supervisor/*.log {
+#    daily
+#    missingok
+#    rotate 7
+#    compress
+#    create
+#    maxsize 50M
+#}
 EOF
 fi
 
