@@ -53,7 +53,7 @@ Huge thanks to:
 qemu_version=4.1.0
 # libvirt - https://libvirt.org/sources/
 # changelog - https://libvirt.org/news.html
-libvirt_version=5.7.0
+libvirt_version=6.0.0
 # virt-manager - https://github.com/virt-manager/virt-manager/releases
 # autofilled
 OS=""
@@ -69,6 +69,7 @@ QTARGETS="--target-list=i386-softmmu,x86_64-softmmu,i386-linux-user,x86_64-linux
 
 function changelog() {
 cat << EndOfCL
+    # 12.02.2020 - Libvirt 6.0
     # 06.08.2019 - Libvirt 5.6
     # 06.07.2019 - Libvirt 5.5, more checks, compatibility with Ubuntu 19.04, but I suggest to stay with 18.04
     # 24.04.2019 - QEMU 4
