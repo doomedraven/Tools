@@ -1,3 +1,5 @@
+REM NTP
+reg add "HKLM\SYSTEM\CurrentControlSet\Services\W32Time\Parameters" /v LocalNTP /t REG_DWORD /d 0 /f
 REM HELP
 REM http://www.windows-commandline.com/start-stop-service-command-line/
 REM disable UAC
