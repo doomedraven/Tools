@@ -6,7 +6,7 @@
 # https://www.doomedraven.com/2016/05/kvm.html
 # Use Ubuntu 18.04 LTS
 
-#Update date: 03.09.2019
+#Update date: 14.02.2020
 
 : '
 Huge thanks to:
@@ -50,9 +50,10 @@ Huge thanks to:
 #      strs[5] = "VBoxVBoxVBox"; /* VirtualBox */
 
 #https://www.qemu.org/download/#source or https://download.qemu.org/
-qemu_version=4.1.0
+qemu_version=4.2.0
 # libvirt - https://libvirt.org/sources/
 # changelog - https://libvirt.org/news.html
+#5.6.0 can be the best
 libvirt_version=6.0.0
 # virt-manager - https://github.com/virt-manager/virt-manager/releases
 # autofilled
@@ -69,7 +70,9 @@ QTARGETS="--target-list=i386-softmmu,x86_64-softmmu,i386-linux-user,x86_64-linux
 
 function changelog() {
 cat << EndOfCL
-    # 12.02.2020 - Libvirt 6.0
+    # 14.02.2020 - Libvirt 6, fix libvirt installation
+    # 13.12.2019 - Libvirt 5.10, QEMU 4.2
+    # 12.10.2019 - Libvirt 5.8
     # 06.08.2019 - Libvirt 5.6
     # 06.07.2019 - Libvirt 5.5, more checks, compatibility with Ubuntu 19.04, but I suggest to stay with 18.04
     # 24.04.2019 - QEMU 4
@@ -184,9 +187,17 @@ function install_libguestfs() {
     echo "[+] Check for previous version of LibGuestFS"
     sudo dpkg --purge --force-all "libguestfs-*" 2>/dev/null
 
-    sudo apt install libyara3 erlang-dev gperf flex bison libaugeas-dev libhivex-dev supermin ocaml-nox libhivex-ocaml genisoimage libhivex-ocaml-dev libmagic-dev libjansson-dev gnulib -y 2>/dev/null
+    sudo apt install libyara3 erlang-dev gperf flex bison libaugeas-dev libhivex-dev supermin ocaml-nox libhivex-ocaml genisoimage libhivex-ocaml-dev libmagic-dev libjansson-dev gnulib jq -y 2>/dev/null
 
     if [ ! -d libguestfs ]; then
+        #ToDo move to latest release not latest code
+        #_info=$(curl -s https://api.github.com/repos/libguestfs/libguestfs/releases/latest)
+        #_version=$(echo $_info |jq .tag_name|sed "s/\"//g")
+        #_repo_url=$(echo $_info | jq ".zipball_url" | sed "s/\"//g")
+        #wget -q $_repo_url
+        #unzip $_version
+    #wget "https://github.com/VirusTotal/yara/archive/v$yara_version.zip" && unzip "v$yara_version.zip"
+    directory=`ls | grep "VirusTotal-yara-*"`
         git clone --recursive https://github.com/libguestfs/libguestfs
     fi
     cd libguestfs || return
@@ -343,7 +354,7 @@ EOH
     fi
 
     echo "[+] Checking/deleting old versions of Libvirt"
-    apt-get purge libvirt0 libvirt-bin 2>/dev/null
+    apt-get purge libvirt0 libvirt-bin libvirt-$libvirt_version 2>/dev/null
     dpkg -l|grep "libvirt-[0-9]\{1,2\}\.[0-9]\{1,2\}\.[0-9]\{1,2\}"|cut -d " " -f 3|sudo xargs dpkg --purge --force-all 2>/dev/null
 
     cd /tmp || return
@@ -362,9 +373,11 @@ EOH
         pip install ipaddr
         # --prefix=/usr --localstatedir=/var --sysconfdir=/etc
         # --with-secdriver-apparmor=yes --with-apparmor-profiles
-        ./autogen.sh --system --with-qemu=yes --with-dtrace --with-numad --disable-nls --with-openvz=no --with-vmware=no --with-phyp=no --with-xenapi=no --with-libxl=no  --with-vbox=no --with-lxc=no --with-vz=no   --with-esx=no --with-hyperv=no --with-yajl=yes --with-secdriver-apparmor=yes --with-apparmor-profiles
+        mkdir build && cd build
+        ../autogen.sh --system --with-qemu=yes --with-dtrace --with-numad --disable-nls --with-openvz=no --with-yajl=yes --with-secdriver-apparmor=yes --with-apparmor-profiles
         make -j"$(nproc)"
         checkinstall -D --pkgname=libvirt-$libvirt_version --default
+        cd ..
         # check if linked correctly
         if [ -f /usr/lib/libvirt-qemu.so ]; then
             libvirt_so_path=/usr/lib/
@@ -484,10 +497,10 @@ function install_virt_manager() {
     fontconfig fontconfig-config fonts-dejavu-core genisoimage gir1.2-appindicator3-0.1 gir1.2-secret-1 -y
     # should be installed first
 
-    pip install pycairo --no-use-pep517
-    pip3 install pycairo --no-use-pep517
-    pip3 install PyGObject --no-use-pep517 -U
-    pip install PyGObject --no-use-pep517 -U
+    pip install pycairo
+    pip3 install pycairo
+    pip3 install PyGObject -U
+    pip install PyGObject -U
 
     if [ -f /usr/lib/libvirt-qemu.so ]; then
         libvirt_so_path=/usr/lib/
@@ -602,7 +615,6 @@ function replace_qemu_clues_public() {
     #_sed_aux 's/Microsoft Hv/GenuineIntel/g' qemu*/target/i386/kvm.c 'Microsoft Hv was not replaced in target/i386/kvm.c'
     #_sed_aux 's/Bochs\/Plex86/<WOOT>\/FIRM64/g' qemu*/roms/vgabios/vbe.c 'BOCHS was not replaced in roms/vgabios/vbe.c'
 }
-
 
 
 function replace_seabios_clues_public() {
@@ -933,7 +945,7 @@ cat << EndOfHelp
 
     9. ImportError: cannot import name Vte
     $ apt-get install gir1.2-vte-2.90
-    
+
     10. TypeError: Couldn't find foreign struct converter for 'cairo.Context'
     $ apt-get install python3-gi-cairo
 
@@ -978,8 +990,8 @@ function cloning() {
             if [ ! -f "${5}/${1}_${i}.qcow2" ]; then
                 #Linked snapshots are disabled due to performance problems
                 echo "Creating $5/$1_$i.qcow2"
-                qemu-img create -f qcow2 -b "$2" "$5/$1_$i.qcow2"
-                #cp "$2" "$5/$1_$i.qcow2"
+                #qemu-img create -f qcow2 -b "$2" "$5/$1_$i.qcow2"
+                cp "$2" "$5/$1_$i.qcow2"
             fi
             #2>/dev/null
             if virt-clone --print-xml -n "$1_$i" -o "$1" -m "$macaddr" |sed "s|<driver name=\"qemu\" type=\"qcow2\" cache=\"none\" io=\"native\"/>|<driver name=\"qemu\" type=\"qcow2\" cache=\"none\" discard=\"unmap\" detect_zeroes=\"on\" io=\"native\"/>\\n      <source file=\"${5}/${1}_${i}.qcow2\"/>|g" > "$5/$1_$i.xml"; then
