@@ -1,7 +1,7 @@
 #!/bin/bash
 # By @doomedraven - https://twitter.com/D00m3dR4v3n
 
-# Copyright (C) 2011-2019 DoomedRaven.
+# Copyright (C) 2011-2020 DoomedRaven.
 # This file is part of Tools - https://github.com/doomedraven/Tools
 # See the file 'LICENSE.md' for copying permission.
 
@@ -16,12 +16,13 @@ IFACE_IP="192.168.1.1"
 # DB password
 PASSWD="SuperPuperSecret"
 DIST_MASTER_IP=X.X.X.X
+USER="cape"
 
 function issues() {
 cat << EOI
 Problems with PyOpenSSL?
     sudo rm -rf /usr/local/lib/python2.7/dist-packages/OpenSSL/
-    sudo rm -rf /home/cuckoo/.local/lib/python2.7/site-packages/OpenSSL/
+    sudo rm -rf /home/${USER}/.local/lib/python2.7/site-packages/OpenSSL/
     sudo apt install --reinstall python-openssl
 
 Problem with PIP?
@@ -41,13 +42,14 @@ function usage() {
 cat << EndOfHelp
     You need to edit NETWORK_IFACE, IFACE_IP and PASSWD for correct install
 
-    Usage: $0 <command> <cuckoo_version> <iface_ip> | tee $0.log
+    Usage: $0 <command> cape <iface_ip> | tee $0.log
         Example: $0 all cape 192.168.1.1 | tee $0.log
     Commands - are case insensitive:
-        All - Installs dependencies, V2/CAPE, sets supervisor
-        Cuckoo - Install V2/CAPE Cuckoo
+        All - Installs dependencies, CAPE, systemd, see code for full list
+        Sandbox - Install CAPE
         Dependencies - Install all dependencies with performance tricks
-        Supervisor - Install supervisor config for CAPE; for v2 use cuckoo --help ;)
+        Systemd - Install systemd config for cape, we suggest to use systemd
+        Supervisor - Install supervisor config for CAPE # depricated
         Suricata - Install latest suricata with performance boost
         PostgreSQL - Install latest PostgresSQL
         Yara - Install latest yara
@@ -126,7 +128,7 @@ function distributed() {
     sudo apt install uwsgi -y 2>/dev/null
     sudo mkdir -p /data/{config,}db
     sudo chown mongodb:mongodb /data/ -R
-    cat >> /etc/uwsgi/apps-available/cuckoo_api.ini << EOL
+    cat >> /etc/uwsgi/apps-available/sandbox_api.ini << EOL
 [uwsgi]
     plugins = python
     callable = application
@@ -145,44 +147,14 @@ function distributed() {
     lazy-apps = true
     timeout = 600
     chmod-socket = 664
-    chown-socket = cuckoo:cuckoo
-    gui = cuckoo
-    uid = cuckoo
+    chown-socket = cape:cape
+    gui = cape
+    uid = cape
     stats = 127.0.0.1:9191
 EOL
 
-    ln -s /etc/uwsgi/apps-available/cuckoo_api.ini /etc/uwsgi/apps-enabled
+    ln -s /etc/uwsgi/apps-available/sandbox_api.ini /etc/uwsgi/apps-enabled
     service uwsgi restart
-
-    if [ ! -f /etc/systemd/system/mongod.service ]; then
-        cat >> /etc/systemd/system/mongod.service <<EOL
-# /etc/systemd/system/mongodb.service
-[Unit]
-Description=High-performance, schema-free document-oriented database
-Wants=network.target
-After=network.target
-
-[Service]
-PermissionsStartOnly=true
-ExecStartPre=/bin/mkdir -p /data/{config,}db
-ExecStartPre=/bin/chown mongodb:mongodb /data -R
-# https://www.tutorialspoint.com/mongodb/mongodb_replication.htm
-ExecStart=/usr/bin/numactl --interleave=all /usr/bin/mongod --quiet --shardsvr --port 27017
-# --replSet rs0
-ExecReload=/bin/kill -HUP $MAINPID
-Restart=always
-# enable on ramfs servers
-# --wiredTigerCacheSizeGB=50
-#User=mongodb
-#Group=mongodb
-#StandardOutput=syslog
-#StandardError=syslog
-#SyslogIdentifier=mongodb
-
-[Install]
-WantedBy=multi-user.target
-EOL
-fi
 
     if [ ! -f /etc/systemd/system/mongos.service ]; then
         cat >> /etc/systemd/system/mongos.service << EOL
@@ -193,16 +165,13 @@ After=bind9.service
 [Service]
 PIDFile=/var/run/mongos.pid
 User=root
-ExecStart=/usr/bin/mongos --configdb cuckoo_config/${DIST_MASTER_IP}:27019 --port 27020
+ExecStart=/usr/bin/mongos --configdb cape_config/${DIST_MASTER_IP}:27019 --port 27020
 [Install]
 WantedBy=multi-user.target
 EOL
 fi
-
     systemctl daemon-reload
-    systemctl enable mongod.service
     systemctl enable mongos.service
-    systemctl start mongod.service
     systemctl start mongos.service
 
     echo -e "\n\n\n[+] CAPE distributed documentation: https://github.com/kevoreilly/CAPEv2/blob/master/docs/book/src/usage/dist.rst"
@@ -214,7 +183,7 @@ fi
 
 function install_suricata() {
     add-apt-repository ppa:oisf/suricata-stable
-    apt install suricata
+    apt install suricata -y
     touch /etc/suricata/threshold.config
 
 
@@ -235,7 +204,9 @@ function install_suricata() {
     crontab -l | { cat; echo "15 * * * * sudo /usr/bin/suricata-update --suricata /usr/bin/suricata --suricata-conf /etc/suricata/suricata.yaml -o /etc/suricata/rules/"; } | crontab -
     crontab -l | { cat; echo "15 * * * * /usr/bin/suricatasc -c reload-rules"; } | crontab -
 
-    cp "/usr/share/suricata/rules/*" "/etc/suricata/rules/"
+    if [ -d /usr/share/suricata/rules/]; then
+        cp "/usr/share/suricata/rules/*" "/etc/suricata/rules/"
+    fi
 
     #change suricata yaml
     sed -i 's|#default-rule-path: /etc/suricata/rules|default-rule-path: /var/lib/suricata/rules|g' /etc/default/suricata
@@ -245,16 +216,16 @@ function install_suricata() {
     sed -i 's/mpm-algo: ac/mpm-algo: hs/g' /etc/suricata/suricata.yaml
     sed -i 's/mpm-algo: auto/mpm-algo: hs/g' /etc/suricata/suricata.yaml
     sed -i 's/#run-as:/run-as:/g' /etc/suricata/suricata.yaml
-    sed -i 's/#  user: suri/   user: cuckoo/g' /etc/suricata/suricata.yaml
-    sed -i 's/#  user: suri/   group: cuckoo/g' /etc/suricata/suricata.yaml
+    sed -i 's/#  user: suri/   user: ${USER}/g' /etc/suricata/suricata.yaml
+    sed -i 's/#  user: suri/   group: ${USER}/g' /etc/suricata/suricata.yaml
     sed -i 's/    depth: 1mb/    depth: 0/g' /etc/suricata/suricata.yaml
     sed -i 's/request-body-limit: 100kb/request-body-limit: 0/g' /etc/suricata/suricata.yaml
     sed -i 's/response-body-limit: 100kb/response-body-limit: 0/g' /etc/suricata/suricata.yaml
     sed -i 's/EXTERNAL_NET: "!$HOME_NET"/EXTERNAL_NET: "ANY"/g' /etc/suricata/suricata.yaml
     # enable eve-log
-    python -c "pa = '/etc/suricata/suricata.yaml';q=open(pa, 'rb').read().replace('eve-log:\n      enabled: no\n', 'eve-log:\n      enabled: yes\n');open(pa, 'wb').write(q);"
+    python3 -c "pa = '/etc/suricata/suricata.yaml';q=open(pa, 'rb').read().replace('eve-log:\n      enabled: no\n', 'eve-log:\n      enabled: yes\n');open(pa, 'wb').write(q);"
 
-    chown cuckoo:cuckoo -R /etc/suricata
+    chown ${USER}:${USER} -R /etc/suricata
 }
 
 
@@ -304,6 +275,7 @@ function install_mongo(){
 
     if [ -f /etc/systemd/system/mongod.service ]; then
         systemctl stop mongod.service
+        systemctl disable mongod.service
         rm /etc/systemd/system/mongod.service
         systemctl daemon-reload
     fi
@@ -363,8 +335,9 @@ function dependencies() {
     #sudo canonical-livepatch enable APITOKEN
 
     # deps
-    apt install psmisc jq sqlite3 tmux net-tools checkinstall graphviz python3-pydot git numactl python3 python3-dev python3-pip python3-m2crypto libjpeg-dev zlib1g-dev -y
-    apt install swig upx-ucl libssl-dev wget zip unzip p7zip-full rar unrar unace-nonfree cabextract geoip-database libgeoip-dev libjpeg-dev mono-utils ssdeep libfuzzy-dev exiftool -y
+    apt install python3-pip -y
+    apt install psmisc jq sqlite3 tmux net-tools checkinstall graphviz python3-pydot git numactl python3 python3-dev python3-pip libjpeg-dev zlib1g-dev -y
+    apt install upx-ucl libssl-dev wget zip unzip p7zip-full rar unrar unace-nonfree cabextract geoip-database libgeoip-dev libjpeg-dev mono-utils ssdeep libfuzzy-dev exiftool -y
     apt install ssdeep uthash-dev libconfig-dev libarchive-dev libtool autoconf automake privoxy software-properties-common wkhtmltopdf xvfb xfonts-100dpi tcpdump libcap2-bin -y
     apt install python3-pil subversion python3-capstone uwsgi uwsgi-plugin-python python3-pyelftools -y
     #clamav clamav-daemon clamav-freshclam
@@ -374,7 +347,8 @@ function dependencies() {
     # from pip import __main__
     # if __name__ == '__main__':
     #     sys.exit(__main__._main())
-    pip3 install supervisor requests[security] pyOpenSSL pefile tldextract httpreplay imagehash oletools olefile "networkx>=2.1" mixbox capstone PyCrypto voluptuous xmltodict future python-dateutil requests_file "gevent>=1.2, <1.3" simplejson pyvmomi pyinstaller maec regex xmltodict -U
+    #httpreplay not py3
+    pip3 install cryptography requests[security] pyOpenSSL pefile tldextract imagehash oletools olefile "networkx>=2.1" mixbox capstone PyCrypto voluptuous xmltodict future python-dateutil requests_file "gevent>=1.2, <1.3" simplejson pyvmomi pyinstaller maec regex xmltodict -U
     pip3 install git+https://github.com/doomedraven/sflock.git git+https://github.com/doomedraven/socks5man.git pyattck==1.0.4 distorm3 openpyxl git+https://github.com/volatilityfoundation/volatility3
     #config parsers
     pip3 install git+https://github.com/Defense-Cyber-Crime-Center/DC3-MWCP.git git+https://github.com/kevthehermit/RATDecoders.git
@@ -386,10 +360,9 @@ function dependencies() {
 
     #thanks Jurriaan <3
     pip3 install git+https://github.com/jbremer/peepdf.git
-
     pip3 install matplotlib==2.2.2 numpy==1.15.0 six==1.11.0 statistics==1.0.3.5 lief==0.9.0
 
-    pip3 install "django>=2.2.6, <3" git+https://github.com/jsocol/django-ratelimit
+    pip3 install "django>3" git+https://github.com/jsocol/django-ratelimit
     pip3 install sqlalchemy sqlalchemy-utils jinja2 markupsafe bottle chardet pygal rarfile jsbeautifier dpkt nose dnspython pytz requests[socks] python-magic geoip pillow java-random python-whois bs4 pype32-py3 git+https://github.com/kbandla/pydeep.git flask flask-restful flask-sqlalchemy pyvmomi
     apt install -y openjdk-11-jdk-headless
     apt install -y openjdk-8-jdk-headless
@@ -398,19 +371,19 @@ function dependencies() {
 
     # sudo su - postgres
     #psql
-    sudo -u postgres -H sh -c "psql -c \"CREATE USER cuckoo WITH PASSWORD '$PASSWD'\"";
-    sudo -u postgres -H sh -c "psql -c \"CREATE DATABASE cuckoo\"";
-    sudo -u postgres -H sh -c "psql -d \"cuckoo\" -c \"GRANT ALL PRIVILEGES ON DATABASE cuckoo to cuckoo;\""
+    sudo -u postgres -H sh -c "psql -c \"CREATE USER ${USER} WITH PASSWORD '$PASSWD'\"";
+    sudo -u postgres -H sh -c "psql -c \"CREATE DATABASE ${USER}\"";
+    sudo -u postgres -H sh -c "psql -d \"${USER}\" -c \"GRANT ALL PRIVILEGES ON DATABASE ${USER} to ${USER};\""
     #exit
 
     sudo apt install apparmor-utils -y
     sudo aa-disable /usr/sbin/tcpdump
     # ToDo check if user exits
 
-    useradd -s /bin/bash -d /home/cuckoo/ -m cuckoo
-    usermod -G cuckoo -a cuckoo
+    useradd -s /bin/bash -d /home/${USER}/ -m ${USER}
+    usermod -G ${USER} -a ${USER}
     groupadd pcap
-    usermod -a -G pcap cuckoo
+    usermod -a -G pcap ${USER}
     chgrp pcap /usr/sbin/tcpdump
     setcap cap_net_raw,cap_net_admin=eip /usr/sbin/tcpdump
 
@@ -476,6 +449,8 @@ EOF
     make -j"$(getconf _NPROCESSORS_ONLN)"
     sudo checkinstall -D --pkgname=passivedns --default
 
+    #Depricated as py2 only
+    :"
     #ToDo move to py3
     cd /usr/local/lib/python2.7/dist-packages/volatility || return
     mkdir resources
@@ -494,25 +469,50 @@ EOF
     cd unicorn || return
     ./make.sh
     sudo ./make.sh install
+    "
     pip3 install unicorn Capstone
 }
 
 function install_CAPE() {
     cd /opt || return
     git clone https://github.com/kevoreilly/CAPEv2/
-    #chown -R root:cuckoo /usr/var/malheur/
+    #chown -R root:${USER} /usr/var/malheur/
     #chmod -R =rwX,g=rwX,o=X /usr/var/malheur/
-    # Adapting owner permissions to the cuckoo path folder
-    chown cuckoo:cuckoo -R "/opt/CAPEv2/"
+    # Adapting owner permissions to the ${USER} path folder
+    chown ${USER}:${USER} -R "/opt/CAPEv2/"
 
     sed -i "s/process_results = on/process_results = off/g" /opt/CAPEv2/conf/cuckoo.conf
-    sed -i "s/connection =/connection = postgresql://cuckoo:$PASSWD@localhost:5432/cuckoo/g" /opt/CAPEv2/conf/cuckoo.conf
+    sed -i "s/connection =/connection = postgresql://${USER}:$PASSWD@localhost:5432/${USER}/g" /opt/CAPEv2/conf/cuckoo.conf
     sed -i "s/tor = off/tor = on/g" /opt/CAPEv2/conf/cuckoo.conf
     sed -i "s/memory_dump = off/memory_dump = on/g" /opt/CAPEv2/conf/cuckoo.conf
     sed -i "s/achinery = vmwareserver/achinery = kvm/g" /opt/CAPEv2/conf/cuckoo.conf
     sed -i "s/interface = br0/interface = $NETWORK_IFACE/g" /opt/CAPEv2/conf/aux.conf
 
 }
+
+function install_systemd() {
+
+    cd /opt/CAPEv2/systemd
+
+    FILES=(
+        cape-processor.service
+        cape-rooter.service
+        cape-web.service
+        cape.service
+        suricata-update.service
+        suricata-update.timer
+    )
+
+    for file in "${FILES[@]}"; do
+        if [ ! -f /etc/systemd/system/$file ]; then
+            cp $file /etc/systemd/system/
+            systemctl enable $file && systemctl start $file
+        fi
+    done
+
+    systemctl daemon-reload
+}
+
 
 function supervisor() {
     pip3 install supervisor -U
@@ -555,18 +555,18 @@ EOF
 [program:cape]
 command=python3 cuckoo.py
 directory=/opt/CAPEv2/
-user=cuckoo
+user=${USER}
 priority=200
 autostart=true
 autorestart=true
 stopasgroup=true
-stderr_logfile=/var/log/supervisor/cuckoo.err.log
-stdout_logfile=/var/log/supervisor/cuckoo.out.log
+stderr_logfile=/var/log/supervisor/${USER}.err.log
+stdout_logfile=/var/log/supervisor/${USER}.out.log
 
 [program:web]
 command=python3 manage.py runserver 0.0.0.0:8000 --insecure
 directory=/opt/CAPEv2/web
-user=cuckoo
+user=${USER}
 priority=500
 autostart=true
 autorestart=true
@@ -576,7 +576,7 @@ stdout_logfile=/var/log/supervisor/web.out.log
 
 [program:process]
 command=python3 process.py -p7 auto
-user=cuckoo
+user=${USER}
 priority=300
 directory=/opt/CAPEv2/utils
 autostart=true
@@ -601,7 +601,7 @@ stdout_logfile=/var/log/supervisor/router.out.log
 programs = rooter,web,cape,process
 
 [program:suricata]
-command=bash -c "mkdir /var/run/suricata; chown cuckoo:cuckoo /var/run/suricata; LD_LIBRARY_PATH=/usr/local/lib /usr/bin/suricata -c /etc/suricata/suricata.yaml --unix-socket -k none --user cuckoo --group cuckoo"
+command=bash -c "mkdir /var/run/suricata; chown ${USER}:${USER} /var/run/suricata; LD_LIBRARY_PATH=/usr/local/lib /usr/bin/suricata -c /etc/suricata/suricata.yaml --unix-socket -k none --user ${USER} --group ${USER}"
 user=root
 autostart=true
 autorestart=true
@@ -612,7 +612,7 @@ stdout_logfile=/var/log/supervisor/suricata.out.log
 [program:socks5man]
 command=/usr/local/bin/socks5man verify --repeated
 autostart=false
-user=cuckoo
+user=${USER}
 autorestart=true
 stopasgroup=true
 stderr_logfile=/var/log/supervisor/socks5man.err.log
@@ -651,7 +651,7 @@ esac
 
 
 if [ $# -eq 3 ]; then
-    cuckoo_version=$2
+    sandbox_version=$2
     IFACE_IP=$3
 elif [ $# -eq 2 ]; then
     cuckoo_version=$2
@@ -660,7 +660,7 @@ elif [ $# -eq 0 ]; then
     exit 1
 fi
 
-cuckoo_version=$(echo "$cuckoo_version"|tr "[A-Z]" "[a-z]")
+sandbox_version=$(echo "$sandbox_version"|tr "[A-Z]" "[a-z]")
 
 
 #check if start with root
@@ -677,20 +677,20 @@ case "$COMMAND" in
     install_mongo
     install_suricata
     install_yara
-    if [ "$cuckoo_version" = "v2" ]; then
+    if [ "$sandbox_version" = "upstream" ]; then
         pip3 install cuckoo
     else
         install_CAPE
     fi
-    supervisor
-    distributed
+    install_systemd
     redsocks2
     install_logrotate
     #socksproxies is to start redsocks stuff
     crontab -l | { cat; echo "@reboot /opt/CAPEv2/socksproxies.sh"; } | crontab -
     crontab -l | { cat; echo "@reboot cd /opt/CAPEv2/utils/ && ./smtp_sinkhole.sh"; } | crontab -
-
     ;;
+'systemd')
+    install_systemd;;
 'supervisor')
     supervisor;;
 'suricata')
@@ -699,8 +699,8 @@ case "$COMMAND" in
     install_yara;;
 'postgresql')
     install_postgresql;;
-'cuckoo')
-    if [ "$cuckoo_version" = "v2" ]; then
+'sandbox')
+    if [ "$sandbox_version" = "upstream" ]; then
         pip3 install cuckoo
         print "[*] run cuckoo under cuckoo user, NEVER RUN IT AS ROOT!"
     else
