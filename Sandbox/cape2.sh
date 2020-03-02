@@ -288,8 +288,7 @@ Wants=network.target
 After=network.target
 [Service]
 PermissionsStartOnly=true
-ExecStartPre=/bin/mkdir -p /data/{config,}db
-ExecStartPre=/bin/chown mongodb:mongodb /data -R
+ExecStartPre=/bin/mkdir -p /data/{config,}db && /bin/chown mongodb:mongodb /data -R
 # https://www.tutorialspoint.com/mongodb/mongodb_replication.htm
 ExecStart=/usr/bin/numactl --interleave=all /usr/bin/mongod --quiet --shardsvr --bind_ip_all --port 27017
 # --replSet rs0
