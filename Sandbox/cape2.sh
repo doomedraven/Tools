@@ -204,7 +204,7 @@ function install_suricata() {
     crontab -l | { cat; echo "15 * * * * sudo /usr/bin/suricata-update --suricata /usr/bin/suricata --suricata-conf /etc/suricata/suricata.yaml -o /etc/suricata/rules/"; } | crontab -
     crontab -l | { cat; echo "15 * * * * /usr/bin/suricatasc -c reload-rules"; } | crontab -
 
-    if [ -d /usr/share/suricata/rules/ ]; then
+    if [ -d /usr/share/suricata/rules/]; then
         cp "/usr/share/suricata/rules/*" "/etc/suricata/rules/"
     fi
 
@@ -223,7 +223,7 @@ function install_suricata() {
     sed -i 's/response-body-limit: 100kb/response-body-limit: 0/g' /etc/suricata/suricata.yaml
     sed -i 's/EXTERNAL_NET: "!$HOME_NET"/EXTERNAL_NET: "ANY"/g' /etc/suricata/suricata.yaml
     # enable eve-log
-    python3 -c "pa = '/etc/suricata/suricata.yaml';q=open(pa, 'rb').read().replace('eve-log:\n      enabled: no\n', 'eve-log:\n      enabled: yes\n');open(pa, 'wb').write(q);"
+    python3 -c "pa = '/etc/suricata/suricata.yaml';q=open(pa, 'rb').read().replace(b'eve-log:\n      enabled: no\n', b'eve-log:\n      enabled: yes\n');open(pa, 'wb').write(q);"
 
     chown ${USER}:${USER} -R /etc/suricata
 }
@@ -484,7 +484,7 @@ function install_CAPE() {
     sed -i "s/tor = off/tor = on/g" /opt/CAPEv2/conf/cuckoo.conf
     sed -i "s/memory_dump = off/memory_dump = on/g" /opt/CAPEv2/conf/cuckoo.conf
     sed -i "s/achinery = vmwareserver/achinery = kvm/g" /opt/CAPEv2/conf/cuckoo.conf
-    sed -i "s/interface = br0/interface = $NETWORK_IFACE/g" /opt/CAPEv2/conf/aux.conf
+    sed -i "s/interface = br0/interface = $NETWORK_IFACE/g" /opt/CAPEv2/conf/auxiliary.conf
 
 }
 
