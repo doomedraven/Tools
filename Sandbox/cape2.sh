@@ -281,7 +281,7 @@ function install_mongo(){
     fi
 
     if [ ! -f /etc/systemd/system/mongodb.service ]; then
-        crontab -l | { cat; echo "@reboot /bin/mkdir -p /data/{config,}db && /bin/chown mongodb:mongodb /data -R"; } | crontab -
+        crontab -l | { cat; echo "@reboot /bin/mkdir -p /data/configdb && /bin/mkdir -p /data/db && /bin/chown mongodb:mongodb /data -R"; } | crontab -
         cat >> /etc/systemd/system/mongodb.service <<EOF
 [Unit]
 Description=High-performance, schema-free document-oriented database
@@ -586,7 +586,7 @@ stderr_logfile=/var/log/supervisor/process.err.log
 stdout_logfile=/var/log/supervisor/process.out.log
 
 [program:rooter]
-command=python3 rooter.py
+command=python3 rooter.py -g ${USER}
 directory=/opt/CAPEv2/utils
 user=root
 startsecs=10
