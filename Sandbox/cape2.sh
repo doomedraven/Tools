@@ -54,6 +54,7 @@ cat << EndOfHelp
         PostgreSQL - Install latest PostgresSQL
         Yara - Install latest yara
         Mongo - Install latest mongodb
+        LetsEncrypt - Install dependencies and retrieves certificate
         Dist - will install CAPE distributed stuff
         redsocks2 - install redsocks2
         logrotate - install logrotate config to rotate daily or 10G logs
@@ -280,6 +281,7 @@ function install_mongo(){
     fi
 
     if [ ! -f /etc/systemd/system/mongodb.service ]; then
+        crontab -l | { cat; echo "@reboot /bin/mkdir -p /data/{config,}db && /bin/chown mongodb:mongodb /data -R"; } | crontab -
         cat >> /etc/systemd/system/mongodb.service <<EOF
 [Unit]
 Description=High-performance, schema-free document-oriented database
@@ -287,7 +289,7 @@ Wants=network.target
 After=network.target
 [Service]
 PermissionsStartOnly=true
-ExecStartPre=/bin/mkdir -p /data/{config,}db && /bin/chown mongodb:mongodb /data -R
+#ExecStartPre=/bin/mkdir -p /data/{config,}db && /bin/chown mongodb:mongodb /data -R
 # https://www.tutorialspoint.com/mongodb/mongodb_replication.htm
 ExecStart=/usr/bin/numactl --interleave=all /usr/bin/mongod --quiet --shardsvr --bind_ip_all --port 27017
 # --replSet rs0
@@ -637,6 +639,14 @@ EOF
 }
 
 
+function letsencrypt() {
+    #https://www.digitalocean.com/community/tutorials/how-to-secure-nginx-with-let-s-encrypt-on-ubuntu-18-04
+    sudo add-apt-repository ppa:certbot/certbot -y
+    sudo apt update
+    sudo apt install python-certbot-nginx -y
+    #Not finished yet ;)
+    sudo certbot renew --dry-run
+}
 
 # Doesn't work ${$1,,}
 COMMAND=$(echo "$1"|tr "[A-Z]" "[a-z]")
@@ -718,6 +728,8 @@ case "$COMMAND" in
     install_logrotate;;
 'issues')
     issues;;
+'letsencrypt')
+    letsencrypt;;
 *)
     usage;;
 esac
