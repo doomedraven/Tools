@@ -990,7 +990,7 @@ function cloning() {
             if [ ! -f "${5}/${1}_${i}.qcow2" ]; then
                 #Linked snapshots are disabled due to performance problems
                 echo "Creating $5/$1_$i.qcow2"
-                #qemu-img create -f qcow2 -b "$2" "$5/$1_$i.qcow2"
+                #qemu-img create -f qcow2 -F qcow2 -b "$2" "$5/$1_$i.qcow2"
                 cp "$2" "$5/$1_$i.qcow2"
             fi
             #2>/dev/null
