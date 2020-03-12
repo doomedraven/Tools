@@ -490,6 +490,10 @@ function install_CAPE() {
     sed -i "s/memory_dump = off/memory_dump = on/g" /opt/CAPEv2/conf/cuckoo.conf
     sed -i "s/achinery = vmwareserver/achinery = kvm/g" /opt/CAPEv2/conf/cuckoo.conf
     sed -i "s/interface = br0/interface = $NETWORK_IFACE/g" /opt/CAPEv2/conf/auxiliary.conf
+    
+    cd CAPEv2 || return
+    python3 utils/community.py -af
+    
 
 }
 
