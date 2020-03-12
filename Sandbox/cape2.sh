@@ -208,9 +208,12 @@ function install_suricata() {
     if [ -d /usr/share/suricata/rules/]; then
         cp "/usr/share/suricata/rules/*" "/etc/suricata/rules/"
     fi
+    if [ -d /var/lib/suricata/rules/]; then
+        cp "/var/lib/suricata/rules/*" "/etc/suricata/rules/"
+    fi
 
     #change suricata yaml
-    sed -i 's|#default-rule-path: /etc/suricata/rules|default-rule-path: /var/lib/suricata/rules|g' /etc/default/suricata
+    sed -i 's|#default-rule-path: /etc/suricata/rules|default-rule-path: /etc/suricata/rules|g' /etc/default/suricata
     sed -i 's/#rule-files:/rule-files:/g' /etc/suricata/suricata.yaml
     sed -i 's/# - suricata.rules/ - suricata.rules/g' /etc/suricata/suricata.yaml
     sed -i 's/RUN=yes/RUN=no/g' /etc/default/suricata
