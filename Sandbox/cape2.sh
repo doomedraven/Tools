@@ -701,7 +701,9 @@ case "$COMMAND" in
     redsocks2
     install_logrotate
     #socksproxies is to start redsocks stuff
-    crontab -l | { cat; echo "@reboot /opt/CAPEv2/socksproxies.sh"; } | crontab -
+    if [ -f /opt/CAPEv2/socksproxies.sh ]; then
+        crontab -l | { cat; echo "@reboot /opt/CAPEv2/socksproxies.sh"; } | crontab -
+    fi
     crontab -l | { cat; echo "@reboot cd /opt/CAPEv2/utils/ && ./smtp_sinkhole.sh"; } | crontab -
     ;;
 'systemd')
