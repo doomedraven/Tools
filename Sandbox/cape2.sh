@@ -251,10 +251,9 @@ function install_yara() {
     checkinstall -D --pkgname="yara-$yara_version" --pkgversion="$yara_version|cut -c 2-" --default
     ldconfig
     cd ..
-    rm "VirusTotal-yara-*.zip"
+    rm $yara_version
     git clone --recursive https://github.com/VirusTotal/yara-python
-    cd yara-python || return
-    pip3 install .
+    pip3 install ./yara-python
 }
 
 function install_mongo(){
