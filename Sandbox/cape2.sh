@@ -253,7 +253,7 @@ function install_yara() {
     cd ..
     rm $yara_version
     git clone --recursive https://github.com/VirusTotal/yara-python
-    pip3 install ./yara-python || return
+    pip3 install ./yara-python
 }
 
 function install_mongo(){
