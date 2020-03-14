@@ -182,7 +182,6 @@ function install_haxm_mac() {
 }
 
 function install_libguestfs() {
-
     cd /opt || return
     echo "[+] Check for previous version of LibGuestFS"
     sudo dpkg --purge --force-all "libguestfs-*" 2>/dev/null
@@ -208,7 +207,6 @@ function install_libguestfs() {
     echo "[+] cd /opt/libguestfs/ && ./run ./sparsify/virt-sparsify"
 }
 
-
 function install_libvmi() {
     # IMPORTANT:
     # 1) LibVMI will have KVM support if libvirt is available during compile time.
@@ -231,16 +229,16 @@ function install_libvmi() {
     # LibVMI
     cd /tmp || return
 
-    if [ ! -f "libvmi" ]; then
+    if [ ! -d "libvmi" ]; then
         git clone https://github.com/libvmi/libvmi.git
         echo "[+] Cloned LibVMI repo"
     fi
     cd "libvmi" || return
 
     # install deps
-    apt-get install -y cmake flex bison libglib2.0-dev libjson-c-dev libyajl-dev
+    apt install -y cmake flex bison libglib2.0-dev libjson-c-dev libyajl-dev
     # other deps
-    apt-get install -y pkg-config
+    apt install -y pkg-config
     mkdir build
     cd build || return
     cmake -DENABLE_XEN=ON -DENABLE_KVM=ON -DENABLE_XENSTORE=OFF -DENABLE_BAREFLANK=OFF ..
@@ -251,7 +249,7 @@ function install_libvmi() {
     # LibVMI Python
     cd /tmp || return
 
-    if [ ! -f "python" ]; then
+    if [ ! -d "python" ]; then
         # actual
         # https://github.com/libvmi/python/tree/76d9ea85eefa0d77f6ad4d6089e757e844763917
         # git checkout add_vmi_request_page_fault
@@ -262,7 +260,7 @@ function install_libvmi() {
     cd "python" || return
 
     # install deps
-    apt-get install -y python3-pkgconfig python3-cffi python3-future
+    apt install -y python3-pkgconfig python3-cffi python3-future
     #pip install .
     python setup.py build
     python setup.py install
@@ -273,7 +271,7 @@ function install_libvmi() {
     # Rekall
     cd /tmp || return
 
-    if [ ! -f "rekall" ]; then
+    if [ ! -d "rekall" ]; then
         git clone https://github.com/google/rekall.git
         echo "[+] Cloned Rekall repo"
     fi
@@ -300,7 +298,7 @@ function install_libvmi() {
 #
 function install_pyvmidbg() {
     # deps
-    apt-get install python3-docopt python3-lxml cabextract
+    apt install python3-docopt python3-lxml cabextract
 
     # libvmi config entry
     # /etc/libvmi.conf:
@@ -354,7 +352,7 @@ EOH
     fi
 
     echo "[+] Checking/deleting old versions of Libvirt"
-    apt-get purge libvirt0 libvirt-bin libvirt-$libvirt_version 2>/dev/null
+    apt purge libvirt0 libvirt-bin libvirt-$libvirt_version 2>/dev/null
     dpkg -l|grep "libvirt-[0-9]\{1,2\}\.[0-9]\{1,2\}\.[0-9]\{1,2\}"|cut -d " " -f 3|sudo xargs dpkg --purge --force-all 2>/dev/null
 
     cd /tmp || return
@@ -368,8 +366,8 @@ EOH
     tar xf libvirt-$libvirt_version.tar.xz
     cd libvirt-$libvirt_version || return
     if [ "$OS" = "Linux" ]; then
-        apt-get install python-dev python3-dev unzip numad glib-2.0 libglib2.0-dev libsdl1.2-dev lvm2 python-pip python-libxml2 python3-libxml2 ebtables libosinfo-1.0-dev libnl-3-dev libnl-route-3-dev libyajl-dev xsltproc libapparmor-dev apparmor-utils libdevmapper-dev libpciaccess-dev dnsmasq dmidecode librbd-dev -y 2>/dev/null
-        apt-get install apparmor-profiles apparmor-profiles-extra apparmor-utils libapparmor-dev python-apparmor libapparmor-perl -y
+        apt install python-dev python3-dev unzip numad glib-2.0 libglib2.0-dev libsdl1.2-dev lvm2 python-pip python-libxml2 python3-libxml2 ebtables libosinfo-1.0-dev libnl-3-dev libnl-route-3-dev libyajl-dev xsltproc libapparmor-dev apparmor-utils libdevmapper-dev libpciaccess-dev dnsmasq dmidecode librbd-dev -y 2>/dev/null
+        apt install apparmor-profiles apparmor-profiles-extra apparmor-utils libapparmor-dev python-apparmor libapparmor-perl -y
         pip install ipaddr
         # --prefix=/usr --localstatedir=/var --sysconfdir=/etc
         # --with-secdriver-apparmor=yes --with-apparmor-profiles
@@ -526,23 +524,25 @@ function install_virt_manager() {
     #ToDo add blacklist
     checkinstall --pkgname=libvirt-glib-1.0-0 --default
 
+    cd /tmp || return
     if [ ! -f gir1.2-libvirt-glib-1.0_1.0.0-1_amd64.deb ]; then
         wget http://launchpadlibrarian.net/297448356/gir1.2-libvirt-glib-1.0_1.0.0-1_amd64.deb
     fi
     dpkg -i gir1.2-libvirt-glib-1.0_1.0.0-1_amd64.deb
-
     /sbin/ldconfig
 
-    if [ ! -f "virt-manager" ]; then
+    cd /tmp || return
+    if [ ! -d "virt-manager" ]; then
         git clone https://github.com/virt-manager/virt-manager.git
         echo "[+] Cloned Virt Manager repo"
     fi
     cd "virt-manager" || return
-    apt-get install gobject-introspection intltool pkg-config python-lxml python3-libxml2 libxml2-dev libxslt-dev python-dev gir1.2-gtk-vnc-2.0 gir1.2-spiceclientgtk-3.0 libgtk-3-dev -y
+    apt install gobject-introspection intltool pkg-config python-lxml python3-libxml2 libxml2-dev libxslt-dev python-dev gir1.2-gtk-vnc-2.0 gir1.2-spiceclientgtk-3.0 libgtk-3-dev -y
     # py3
     #pip3 install .
     python3 setup.py build
     python3 setup.py install
+
     if [ "$SHELL" = "/bin/zsh" ] || [ "$SHELL" = "/usr/bin/zsh" ] ; then
         echo "export LIBVIRT_DEFAULT_URI=qemu:///system" >> "$HOME/.zsh"
     else
@@ -552,14 +552,14 @@ function install_virt_manager() {
 
 function install_kvm_linux() {
     sed -i 's/# deb-src/deb-src/g' /etc/apt/sources.list
-    apt-get update 2>/dev/null
-    apt-get install build-essential python-pip python3-pip gcc pkg-config cpu-checker intltool -y 2>/dev/null
-    apt-get install gtk-update-icon-cache -y 2>/dev/null
+    apt update 2>/dev/null
+    apt install build-essential python-pip python3-pip gcc pkg-config cpu-checker intltool -y 2>/dev/null
+    apt install gtk-update-icon-cache -y 2>/dev/null
 
     # WSL support
-    apt-get install gcc make gnutls-bin -y
+    apt install gcc make gnutls-bin -y
     # remove old
-    apt-get purge libvirt0 libvirt-bin -y
+    apt purge libvirt0 libvirt-bin -y
     install_libvirt
 
     systemctl enable libvirtd.service
@@ -594,7 +594,6 @@ EOF
     fi
 }
 
-
 function replace_qemu_clues_public() {
     echo '[+] Patching QEMU clues'
     _sed_aux 's/QEMU HARDDISK/<WOOT> HARDDISK/g' qemu*/hw/ide/core.c 'QEMU HARDDISK was not replaced in core.c'
@@ -615,7 +614,6 @@ function replace_qemu_clues_public() {
     #_sed_aux 's/Microsoft Hv/GenuineIntel/g' qemu*/target/i386/kvm.c 'Microsoft Hv was not replaced in target/i386/kvm.c'
     #_sed_aux 's/Bochs\/Plex86/<WOOT>\/FIRM64/g' qemu*/roms/vgabios/vbe.c 'BOCHS was not replaced in roms/vgabios/vbe.c'
 }
-
 
 function replace_seabios_clues_public() {
     echo "[+] Generating SeaBios Kconfig"
@@ -668,7 +666,6 @@ function replace_seabios_clues_public() {
     done
 }
 
-
 function qemu_func() {
     cd /tmp || return
 
@@ -696,11 +693,11 @@ function qemu_func() {
     fail=0
 
     if [ "$OS" = "Linux" ]; then
-        apt-get install software-properties-common
+        apt install software-properties-common
         add-apt-repository universe
-        apt-get update 2>/dev/null
-        apt-get install checkinstall openbios-* libssh2-1-dev vde2 liblzo2-dev libghc-gtk3-dev libsnappy-dev libbz2-dev libxml2-dev google-perftools libgoogle-perftools-dev libvde-dev python-pip -y 2>/dev/null
-        apt-get install debhelper ibusb-1.0-0-dev libxen-dev uuid-dev xfslibs-dev libjpeg-dev libusbredirparser-dev device-tree-compiler texinfo libbluetooth-dev libbrlapi-dev libcap-ng-dev libcurl4-gnutls-dev libfdt-dev gnutls-dev libiscsi-dev libncurses5-dev libnuma-dev libcacard-dev librados-dev librbd-dev libsasl2-dev libseccomp-dev libspice-server-dev \
+        apt update 2>/dev/null
+        apt install checkinstall openbios-* libssh2-1-dev vde2 liblzo2-dev libghc-gtk3-dev libsnappy-dev libbz2-dev libxml2-dev google-perftools libgoogle-perftools-dev libvde-dev python-pip -y 2>/dev/null
+        apt install debhelper ibusb-1.0-0-dev libxen-dev uuid-dev xfslibs-dev libjpeg-dev libusbredirparser-dev device-tree-compiler texinfo libbluetooth-dev libbrlapi-dev libcap-ng-dev libcurl4-gnutls-dev libfdt-dev gnutls-dev libiscsi-dev libncurses5-dev libnuma-dev libcacard-dev librados-dev librbd-dev libsasl2-dev libseccomp-dev libspice-server-dev \
         libaio-dev libcap-dev libattr1-dev libpixman-1-dev libgtk2.0-bin  libxml2-utils systemtap-sdt-dev texinfo uml-utilities openbios-sparc openbios-ppc -y 2>/dev/null
         # qemu docs required
         PERL_MM_USE_DEFAULT=1 perl -MCPAN -e install "Perl/perl-podlators"
@@ -792,7 +789,7 @@ function seabios_func() {
     cd /tmp || return
     fail=0
     echo '[+] Installing SeaBios dependencies'
-    apt-get install git iasl -y
+    apt install git iasl -y
     if [ -d seabios ]; then
         rm -r seabios
     fi
@@ -862,7 +859,7 @@ cat << EndOfHelp
     * Error:
         /libvirt.so.0: version LIBVIRT_PRIVATE_x.x.0' not found (required by /usr/sbin/libvirtd)
     * Solutions:
-        1. apt-get purge libvirt0 libvirt-bin
+        1. apt purge libvirt0 libvirt-bin
         2. reboot
         3. $0 libvirt
 
@@ -922,10 +919,10 @@ cat << EndOfHelp
     $ ./kvm-qemu.sh libvirt
 
     2. ImportError: No module named libxml2
-    $ apt-get install python-libxml2 python3-libxml2
+    $ apt install python-libxml2 python3-libxml2
 
     3. ImportError: No module named requests
-    $ apt-get install python-requests
+    $ apt install python-requests
 
     4. Error launching details: Namespace GtkVnc not available
     $ ./kvm-qemu.sh libvirt
@@ -934,26 +931,26 @@ cat << EndOfHelp
     $ ./kvm-qemu.sh libvirt
 
     6. ValueError: Namespace Libosinfo not available
-    $ apt-get install libosinfo-1.0
+    $ apt install libosinfo-1.0
 
     7. ImportError: No module named ipaddr
-    $ apt-get install python-ipaddr
+    $ apt install python-ipaddr
 
     8. Namespace Gtk not available: Could not open display: localhost:10.0
     ValueError: Namespace GtkSource not available
-    $ apt-get install libgtk-3-dev libgtksourceview-3.0-dev
+    $ apt install libgtk-3-dev libgtksourceview-3.0-dev
 
     9. ImportError: cannot import name Vte
-    $ apt-get install gir1.2-vte-2.90
+    $ apt install gir1.2-vte-2.90
 
     10. TypeError: Couldn't find foreign struct converter for 'cairo.Context'
-    $ apt-get install python3-gi-cairo
+    $ apt install python3-gi-cairo
 
 EndOfHelp
 }
 
 function install_WebVirtCloud(){
-    sudo apt-get -y install git virtualenv python-virtualenv python-dev python-lxml libvirt-dev zlib1g-dev libxslt1-dev nginx libsasl2-modules gcc pkg-config python-guestfs
+    sudo apt -y install git virtualenv python-virtualenv python-dev python-lxml libvirt-dev zlib1g-dev libxslt1-dev nginx libsasl2-modules gcc pkg-config python-guestfs
     pip install supervisor
     git clone https://github.com/retspen/webvirtcloud
     cd webvirtcloud || return
@@ -1036,12 +1033,12 @@ fi
 
 OS="$(uname -s)"
 #add-apt-repository universe
-#apt-get update && apt-get upgrade
+#apt update && apt upgrade
 #make
 
 case "$COMMAND" in
 'all')
-    apt-get install language-pack-UTF-8
+    apt install language-pack-UTF-8
     qemu_func
     seabios_func
     if [ "$OS" = "Linux" ]; then
@@ -1125,7 +1122,7 @@ case "$COMMAND" in
     grub_iommu;;
 'mosh')
     if [ "$OS" = "Linux" ]; then
-        sudo apt-get install mosh -y
+        sudo apt install mosh -y
     elif [ "$OS" = "Darwin" ]; then
         _check_brew
         brew install mosh
