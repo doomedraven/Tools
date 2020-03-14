@@ -483,12 +483,11 @@ function install_CAPE() {
     # Adapting owner permissions to the ${USER} path folder
     chown ${USER}:${USER} -R "/opt/CAPEv2/"
 
-    sed -i "s/process_results = on/process_results = off/g" /opt/CAPEv2/conf/cuckoo.conf
     sed -i "s/connection =/connection = postgresql://${USER}:$PASSWD@localhost:5432/${USER}/g" /opt/CAPEv2/conf/cuckoo.conf
-    sed -i "s/tor = off/tor = on/g" /opt/CAPEv2/conf/cuckoo.conf
+    sed -i "/tor/{n;s/enabled = no/enabled = yes/g}" /opt/CAPEv2/conf/routing.conf
     sed -i "s/memory_dump = off/memory_dump = on/g" /opt/CAPEv2/conf/cuckoo.conf
-    sed -i "s/achinery = vmwareserver/achinery = kvm/g" /opt/CAPEv2/conf/cuckoo.conf
-    sed -i "s/interface = br0/interface = $NETWORK_IFACE/g" /opt/CAPEv2/conf/auxiliary.conf
+    sed -i "/machinery =/cmachinery = kvm" /opt/CAPEv2/conf/cuckoo.conf
+    sed -i "/interface =/cinterface = $NETWORK_IFACE" /opt/CAPEv2/conf/auxiliary.conf
     
     cd CAPEv2 || return
     python3 utils/community.py -af
