@@ -78,7 +78,6 @@ function install_fail2ban() {
     systemctl start fail2ban
     systemctl enable fail2ban
 
-
     #https://kifarunix.com/how-to-protect-ssh-server-authentication-with-fail2ban-on-ubuntu-18-04/2/
 }
 
@@ -97,7 +96,6 @@ function install_logrotate() {
     maxsize 10G
 }
 
-
 #/var/log/supervisor/*.log {
 #    daily
 #    missingok
@@ -107,7 +105,7 @@ function install_logrotate() {
 #    maxsize 50M
 #}
 EOF
-fi
+    fi
 
     sudo /usr/sbin/logrotate --force /etc/logrotate.conf
     du -sh /var/log/* | sort -hr | head -n10
@@ -179,14 +177,14 @@ fi
     echo -e "\t https://docs.mongodb.com/manual/tutorial/enable-authentication/"
     echo -e "\t https://docs.mongodb.com/manual/administration/security-checklist/"
     echo -e "\t https://docs.mongodb.com/manual/core/security-users/#sharding-security"
-
 }
 
 function install_suricata() {
+    echo '[+] Installing Suricata'
+
     add-apt-repository ppa:oisf/suricata-stable
     apt install suricata -y
     touch /etc/suricata/threshold.config
-
 
     """
     You can now start suricata by running as root something like '/usr/bin/suricata -c /etc/suricata//suricata.yaml -i eth0'.
@@ -200,7 +198,7 @@ function install_suricata() {
     """
 
     # Download etupdate to update Emerging Threats Open IDS rules:
-    sudo pip3 install suricata-update
+    pip3 install suricata-update
     mkdir -p "/etc/suricata/rules"
     crontab -l | { cat; echo "15 * * * * sudo /usr/bin/suricata-update --suricata /usr/bin/suricata --suricata-conf /etc/suricata/suricata.yaml -o /etc/suricata/rules/"; } | crontab -
     crontab -l | { cat; echo "15 * * * * /usr/bin/suricatasc -c reload-rules"; } | crontab -
@@ -232,16 +230,17 @@ function install_suricata() {
     chown ${USER}:${USER} -R /etc/suricata
 }
 
-
 function install_yara() {
     echo '[+] Installing Yara'
+
     apt install libtool libjansson-dev libmagic1 libmagic-dev jq autoconf checkinstall -y
-    cd /tmp/ || return
+
+    cd /tmp || return
     yara_info=$(curl -s https://api.github.com/repos/VirusTotal/yara/releases/latest)
     yara_version=$(echo $yara_info |jq .tag_name|sed "s/\"//g")
     yara_repo_url=$(echo $yara_info | jq ".zipball_url" | sed "s/\"//g")
     wget -q $yara_repo_url
-    unzip $yara_version
+    unzip -q $yara_version
     #wget "https://github.com/VirusTotal/yara/archive/v$yara_version.zip" && unzip "v$yara_version.zip"
     directory=`ls | grep "VirusTotal-yara-*"`
     cd $directory || return
@@ -250,14 +249,15 @@ function install_yara() {
     make -j"$(getconf _NPROCESSORS_ONLN)"
     checkinstall -D --pkgname="yara-$yara_version" --pkgversion="$yara_version|cut -c 2-" --default
     ldconfig
-    cd ..
-    rm $yara_version
+
+    cd /tmp || return
     git clone --recursive https://github.com/VirusTotal/yara-python
     pip3 install ./yara-python
 }
 
 function install_mongo(){
     echo "[+] Installing MongoDB"
+
     wget -qO - https://www.mongodb.org/static/pgp/server-4.2.asc | sudo apt-key add -
     echo "deb [ arch=amd64 ] https://repo.mongodb.org/apt/ubuntu $(lsb_release -cs)/mongodb-org/4.2 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb.list
 
@@ -307,7 +307,6 @@ SyslogIdentifier=mongodb
 [Install]
 WantedBy=multi-user.target
 EOF
-
     fi
     systemctl enable mongodb.service
     systemctl restart mongodb.service
@@ -316,9 +315,10 @@ EOF
 }
 
 function install_postgresql() {
-    # Postgresql 12
+    echo "[+] Installing PostgreSQL 12"
+
     wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
-    echo "deb http://apt.postgresql.org/pub/repos/apt/ `lsb_release -cs`-pgdg main" |sudo tee  /etc/apt/sources.list.d/pgdg.list
+    echo "deb http://apt.postgresql.org/pub/repos/apt/ `lsb_release -cs`-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
 
     sudo apt update -y
     sudo apt -y install libpq-dev postgresql-12 postgresql-client-12
@@ -327,8 +327,9 @@ function install_postgresql() {
 }
 
 function dependencies() {
-    sudo timedatectl set-timezone UTC
+    echo "[+] Installing dependencies"
 
+    timedatectl set-timezone UTC
     export LANGUAGE=en_US.UTF-8
     export LANG=en_US.UTF-8
     export LC_ALL=en_US.UTF-8
@@ -341,7 +342,7 @@ function dependencies() {
     apt install psmisc jq sqlite3 tmux net-tools checkinstall graphviz python3-pydot git numactl python3 python3-dev python3-pip libjpeg-dev zlib1g-dev -y
     apt install upx-ucl libssl-dev wget zip unzip p7zip-full rar unrar unace-nonfree cabextract geoip-database libgeoip-dev libjpeg-dev mono-utils ssdeep libfuzzy-dev exiftool -y
     apt install ssdeep uthash-dev libconfig-dev libarchive-dev libtool autoconf automake privoxy software-properties-common wkhtmltopdf xvfb xfonts-100dpi tcpdump libcap2-bin -y
-    apt install python3-pil subversion python3-capstone uwsgi uwsgi-plugin-python python3-pyelftools -y
+    apt install python3-pil subversion uwsgi uwsgi-plugin-python python3-pyelftools -y
     #clamav clamav-daemon clamav-freshclam
     # if broken sudo python -m pip uninstall pip && sudo apt install python-pip --reinstall
     #pip3 install --upgrade pip
@@ -358,13 +359,13 @@ function dependencies() {
     apt install libre2-dev -y
     #re2 for py3
     pip3 install cython
-    pip3 install https://github.com/andreasvc/pyre2/archive/master.zip
+    pip3 install git+https://github.com/andreasvc/pyre2.git
 
     #thanks Jurriaan <3
     pip3 install git+https://github.com/jbremer/peepdf.git
     pip3 install matplotlib==2.2.2 numpy==1.15.0 six==1.11.0 statistics==1.0.3.5 lief==0.9.0
 
-    pip3 install "django>3" git+https://github.com/jsocol/django-ratelimit
+    pip3 install "django>3" git+https://github.com/jsocol/django-ratelimit.git
     pip3 install sqlalchemy sqlalchemy-utils jinja2 markupsafe bottle chardet pygal rarfile jsbeautifier dpkt nose dnspython pytz requests[socks] python-magic geoip pillow java-random python-whois bs4 pype32-py3 git+https://github.com/kbandla/pydeep.git flask flask-restful flask-sqlalchemy pyvmomi
     apt install -y openjdk-11-jdk-headless
     apt install -y openjdk-8-jdk-headless
@@ -378,8 +379,8 @@ function dependencies() {
     sudo -u postgres -H sh -c "psql -d \"${USER}\" -c \"GRANT ALL PRIVILEGES ON DATABASE ${USER} to ${USER};\""
     #exit
 
-    sudo apt install apparmor-utils -y
-    sudo aa-disable /usr/sbin/tcpdump
+    apt install apparmor-utils -y
+    aa-disable /usr/sbin/tcpdump
     # ToDo check if user exits
 
     useradd -s /bin/bash -d /home/${USER}/ -m ${USER}
@@ -414,8 +415,8 @@ function dependencies() {
     sed -i 's/#RunAsDaemon 1/RunAsDaemon 1/g' /etc/tor/torrc
 
     cat >> /etc/tor/torrc <<EOF
-TransPort $IFACE_IP:9040
-DNSPort $IFACE_IP:5353
+TransPort ${IFACE_IP}:9040
+DNSPort ${IFACE_IP}:5353
 NumCPUs $(getconf _NPROCESSORS_ONLN)
 EOF
 
@@ -472,10 +473,13 @@ EOF
     ./make.sh
     sudo ./make.sh install
     "
-    pip3 install unicorn Capstone
+
+    pip3 install unicorn capstone
 }
 
 function install_CAPE() {
+    echo "[+] Installing CAPEv2"
+
     cd /opt || return
     git clone https://github.com/kevoreilly/CAPEv2/
     #chown -R root:${USER} /usr/var/malheur/
@@ -483,20 +487,17 @@ function install_CAPE() {
     # Adapting owner permissions to the ${USER} path folder
     chown ${USER}:${USER} -R "/opt/CAPEv2/"
 
-    sed -i "s/connection =/connection = postgresql://${USER}:$PASSWD@localhost:5432/${USER}/g" /opt/CAPEv2/conf/cuckoo.conf
+    sed -i "/connection =/cconnection = postgresql://${USER}:${PASSWD}@localhost:5432/${USER}" /opt/CAPEv2/conf/cuckoo.conf
     sed -i "/tor/{n;s/enabled = no/enabled = yes/g}" /opt/CAPEv2/conf/routing.conf
-    sed -i "s/memory_dump = off/memory_dump = on/g" /opt/CAPEv2/conf/cuckoo.conf
+    sed -i "/memory_dump = off/cmemory_dump = on" /opt/CAPEv2/conf/cuckoo.conf
     sed -i "/machinery =/cmachinery = kvm" /opt/CAPEv2/conf/cuckoo.conf
-    sed -i "/interface =/cinterface = $NETWORK_IFACE" /opt/CAPEv2/conf/auxiliary.conf
+    sed -i "/interface =/cinterface = ${NETWORK_IFACE}" /opt/CAPEv2/conf/auxiliary.conf
     
     cd CAPEv2 || return
     python3 utils/community.py -af
-    
-
 }
 
 function install_systemd() {
-
     cd /opt/CAPEv2/systemd
 
     FILES=(
@@ -517,7 +518,6 @@ function install_systemd() {
 
     systemctl daemon-reload
 }
-
 
 function supervisor() {
     pip3 install supervisor -U
@@ -554,7 +554,6 @@ RestartSec=50s
 WantedBy=multi-user.target
 EOF
     fi
-
 
     cat >> /etc/supervisor/conf.d/cape.conf <<EOF
 [program:cape]
@@ -624,7 +623,6 @@ stderr_logfile=/var/log/supervisor/socks5man.err.log
 stdout_logfile=/var/log/supervisor/socks5man.out.log
 EOF
 
-
     # fix for too many open files
     python -c "pa = '/etc/supervisor/supervisord.conf';q=open(pa, 'rb').read().replace('[supervisord]\nlogfile=', '[supervisord]\nminfds=1048576 ;\nlogfile=');open(pa, 'wb').write(q);"
 
@@ -640,9 +638,7 @@ EOF
     supervisorctl reread
     supervisorctl update
     # msoffice decrypt encrypted files
-
 }
-
 
 function letsencrypt() {
     #https://www.digitalocean.com/community/tutorials/how-to-secure-nginx-with-let-s-encrypt-on-ubuntu-18-04
@@ -662,7 +658,6 @@ case $COMMAND in
         exit 0;;
 esac
 
-
 if [ $# -eq 3 ]; then
     sandbox_version=$2
     IFACE_IP=$3
@@ -674,7 +669,6 @@ elif [ $# -eq 0 ]; then
 fi
 
 sandbox_version=$(echo "$sandbox_version"|tr "[A-Z]" "[a-z]")
-
 
 #check if start with root
 if [ "$EUID" -ne 0 ]; then
