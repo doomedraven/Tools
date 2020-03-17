@@ -87,14 +87,14 @@ function install_logrotate() {
     # https://www.digitalocean.com/community/tutorials/how-to-manage-logfiles-with-logrotate-on-ubuntu-16-04
     if [ ! -f /etc/logrotate.d/doomedraven.conf ]; then
             cat >> /etc/logrotate.d/doomedraven.conf << EOF
-/var/log/*.log {
-    daily
-    missingok
-    rotate 7
-    compress
-    create
-    maxsize 10G
-}
+#/var/log/*.log {
+#    daily
+#    missingok
+#    rotate 7
+#    compress
+#    create
+#    maxsize 10G
+#}
 
 #/var/log/supervisor/*.log {
 #    daily
@@ -262,7 +262,7 @@ function install_mongo(){
     echo "deb [ arch=amd64 ] https://repo.mongodb.org/apt/ubuntu $(lsb_release -cs)/mongodb-org/4.2 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb.list
 
     apt update 2>/dev/null
-    apt install libpcre3-dev
+    apt install libpcre3-dev -y
     apt install -y mongodb-org-mongos mongodb-org-server mongodb-org-shell mongodb-org-tools
     pip3 install pymongo -U
 
@@ -342,7 +342,7 @@ function dependencies() {
     apt install psmisc jq sqlite3 tmux net-tools checkinstall graphviz python3-pydot git numactl python3 python3-dev python3-pip libjpeg-dev zlib1g-dev -y
     apt install upx-ucl libssl-dev wget zip unzip p7zip-full rar unrar unace-nonfree cabextract geoip-database libgeoip-dev libjpeg-dev mono-utils ssdeep libfuzzy-dev exiftool -y
     apt install ssdeep uthash-dev libconfig-dev libarchive-dev libtool autoconf automake privoxy software-properties-common wkhtmltopdf xvfb xfonts-100dpi tcpdump libcap2-bin -y
-    apt install python3-pil subversion uwsgi uwsgi-plugin-python python3-pyelftools -y
+    apt install python3-pil subversion uwsgi uwsgi-plugin-python python3-pyelftools git curl -y
     #clamav clamav-daemon clamav-freshclam
     # if broken sudo python -m pip uninstall pip && sudo apt install python-pip --reinstall
     #pip3 install --upgrade pip
@@ -389,17 +389,6 @@ function dependencies() {
     usermod -a -G pcap ${USER}
     chgrp pcap /usr/sbin/tcpdump
     setcap cap_net_raw,cap_net_admin=eip /usr/sbin/tcpdump
-
-    '''
-    cd /tmp/ || return
-    git clone https://github.com/rieck/malheur.git
-    cd malheur || return
-    ./bootstrap
-    ./configure --prefix=/usr
-    make -j"$(getconf _NPROCESSORS_ONLN)"
-    sudo checkinstall -D --pkgname=malheur --default
-    dpkg -i malheur_0.6.0-1_amd64.deb
-    '''
 
     # https://www.torproject.org/docs/debian.html.en
     echo "deb http://deb.torproject.org/torproject.org $(lsb_release -cs) main" >> /etc/apt/sources.list
@@ -624,10 +613,10 @@ stdout_logfile=/var/log/supervisor/socks5man.out.log
 EOF
 
     # fix for too many open files
-    python -c "pa = '/etc/supervisor/supervisord.conf';q=open(pa, 'rb').read().replace('[supervisord]\nlogfile=', '[supervisord]\nminfds=1048576 ;\nlogfile=');open(pa, 'wb').write(q);"
+    python3 -c "pa = '/etc/supervisor/supervisord.conf';q=open(pa, 'r').read().replace('[supervisord]\nlogfile=', '[supervisord]\nminfds=1048576;\nlogfile=');open(pa, 'w').write(q);"
 
     # include conf.d
-    python -c "pa = '/etc/supervisor/supervisord.conf';q=open(pa, 'rb').read().replace(';[include]\n;files = relative/directory/*.ini', '[include]\nfiles = conf.d/cape.conf');open(pa, 'wb').write(q);"
+    python3 -c "pa = '/etc/supervisor/supervisord.conf';q=open(pa, 'r').read().replace(';[include]\n;files = relative/directory/*.ini', '[include]\nfiles = conf.d/cape.conf');open(pa, 'w').write(q);"
 
     sudo systemctl enable supervisor
     sudo systemctl start supervisor
