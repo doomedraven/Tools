@@ -293,7 +293,7 @@ After=network.target
 PermissionsStartOnly=true
 #ExecStartPre=/bin/mkdir -p /data/{config,}db && /bin/chown mongodb:mongodb /data -R
 # https://www.tutorialspoint.com/mongodb/mongodb_replication.htm
-ExecStart=/usr/bin/numactl --interleave=all /usr/bin/mongod --quiet --shardsvr --bind_ip_all --port 27017
+ExecStart=/usr/bin/numactl --interleave=all /usr/bin/mongod
 # --replSet rs0
 ExecReload=/bin/kill -HUP $MAINPID
 Restart=always
