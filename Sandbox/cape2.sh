@@ -308,6 +308,7 @@ SyslogIdentifier=mongodb
 WantedBy=multi-user.target
 EOF
     fi
+    sudo mkdir -p /data/{config,}db
     systemctl enable mongodb.service
     systemctl restart mongodb.service
 
