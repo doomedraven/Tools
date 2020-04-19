@@ -203,10 +203,10 @@ function install_suricata() {
     crontab -l | { cat; echo "15 * * * * sudo /usr/bin/suricata-update --suricata /usr/bin/suricata --suricata-conf /etc/suricata/suricata.yaml -o /etc/suricata/rules/"; } | crontab -
     crontab -l | { cat; echo "15 * * * * /usr/bin/suricatasc -c reload-rules"; } | crontab -
 
-    if [ -d /usr/share/suricata/rules/]; then
+    if [ -d /usr/share/suricata/rules/ ]; then
         cp "/usr/share/suricata/rules/*" "/etc/suricata/rules/"
     fi
-    if [ -d /var/lib/suricata/rules/]; then
+    if [ -d /var/lib/suricata/rules/ ]; then
         cp "/var/lib/suricata/rules/*" "/etc/suricata/rules/"
     fi
 
