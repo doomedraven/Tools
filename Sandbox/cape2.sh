@@ -49,7 +49,7 @@ cat << EndOfHelp
         Sandbox - Install CAPE
         Dependencies - Install all dependencies with performance tricks
         Systemd - Install systemd config for cape, we suggest to use systemd
-        Supervisor - Install supervisor config for CAPE # depricated
+        Supervisor - Install supervisor config for CAPE # depricated
         Suricata - Install latest suricata with performance boost
         PostgreSQL - Install latest PostgresSQL
         Yara - Install latest yara
@@ -488,23 +488,121 @@ function install_CAPE() {
 }
 
 function install_systemd() {
-    cd /opt/CAPEv2/systemd
 
-    FILES=(
-        cape-processor.service
-        cape-rooter.service
-        cape-web.service
-        cape.service
-        suricata-update.service
-        suricata-update.timer
-    )
+    if [ ! -f /etc/systemd/system/cape-processor.service ]; then
+        cat >> /etc/systemd/system/cape-processor.service << EOL
+[Unit]
+Description=CAPEv2 report processor
+Documentation=https://github.com/kevoreilly/CAPEv2
+Wants=cape.service
+After=cape-rooter.service
 
-    for file in "${FILES[@]}"; do
-        if [ ! -f /etc/systemd/system/$file ]; then
-            cp $file /etc/systemd/system/
-            systemctl enable $file && systemctl start $file
-        fi
-    done
+[Service]
+WorkingDirectory=/opt/CAPEv2/utils/
+ExecStart=/usr/bin/python3 process.py -p7 auto -pt 900
+User=${USER}
+Group=${USER}
+Restart=always
+RestartSec=5m
+LimitNOFILE=100000
+
+[Install]
+WantedBy=multi-user.target
+EOL
+fi
+
+    if [ ! -f /etc/systemd/system/cape-rooter.service ]; then
+        cat >> /etc/systemd/system/cape-rooter.service << EOL
+[Unit]
+Description=CAPE rooter
+Documentation=https://github.com/kevoreilly/CAPEv2
+Wants=network-online.target
+After=syslog.target network.target
+
+[Service]
+WorkingDirectory=/opt/CAPEv2/utils/
+ExecStart=/usr/bin/python3 rooter.py -g ${USER}
+User=root
+Group=root
+Restart=always
+RestartSec=5m
+
+[Install]
+WantedBy=multi-user.target
+EOL
+fi
+
+    if [ ! -f /etc/systemd/system/cape-web.service ]; then
+        cat >> /etc/systemd/system/cape-web.service << EOL
+[Unit]
+Description=CAPE WSGI app
+Documentation=https://github.com/kevoreilly/CAPEv2
+Wants=cape.service
+After=cape.service
+
+[Service]
+WorkingDirectory=/opt/CAPEv2/web
+ExecStart=/usr/bin/python3 manage.py runserver 0.0.0.0:8000
+#ExecStart=/opt/CAPEv2/venv/bin/gunicorn -b 127.0.0.1:8000 web.wsgi
+User=${USER}
+Group=${USER}
+Restart=always
+RestartSec=5m
+
+[Install]
+WantedBy=multi-user.target
+EOL
+fi
+
+    if [ ! -f /etc/systemd/system/mongos.service ]; then
+        cat >> /etc/systemd/system/mongos.service << EOL
+[Unit]
+Description=CAPE
+Documentation=https://github.com/kevoreilly/CAPEv2
+
+[Service]
+WorkingDirectory=/opt/CAPEv2/
+ExecStart=/usr/bin/python3 cuckoo.py
+User=${USER}
+Group=${USER}
+Restart=always
+RestartSec=5m
+LimitNOFILE=100000
+[Install]
+WantedBy=multi-user.target
+EOL
+fi
+
+    if [ ! -f /etc/systemd/system/suricata-update.service ]; then
+        cat >> /etc/systemd/system/suricata-update.service << EOL
+[Unit]
+Description=suricata-update
+
+[Service]
+User=root
+Group=root
+Type=oneshot
+ExecStart=suricata-update
+
+[Install]
+WantedBy=multi-user.target
+EOL
+fi
+
+    if [ ! -f /etc/systemd/system/suricata-update.timer ]; then
+        cat >> /etc/systemd/system/suricata-update.timer << EOL
+[Unit]
+Description=Run suricata-update hourly and at boot
+
+[Timer]
+OnBootSec=15min
+OnUnitActiveSec=1h
+unit=suricata-update.service
+
+[Install]
+WantedBy=timers.target
+EOL
+fi
 
     systemctl daemon-reload
 }
