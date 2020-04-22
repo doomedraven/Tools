@@ -45,7 +45,8 @@ cat << EndOfHelp
     Usage: $0 <command> cape <iface_ip> | tee $0.log
         Example: $0 all cape 192.168.1.1 | tee $0.log
     Commands - are case insensitive:
-        All - Installs dependencies, CAPE, systemd, see code for full list
+        Base - Installs dependencies, CAPE, systemd, see code for full list
+        All - Installs everything - (don't use it if you don't know what will be installed ;))
         Sandbox - Install CAPE
         Dependencies - Install all dependencies with performance tricks
         Systemd - Install systemd config for cape, we suggest to use systemd
@@ -767,6 +768,14 @@ fi
 OS="$(uname -s)"
 
 case "$COMMAND" in
+'base')
+    dependencies
+    install_mongo
+    install_suricata
+    install_yara
+    install_CAPE
+    install_systemd
+    crontab -l | { cat; echo "@reboot cd /opt/CAPEv2/utils/ && ./smtp_sinkhole.sh"; } | crontab -
 'all')
     dependencies
     install_mongo
@@ -779,6 +788,7 @@ case "$COMMAND" in
     fi
     install_systemd
     install_logrotate
+    redsocks2
     #socksproxies is to start redsocks stuff
     if [ -f /opt/CAPEv2/socksproxies.sh ]; then
         crontab -l | { cat; echo "@reboot /opt/CAPEv2/socksproxies.sh"; } | crontab -
