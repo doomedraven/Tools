@@ -352,7 +352,7 @@ function dependencies() {
     # if __name__ == '__main__':
     #     sys.exit(__main__._main())
     #httpreplay not py3
-    pip3 install Pebble bson pymisp cryptography requests[security] pyOpenSSL pefile tldextract imagehash oletools olefile "networkx>=2.1" mixbox capstone PyCrypto voluptuous xmltodict future python-dateutil requests_file "gevent>=1.2, <1.3" simplejson pyvmomi pyinstaller maec regex xmltodict -U
+    pip3 install Pebble bson pymisp==2.4.117.3 cryptography requests[security] pyOpenSSL pefile tldextract imagehash oletools olefile "networkx>=2.1" mixbox capstone PyCrypto voluptuous xmltodict future python-dateutil requests_file "gevent>=1.2, <1.3" simplejson pyvmomi pyinstaller maec regex xmltodict -U
     pip3 install git+https://github.com/doomedraven/sflock.git git+https://github.com/doomedraven/socks5man.git pyattck==1.0.4 distorm3 openpyxl git+https://github.com/volatilityfoundation/volatility3
     #config parsers
     pip3 install git+https://github.com/Defense-Cyber-Crime-Center/DC3-MWCP.git git+https://github.com/kevthehermit/RATDecoders.git
@@ -680,7 +680,6 @@ case "$COMMAND" in
         install_CAPE
     fi
     install_systemd
-    redsocks2
     install_logrotate
     #socksproxies is to start redsocks stuff
     if [ -f /opt/CAPEv2/socksproxies.sh ]; then
