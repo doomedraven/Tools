@@ -776,6 +776,7 @@ case "$COMMAND" in
     install_CAPE
     install_systemd
     crontab -l | { cat; echo "@reboot cd /opt/CAPEv2/utils/ && ./smtp_sinkhole.sh"; } | crontab -
+    ;;
 'all')
     dependencies
     install_mongo
