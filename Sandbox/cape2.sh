@@ -220,13 +220,18 @@ function install_suricata() {
     sed -i 's/mpm-algo: auto/mpm-algo: hs/g' /etc/suricata/suricata.yaml
     sed -i 's/#run-as:/run-as:/g' /etc/suricata/suricata.yaml
     sed -i 's/#  user: suri/   user: ${USER}/g' /etc/suricata/suricata.yaml
-    sed -i 's/#  user: suri/   group: ${USER}/g' /etc/suricata/suricata.yaml
+    sed -i 's/#  group: suri/   group: ${USER}/g' /etc/suricata/suricata.yaml
     sed -i 's/    depth: 1mb/    depth: 0/g' /etc/suricata/suricata.yaml
     sed -i 's/request-body-limit: 100kb/request-body-limit: 0/g' /etc/suricata/suricata.yaml
     sed -i 's/response-body-limit: 100kb/response-body-limit: 0/g' /etc/suricata/suricata.yaml
     sed -i 's/EXTERNAL_NET: "!$HOME_NET"/EXTERNAL_NET: "ANY"/g' /etc/suricata/suricata.yaml
+    sed -i 's/#pid-file: /var/run/suricata.pid/pid-file: /var/run/suricata.pid/g' /etc/suricata/suricata.yaml
+    #-k none
+    sed -i 's/#checksum-validation: nones/checksum-validation: nones/g' /etc/suricata/suricata.yaml
+
     # enable eve-log
     python3 -c "pa = '/etc/suricata/suricata.yaml';q=open(pa, 'rb').read().replace(b'eve-log:\n      enabled: no\n', b'eve-log:\n      enabled: yes\n');open(pa, 'wb').write(q);"
+    python3 -c "pa = '/etc/suricata/suricata.yaml';q=open(pa, 'rb').read().replace(b'unix-command:\n  enabled: auto\n  #filename: custom.socket', b'unix-command:\n  enabled: yes\n  filename: suricata-command.socket');open(pa, 'wb').write(q);"
 
     chown ${USER}:${USER} -R /etc/suricata
 }
@@ -574,36 +579,33 @@ WantedBy=multi-user.target
 EOL
 fi
 
-    if [ ! -f /etc/systemd/system/suricata-update.service ]; then
-        cat >> /etc/systemd/system/suricata-update.service << EOL
+    if [ ! -f /etc/systemd/system/suricata.service ]; then
+        cat >> /etc/systemd/system/suricata.service << EOL
 [Unit]
-Description=suricata-update
+Description=Suricata IDS/IDP daemon
+After=network.target
+Requires=network.target
+Documentation=man:suricata(8) man:suricatasc(8)
+Documentation=https://redmine.openinfosecfoundation.org/projects/suricata/wiki
 
 [Service]
+Type=forking
+#Environment=LD_PREDLOAD=/usr/lib/libtcmalloc_minimal.so.4
+#Environment=CFG=/etc/suricata/suricata.yaml
+#CapabilityBoundingSet=CAP_NET_ADMIN
+ExecStart=/usr/bin/suricata -D -c /etc/suricata/suricata.yaml --unix-socket
+ExecReload=/bin/kill -HUP $MAINPID
+ExecStop=/bin/kill $MAINPID
+PrivateTmp=yes
+InaccessibleDirectories=/home /root
+ReadOnlyDirectories=/boot /usr /etc
 User=root
-Group=root
-Type=oneshot
-ExecStart=suricata-update
 
 [Install]
 WantedBy=multi-user.target
 EOL
 fi
 
-    if [ ! -f /etc/systemd/system/suricata-update.timer ]; then
-        cat >> /etc/systemd/system/suricata-update.timer << EOL
-[Unit]
-Description=Run suricata-update hourly and at boot
-
-[Timer]
-OnBootSec=15min
-OnUnitActiveSec=1h
-unit=suricata-update.service
-
-[Install]
-WantedBy=timers.target
-EOL
-fi
 
     systemctl daemon-reload
 }
