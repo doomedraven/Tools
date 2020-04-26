@@ -17,6 +17,7 @@ IFACE_IP="192.168.1.1"
 PASSWD="SuperPuperSecret"
 DIST_MASTER_IP=X.X.X.X
 USER="cape"
+nginx_version=1.18.0
 
 function issues() {
 cat << EOI
