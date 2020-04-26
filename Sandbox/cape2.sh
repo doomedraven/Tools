@@ -21,12 +21,12 @@ USER="cape"
 function issues() {
 cat << EOI
 Problems with PyOpenSSL?
-    sudo rm -rf /usr/local/lib/python2.7/dist-packages/OpenSSL/
-    sudo rm -rf /home/${USER}/.local/lib/python2.7/site-packages/OpenSSL/
+    sudo rm -rf /usr/local/lib/python3.8/dist-packages/OpenSSL/
+    sudo rm -rf /home/${USER}/.local/lib/python3.8/site-packages/OpenSSL/
     sudo apt install --reinstall python-openssl
 
 Problem with PIP?
-    sudo python -m pip uninstall pip && sudo apt install python-pip --reinstall
+    sudo python -m pip3 uninstall pip3 && sudo apt install python3-pip --reinstall
 
 Problem with pillow:
     * ValueError: jpeg is required unless explicitly disabled using --disable-jpeg, aborting
@@ -42,6 +42,8 @@ function usage() {
 cat << EndOfHelp
     You need to edit NETWORK_IFACE, IFACE_IP and PASSWD for correct install
 
+    * This ISN'T a silver bullet, we can't control all changes in all third part software, you are welcome to report updates
+
     Usage: $0 <command> cape <iface_ip> | tee $0.log
         Example: $0 all cape 192.168.1.1 | tee $0.log
     Commands - are case insensitive:
@@ -50,6 +52,8 @@ cat << EndOfHelp
         Sandbox - Install CAPE
         Dependencies - Install all dependencies with performance tricks
         Systemd - Install systemd config for cape, we suggest to use systemd
+        Nginx <domain.com> - Install NGINX with realip plugin and other goodies, pass your domain as argument
+        LetsEncrypt <domain.com> - Install LetsEncrypt for your site, pass your domain as argument
         Supervisor - Install supervisor config for CAPE # depricated
         Suricata - Install latest suricata with performance boost
         PostgreSQL - Install latest PostgresSQL
@@ -68,6 +72,220 @@ cat << EndOfHelp
     Cuckoo V2 customizations neat howto
         * https://www.adlice.com/cuckoo-sandbox-customization-v2/
 EndOfHelp
+}
+
+function install_nginx() {
+    wget http://nginx.org/download/nginx-$nginx_version.tar.gz
+    wget http://nginx.org/download/nginx-$nginx_version.tar.gz.asc
+    gpg --verify "nginx-$nginx_version.tar.gz.asc"
+    unzip nginx-$nginx_version.tar.gz
+
+    # PCRE version 8.42
+    wget https://ftp.pcre.org/pub/pcre/pcre-8.42.tar.gz && tar xzvf pcre-8.42.tar.gz
+
+    # zlib version 1.2.11
+    wget https://www.zlib.net/zlib-1.2.11.tar.gz && tar xzvf zlib-1.2.11.tar.gz
+
+    # OpenSSL version 1.1.0h
+    wget https://www.openssl.org/source/openssl-1.1.0h.tar.gz && tar xzvf openssl-1.1.0h.tar.gz
+
+    sudo add-apt-repository -y ppa:maxmind/ppa
+    sudo apt update && sudo apt upgrade -y
+    sudo apt install -y perl libperl-dev libgd3 libgd-dev libgeoip1 libgeoip-dev geoip-bin libxml2 libxml2-dev libxslt1.1 libxslt1-dev
+
+    cd nginx-$nginx_version
+
+    sudo cp nginx-$nginx_version/man/nginx.8 /usr/share/man/man8
+    sudo gzip /usr/share/man/man8/nginx.8
+    ls /usr/share/man/man8/ | grep nginx.8.gz
+
+    ./configure --prefix=/usr/share/nginx \
+                --sbin-path=/usr/sbin/nginx \
+                --modules-path=/usr/lib/nginx/modules \
+                --conf-path=/etc/nginx/nginx.conf \
+                --error-log-path=/var/log/nginx/error.log \
+                --http-log-path=/var/log/nginx/access.log \
+                --pid-path=/run/nginx.pid \
+                --lock-path=/var/lock/nginx.lock \
+                --user=www-data \
+                --group=www-data \
+                --build=Ubuntu \
+                --http-client-body-temp-path=/var/lib/nginx/body \
+                --http-fastcgi-temp-path=/var/lib/nginx/fastcgi \
+                --http-proxy-temp-path=/var/lib/nginx/proxy \
+                --http-scgi-temp-path=/var/lib/nginx/scgi \
+                --http-uwsgi-temp-path=/var/lib/nginx/uwsgi \
+                --with-openssl=../openssl-1.1.0h \
+                --with-openssl-opt=enable-ec_nistp_64_gcc_128 \
+                --with-openssl-opt=no-nextprotoneg \
+                --with-openssl-opt=no-weak-ssl-ciphers \
+                --with-openssl-opt=no-ssl3 \
+                --with-pcre=../pcre-8.42 \
+                --with-pcre-jit \
+                --with-zlib=../zlib-1.2.11 \
+                --with-compat \
+                --with-file-aio \
+                --with-threads \
+                --with-http_addition_module \
+                --with-http_auth_request_module \
+                --with-http_dav_module \
+                --with-http_flv_module \
+                --with-http_gunzip_module \
+                --with-http_gzip_static_module \
+                --with-http_mp4_module \
+                --with-http_random_index_module \
+                --with-http_realip_module \
+                --with-http_slice_module \
+                --with-http_ssl_module \
+                --with-http_sub_module \
+                --with-http_stub_status_module \
+                --with-http_v2_module \
+                --with-http_secure_link_module \
+                --with-mail \
+                --with-mail_ssl_module \
+                --with-stream \
+                --with-stream_realip_module \
+                --with-stream_ssl_module \
+                --with-stream_ssl_preread_module \
+                --with-debug \
+                --with-cc-opt='-g -O2 -fPIE -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2' \
+                --with-ld-opt='-Wl,-Bsymbolic-functions -fPIE -pie -Wl,-z,relro -Wl,-z,now'
+
+make -j$(nproc)
+    checkinstall -D --pkgname="nginx-$nginx_version" --pkgversion="$nginx_version" --default
+    sudo ln -s /usr/lib/nginx/modules /etc/nginx/modules
+    sudo adduser --system --home /nonexistent --shell /bin/false --no-create-home --disabled-login --disabled-password --gecos "nginx user" --group nginx
+
+    sudo mkdir -p /var/cache/nginx/client_temp /var/cache/nginx/fastcgi_temp /var/cache/nginx/proxy_temp /var/cache/nginx/scgi_temp /var/cache/nginx/uwsgi_temp
+    sudo chmod 700 /var/cache/nginx/*
+    sudo chown nginx:root /var/cache/nginx/*
+
+    if [ ! -f /etc/systemd/system/nginx.service ]; then
+        sudo cat >> /etc/systemd/system/nginx.service << EOF
+[Unit]
+Description=nginx - high performance web server
+Documentation=https://nginx.org/en/docs/
+After=network-online.target remote-fs.target nss-lookup.target
+Wants=network-online.target
+
+[Service]
+Type=forking
+PIDFile=/var/run/nginx.pid
+ExecStartPre=/usr/sbin/nginx -t -c /etc/nginx/nginx.conf
+ExecStart=/usr/sbin/nginx -c /etc/nginx/nginx.conf
+ExecReload=/bin/kill -s HUP $MAINPID
+ExecStop=/bin/kill -s TERM $MAINPID
+
+[Install]
+WantedBy=multi-user.target
+EOF
+    fi
+
+    sudo systemctl enable nginx.service
+    sudo systemctl start nginx.service
+    sudo systemctl is-enabled nginx.service
+
+    sudo mkdir /etc/nginx/{conf.d,snippets,sites-available,sites-enabled}
+    sudo chmod 640 /var/log/nginx/*
+    sudo chown nginx:adm /var/log/nginx/access.log /var/log/nginx/error.log
+
+
+    if [ ! -f /etc/logrotate.d/nginx ]; then
+        sudo cat >> /etc/logrotate.d/nginx << EOF
+/var/log/nginx/*.log {
+    daily
+    missingok
+    rotate 52
+    compress
+    delaycompress
+    notifempty
+    create 640 nginx adm
+    sharedscripts
+    postrotate
+    if [ -f /var/run/nginx.pid ]; then
+            kill -USR1 `cat /var/run/nginx.pid`
+    fi
+    endscript
+}
+EOF
+fi
+
+    sudo ln -s /etc/nginx/sites-available/$1 /etc/nginx/sites-enabled/
+    #sudo wget https://support.cloudflare.com/hc/en-us/article_attachments/201243967/origin-pull-ca.pem -O
+
+    if [ ! -f /etc/nginx/sites-enabled/capesandbox ]; then
+        cat >> /etc/nginx/sites-enabled/capesandbox << EOF
+server {
+    listen 80 default_server;
+    server_name $1;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    # SSL configuration
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    ssl        on;
+    ssl_certificate         /etc/letsencrypt/live/$1/fullchain.pem;
+    ssl_certificate_key     /etc/letsencrypt/live/$1/privkey.pem;
+    ssl_client_certificate /etc/ssl/certs/cloudflare.crt;
+    ssl_verify_client on;
+
+    server_name $1 www.$1;
+    location / {
+        try_files $uri $uri/ =404;
+    }
+}:
+EOF
+fi
+
+    if [ ! -f /etc/ssl/certs/cloudflare.crt ]; then
+        cat >> /etc/ssl/certs/cloudflare.crt << EOF
+-----BEGIN CERTIFICATE-----
+MIIGBjCCA/CgAwIBAgIIV5G6lVbCLmEwCwYJKoZIhvcNAQENMIGQMQswCQYDVQQG
+EwJVUzEZMBcGA1UEChMQQ2xvdWRGbGFyZSwgSW5jLjEUMBIGA1UECxMLT3JpZ2lu
+IFB1bGwxFjAUBgNVBAcTDVNhbiBGcmFuY2lzY28xEzARBgNVBAgTCkNhbGlmb3Ju
+aWExIzAhBgNVBAMTGm9yaWdpbi1wdWxsLmNsb3VkZmxhcmUubmV0MB4XDTE1MDEx
+MzAyNDc1M1oXDTIwMDExMjAyNTI1M1owgZAxCzAJBgNVBAYTAlVTMRkwFwYDVQQK
+ExBDbG91ZEZsYXJlLCBJbmMuMRQwEgYDVQQLEwtPcmlnaW4gUHVsbDEWMBQGA1UE
+BxMNU2FuIEZyYW5jaXNjbzETMBEGA1UECBMKQ2FsaWZvcm5pYTEjMCEGA1UEAxMa
+b3JpZ2luLXB1bGwuY2xvdWRmbGFyZS5uZXQwggIiMA0GCSqGSIb3DQEBAQUAA4IC
+DwAwggIKAoICAQDdsts6I2H5dGyn4adACQRXlfo0KmwsN7B5rxD8C5qgy6spyONr
+WV0ecvdeGQfWa8Gy/yuTuOnsXfy7oyZ1dm93c3Mea7YkM7KNMc5Y6m520E9tHooc
+f1qxeDpGSsnWc7HWibFgD7qZQx+T+yfNqt63vPI0HYBOYao6hWd3JQhu5caAcIS2
+ms5tzSSZVH83ZPe6Lkb5xRgLl3eXEFcfI2DjnlOtLFqpjHuEB3Tr6agfdWyaGEEi
+lRY1IB3k6TfLTaSiX2/SyJ96bp92wvTSjR7USjDV9ypf7AD6u6vwJZ3bwNisNw5L
+ptph0FBnc1R6nDoHmvQRoyytoe0rl/d801i9Nru/fXa+l5K2nf1koR3IX440Z2i9
++Z4iVA69NmCbT4MVjm7K3zlOtwfI7i1KYVv+ATo4ycgBuZfY9f/2lBhIv7BHuZal
+b9D+/EK8aMUfjDF4icEGm+RQfExv2nOpkR4BfQppF/dLmkYfjgtO1403X0ihkT6T
+PYQdmYS6Jf53/KpqC3aA+R7zg2birtvprinlR14MNvwOsDOzsK4p8WYsgZOR4Qr2
+gAx+z2aVOs/87+TVOR0r14irQsxbg7uP2X4t+EXx13glHxwG+CnzUVycDLMVGvuG
+aUgF9hukZxlOZnrl6VOf1fg0Caf3uvV8smOkVw6DMsGhBZSJVwao0UQNqQIDAQAB
+o2YwZDAOBgNVHQ8BAf8EBAMCAAYwEgYDVR0TAQH/BAgwBgEB/wIBAjAdBgNVHQ4E
+FgQUQ1lLK2mLgOERM2pXzVc42p59xeswHwYDVR0jBBgwFoAUQ1lLK2mLgOERM2pX
+zVc42p59xeswCwYJKoZIhvcNAQENA4ICAQDKDQM1qPRVP/4Gltz0D6OU6xezFBKr
+LWtDoA1qW2F7pkiYawCP9MrDPDJsHy7dx+xw3bBZxOsK5PA/T7p1dqpEl6i8F692
+g//EuYOifLYw3ySPe3LRNhvPl/1f6Sn862VhPvLa8aQAAwR9e/CZvlY3fj+6G5ik
+3it7fikmKUsVnugNOkjmwI3hZqXfJNc7AtHDFw0mEOV0dSeAPTo95N9cxBbm9PKv
+qAEmTEXp2trQ/RjJ/AomJyfA1BQjsD0j++DI3a9/BbDwWmr1lJciKxiNKaa0BRLB
+dKMrYQD+PkPNCgEuojT+paLKRrMyFUzHSG1doYm46NE9/WARTh3sFUp1B7HZSBqA
+kHleoB/vQ/mDuW9C3/8Jk2uRUdZxR+LoNZItuOjU8oTy6zpN1+GgSj7bHjiy9rfA
+F+ehdrz+IOh80WIiqs763PGoaYUyzxLvVowLWNoxVVoc9G+PqFKqD988XlipHVB6
+Bz+1CD4D/bWrs3cC9+kk/jFmrrAymZlkFX8tDb5aXASSLJjUjcptci9SKqtI2h0J
+wUGkD7+bQAr+7vr8/R+CBmNMe7csE8NeEX6lVMF7Dh0a1YKQa6hUN18bBuYgTMuT
+QzMmZpRpIBB321ZBlcnlxiTJvWxvbCPHKHj20VwwAz7LONF59s84ZsOqfoBv8gKM
+s0s5dsq5zpLeaw==
+-----END CERTIFICATE-----
+EOF
+fi
+}
+
+function install_letsencrypt(){
+    sudo add-apt-repository ppa:certbot/certbot -y
+    sudo apt update
+    sudo apt install python3-certbot-nginx -y
+    sudo echo "server_name $1 www.$1;" > /etc/nginx/sites-available/$1
+    sudo certbot --nginx -d $1 -d www.$1
 }
 
 function install_fail2ban() {
@@ -349,7 +567,7 @@ function dependencies() {
     apt install psmisc jq sqlite3 tmux net-tools checkinstall graphviz python3-pydot git numactl python3 python3-dev python3-pip libjpeg-dev zlib1g-dev -y
     apt install upx-ucl libssl-dev wget zip unzip p7zip-full rar unrar unace-nonfree cabextract geoip-database libgeoip-dev libjpeg-dev mono-utils ssdeep libfuzzy-dev exiftool -y
     apt install ssdeep uthash-dev libconfig-dev libarchive-dev libtool autoconf automake privoxy software-properties-common wkhtmltopdf xvfb xfonts-100dpi tcpdump libcap2-bin -y
-    apt install python3-pil subversion uwsgi uwsgi-plugin-python python3-pyelftools git curl -y
+    apt install python3-pil subversion uwsgi uwsgi-plugin-python3 python3-pyelftools git curl -y
     #clamav clamav-daemon clamav-freshclam
     # if broken sudo python -m pip uninstall pip && sudo apt install python-pip --reinstall
     #pip3 install --upgrade pip
@@ -358,7 +576,7 @@ function dependencies() {
     # if __name__ == '__main__':
     #     sys.exit(__main__._main())
     #httpreplay not py3
-    pip3 install Pebble bson pymisp==2.4.117.3 cryptography requests[security] pyOpenSSL pefile tldextract imagehash oletools olefile "networkx>=2.1" mixbox capstone PyCrypto voluptuous xmltodict future python-dateutil requests_file "gevent>=1.2, <1.3" simplejson pyvmomi pyinstaller maec regex xmltodict -U
+    pip3 install Pebble bson pymisp cryptography requests[security] pyOpenSSL pefile tldextract imagehash oletools olefile "networkx>=2.1" mixbox capstone PyCrypto voluptuous xmltodict future python-dateutil requests_file "gevent==20.4.0" simplejson pyvmomi pyinstaller maec regex xmltodict -U
     pip3 install git+https://github.com/doomedraven/sflock.git git+https://github.com/doomedraven/socks5man.git pyattck==1.0.4 distorm3 openpyxl git+https://github.com/volatilityfoundation/volatility3
     #config parsers
     pip3 install git+https://github.com/Defense-Cyber-Crime-Center/DC3-MWCP.git git+https://github.com/kevthehermit/RATDecoders.git
@@ -370,7 +588,7 @@ function dependencies() {
 
     #thanks Jurriaan <3
     pip3 install git+https://github.com/jbremer/peepdf.git
-    pip3 install matplotlib==2.2.2 numpy==1.15.0 six==1.11.0 statistics==1.0.3.5 lief==0.9.0
+    pip3 install matplotlib==2.2.2 numpy==1.15.0 six==1.11.0 statistics==1.0.3.5
 
     pip3 install "django>3" git+https://github.com/jsocol/django-ratelimit.git
     pip3 install sqlalchemy sqlalchemy-utils jinja2 markupsafe bottle chardet pygal rarfile jsbeautifier dpkt nose dnspython pytz requests[socks] python-magic geoip pillow java-random python-whois bs4 pype32-py3 git+https://github.com/kbandla/pydeep.git flask flask-restful flask-sqlalchemy pyvmomi
@@ -488,7 +706,7 @@ function install_CAPE() {
     sed -i "/memory_dump = off/cmemory_dump = on" /opt/CAPEv2/conf/cuckoo.conf
     sed -i "/machinery =/cmachinery = kvm" /opt/CAPEv2/conf/cuckoo.conf
     sed -i "/interface =/cinterface = ${NETWORK_IFACE}" /opt/CAPEv2/conf/auxiliary.conf
-    
+
     cd CAPEv2 || return
     python3 utils/community.py -af
 }
@@ -731,15 +949,6 @@ EOF
     # msoffice decrypt encrypted files
 }
 
-function letsencrypt() {
-    #https://www.digitalocean.com/community/tutorials/how-to-secure-nginx-with-let-s-encrypt-on-ubuntu-18-04
-    sudo add-apt-repository ppa:certbot/certbot -y
-    sudo apt update
-    sudo apt install python-certbot-nginx -y
-    #Not finished yet ;)
-    sudo certbot renew --dry-run
-}
-
 # Doesn't work ${$1,,}
 COMMAND=$(echo "$1"|tr "[A-Z]" "[a-z]")
 
@@ -829,8 +1038,10 @@ case "$COMMAND" in
     install_logrotate;;
 'issues')
     issues;;
+'nginx')
+    install_nginx;;
 'letsencrypt')
-    letsencrypt;;
+    install_letsencrypt;;
 *)
     usage;;
 esac
