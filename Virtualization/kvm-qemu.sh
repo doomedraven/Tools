@@ -4,9 +4,10 @@
 # This file is part of Tools - https://github.com/doomedraven/Tools
 # See the file 'LICENSE.md' for copying permission.
 # https://www.doomedraven.com/2016/05/kvm.html
-# Use Ubuntu 18.04 LTS
+# https://www.doomedraven.com/2020/04/how-to-create-virtual-machine-with-virt.html
+# Use Ubuntu 20.04 LTS
 
-#Update date: 14.02.2020
+#Update date: 28.04.2020
 
 : '
 Huge thanks to:
@@ -50,11 +51,11 @@ Huge thanks to:
 #      strs[5] = "VBoxVBoxVBox"; /* VirtualBox */
 
 #https://www.qemu.org/download/#source or https://download.qemu.org/
-qemu_version=4.2.0
+qemu_version=5.0.0
 # libvirt - https://libvirt.org/sources/
 # changelog - https://libvirt.org/news.html
 #5.6.0 can be the best
-libvirt_version=6.0.0
+libvirt_version=6.2.0
 # virt-manager - https://github.com/virt-manager/virt-manager/releases
 # autofilled
 OS=""
@@ -70,6 +71,7 @@ QTARGETS="--target-list=i386-softmmu,x86_64-softmmu,i386-linux-user,x86_64-linux
 
 function changelog() {
 cat << EndOfCL
+    # 25.04.2020 - Libvirt 6.2, QEMU 5, Ubuntu 20.04
     # 14.02.2020 - Libvirt 6, fix libvirt installation
     # 13.12.2019 - Libvirt 5.10, QEMU 4.2
     # 12.10.2019 - Libvirt 5.8
@@ -100,6 +102,7 @@ cat << EndOfHelp
         QEMU - Install QEMU from source,
             DEFAULT support are x86 and x64, set ENV var QEMU_TARGERS=all to install for all arches
         SeaBios - Install SeaBios and repalce QEMU bios file
+        Libvirt <username_optional> - install libvirt, username is optional
         KVM - this will install intel-HAXM if you on Mac
         HAXM - Mac Hardware Accelerated Execution Manager
         GRUB - add IOMMU to grub command line
@@ -110,7 +113,6 @@ cat << EndOfHelp
         Clone - <VM_NAME> <path_to_hdd> <start_from_number> <#vm_to_create> <path_where_to_store> <network_range_base>
                 * Example Win7x64 /VMs/Win7x64.qcow2 0 5 /var/lib/libvirt/images/ 192.168.1
                 https://wiki.qemu.org/Documentation/CreateSnapshot
-        Libvirt <username_optional> - install libvirt, username is optional
         Libvmi - install LibVMI
         Virtmanager - install virt-manager
         Libguestfs - install libguestfs
@@ -182,6 +184,7 @@ function install_haxm_mac() {
 }
 
 function install_libguestfs() {
+
     cd /opt || return
     echo "[+] Check for previous version of LibGuestFS"
     sudo dpkg --purge --force-all "libguestfs-*" 2>/dev/null
@@ -206,6 +209,7 @@ function install_libguestfs() {
     echo "[+] cd /opt/libguestfs/ && ./run --help"
     echo "[+] cd /opt/libguestfs/ && ./run ./sparsify/virt-sparsify"
 }
+
 
 function install_libvmi() {
     # IMPORTANT:
@@ -366,11 +370,12 @@ EOH
     tar xf libvirt-$libvirt_version.tar.xz
     cd libvirt-$libvirt_version || return
     if [ "$OS" = "Linux" ]; then
-        apt install python-dev python3-dev unzip numad glib-2.0 libglib2.0-dev libsdl1.2-dev lvm2 python-pip python-libxml2 python3-libxml2 ebtables libosinfo-1.0-dev libnl-3-dev libnl-route-3-dev libyajl-dev xsltproc libapparmor-dev apparmor-utils libdevmapper-dev libpciaccess-dev dnsmasq dmidecode librbd-dev -y 2>/dev/null
-        apt install apparmor-profiles apparmor-profiles-extra apparmor-utils libapparmor-dev python-apparmor libapparmor-perl -y
-        pip install ipaddr
+        apt install python3-dev unzip numad glib-2.0 libglib2.0-dev libsdl1.2-dev lvm2 python-pip python-libxml2 python3-libxml2 ebtables libosinfo-1.0-dev libnl-3-dev libnl-route-3-dev libyajl-dev xsltproc libapparmor-dev apparmor-utils libdevmapper-dev libpciaccess-dev dnsmasq dmidecode librbd-dev -y 2>/dev/null
+        apt install apparmor-profiles apparmor-profiles-extra apparmor-utils libapparmor-dev python3-apparmor libapparmor-perl -y
+        pip3 install ipaddr
         # --prefix=/usr --localstatedir=/var --sysconfdir=/etc
-        # --with-secdriver-apparmor=yes --with-apparmor-profiles
+        git init
+        git remote add doomedraven https://github.com/libvirt/libvirt
         mkdir build && cd build
         ../autogen.sh --system --with-qemu=yes --with-dtrace --with-numad --disable-nls --with-openvz=no --with-yajl=yes --with-secdriver-apparmor=yes --with-apparmor-profiles
         make -j"$(nproc)"
@@ -430,12 +435,8 @@ EOH
     fi
     unzip v$libvirt_version.zip
     cd "libvirt-python-$libvirt_version" || return
-    #pip install .
-    python setup.py build
-    python setup.py install
-    #pip3 install .
     python3 setup.py build
-    python3 setup.py install
+    pip3 install .
     if [ "$OS" = "Linux" ]; then
         # https://github.com/libvirt/libvirt/commit/e94979e901517af9fdde358d7b7c92cc055dd50c
         groupname=""
@@ -463,7 +464,7 @@ EOH
 
 function install_virt_manager() {
     # from build-dep
-    apt install libgirepository1.0-dev gtk-doc-tools python-pip python3-pip gir1.2-govirt-1.0 libgovirt-dev \
+    apt install libgirepository1.0-dev gtk-doc-tools python3-pip gir1.2-govirt-1.0 libgovirt-dev \
     libgovirt-common libgovirt2 gir1.2-rest-0.7 unzip intltool augeas-doc ifupdown wodim cdrkit-doc indicator-application \
     augeas-tools radvd auditd systemtap nfs-common zfsutils pm-utils python-openssl-doc python-socks python-ntlm samba ovmf \
     debootstrap sharutils-doc ssh-askpass gnome-keyring python-requests python-six python-urllib3 python2.7 python2.7-minimal \
@@ -524,14 +525,14 @@ function install_virt_manager() {
     #ToDo add blacklist
     checkinstall --pkgname=libvirt-glib-1.0-0 --default
 
-    cd /tmp || return
+    cd /tmp || return
     if [ ! -f gir1.2-libvirt-glib-1.0_1.0.0-1_amd64.deb ]; then
         wget http://launchpadlibrarian.net/297448356/gir1.2-libvirt-glib-1.0_1.0.0-1_amd64.deb
     fi
     dpkg -i gir1.2-libvirt-glib-1.0_1.0.0-1_amd64.deb
+
     /sbin/ldconfig
 
-    cd /tmp || return
     if [ ! -d "virt-manager" ]; then
         git clone https://github.com/virt-manager/virt-manager.git
         echo "[+] Cloned Virt Manager repo"
@@ -542,7 +543,6 @@ function install_virt_manager() {
     #pip3 install .
     python3 setup.py build
     python3 setup.py install
-
     if [ "$SHELL" = "/bin/zsh" ] || [ "$SHELL" = "/usr/bin/zsh" ] ; then
         echo "export LIBVIRT_DEFAULT_URI=qemu:///system" >> "$HOME/.zsh"
     else
@@ -553,7 +553,7 @@ function install_virt_manager() {
 function install_kvm_linux() {
     sed -i 's/# deb-src/deb-src/g' /etc/apt/sources.list
     apt update 2>/dev/null
-    apt install build-essential python-pip python3-pip gcc pkg-config cpu-checker intltool -y 2>/dev/null
+    apt install build-essential python3-pip gcc pkg-config cpu-checker intltool -y 2>/dev/null
     apt install gtk-update-icon-cache -y 2>/dev/null
 
     # WSL support
@@ -569,6 +569,13 @@ function install_kvm_linux() {
 
     kvm-ok
 
+    if ! grep -q -E '^net.bridge.bridge-nf-call-ip6tables' /etc/sysctl.conf; then
+        cat >> /etc/sysctl.conf << EOF
+net.bridge.bridge-nf-call-ip6tables = 0
+net.bridge.bridge-nf-call-iptables = 0
+net.bridge.bridge-nf-call-arptables = 0
+EOF
+    fi
     # Ubuntu 18.04:
     # /dev/kvm permissions always changed to root after reboot
     # "chown root:libvirt /dev/kvm" doesnt help
@@ -590,9 +597,9 @@ function install_kvm_linux() {
 options kvm ignore_msrs=Y
 options kvm report_ignored_msrs=N
 EOF
-
     fi
 }
+
 
 function replace_qemu_clues_public() {
     echo '[+] Patching QEMU clues'
@@ -696,12 +703,11 @@ function qemu_func() {
         apt install software-properties-common
         add-apt-repository universe
         apt update 2>/dev/null
-        apt install checkinstall openbios-* libssh2-1-dev vde2 liblzo2-dev libghc-gtk3-dev libsnappy-dev libbz2-dev libxml2-dev google-perftools libgoogle-perftools-dev libvde-dev python-pip -y 2>/dev/null
-        apt install debhelper ibusb-1.0-0-dev libxen-dev uuid-dev xfslibs-dev libjpeg-dev libusbredirparser-dev device-tree-compiler texinfo libbluetooth-dev libbrlapi-dev libcap-ng-dev libcurl4-gnutls-dev libfdt-dev gnutls-dev libiscsi-dev libncurses5-dev libnuma-dev libcacard-dev librados-dev librbd-dev libsasl2-dev libseccomp-dev libspice-server-dev \
-        libaio-dev libcap-dev libattr1-dev libpixman-1-dev libgtk2.0-bin  libxml2-utils systemtap-sdt-dev texinfo uml-utilities openbios-sparc openbios-ppc -y 2>/dev/null
+        apt install checkinstall openbios-sparc openbios-ppc libssh2-1-dev vde2 liblzo2-dev libghc-gtk3-dev libsnappy-dev libbz2-dev libxml2-dev google-perftools libgoogle-perftools-dev libvde-dev  -y
+        apt install debhelper libusb-1.0-0-dev libxen-dev uuid-dev xfslibs-dev libjpeg-dev libusbredirparser-dev device-tree-compiler texinfo libbluetooth-dev libbrlapi-dev libcap-ng-dev libcurl4-gnutls-dev libfdt-dev gnutls-dev libiscsi-dev libncurses5-dev libnuma-dev libcacard-dev librados-dev librbd-dev libsasl2-dev libseccomp-dev libspice-server-dev \
+        libaio-dev libcap-dev libattr1-dev libpixman-1-dev libgtk2.0-bin libxml2-utils systemtap-sdt-dev uml-utilities -y
         # qemu docs required
         PERL_MM_USE_DEFAULT=1 perl -MCPAN -e install "Perl/perl-podlators"
-        pip install sphinx
         pip3 install sphinx
 
     elif [ "$OS" = "Darwin" ]; then
@@ -937,14 +943,17 @@ cat << EndOfHelp
     $ apt install python-ipaddr
 
     8. Namespace Gtk not available: Could not open display: localhost:10.0
-    ValueError: Namespace GtkSource not available
+    8 ValueError: Namespace GtkSource not available
     $ apt install libgtk-3-dev libgtksourceview-3.0-dev
+    * Error will specify version, example `gi.require_version("GtkSource", "4")`, if that version is not available for your distro
+    * you will need downgrade your virt-manager with `sudo rm -r /usr/share/virt-manager` and install older version
 
     9. ImportError: cannot import name Vte
     $ apt install gir1.2-vte-2.90
 
     10. TypeError: Couldn't find foreign struct converter for 'cairo.Context'
     $ apt install python3-gi-cairo
+
 
 EndOfHelp
 }
@@ -987,8 +996,8 @@ function cloning() {
             if [ ! -f "${5}/${1}_${i}.qcow2" ]; then
                 #Linked snapshots are disabled due to performance problems
                 echo "Creating $5/$1_$i.qcow2"
-                #qemu-img create -f qcow2 -F qcow2 -b "$2" "$5/$1_$i.qcow2"
-                cp "$2" "$5/$1_$i.qcow2"
+                qemu-img create -f qcow2 -F qcow2 -b "$2" "$5/$1_$i.qcow2"
+                #cp "$2" "$5/$1_$i.qcow2"
             fi
             #2>/dev/null
             if virt-clone --print-xml -n "$1_$i" -o "$1" -m "$macaddr" |sed "s|<driver name=\"qemu\" type=\"qcow2\" cache=\"none\" io=\"native\"/>|<driver name=\"qemu\" type=\"qcow2\" cache=\"none\" discard=\"unmap\" detect_zeroes=\"on\" io=\"native\"/>\\n      <source file=\"${5}/${1}_${i}.qcow2\"/>|g" > "$5/$1_$i.xml"; then
