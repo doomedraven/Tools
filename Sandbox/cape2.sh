@@ -589,7 +589,7 @@ function dependencies() {
 
     #thanks Jurriaan <3
     pip3 install git+https://github.com/jbremer/peepdf.git
-    pip3 install matplotlib==2.2.2 numpy==1.15.0 six==1.11.0 statistics==1.0.3.5
+    pip3 install matplotlib==2.2.2 numpy==1.15.0 six>=1.12.0 statistics==1.0.3.5
 
     pip3 install "django>3" git+https://github.com/jsocol/django-ratelimit.git
     pip3 install sqlalchemy sqlalchemy-utils jinja2 markupsafe bottle chardet pygal rarfile jsbeautifier dpkt nose dnspython pytz requests[socks] python-magic geoip pillow java-random python-whois bs4 pype32-py3 git+https://github.com/kbandla/pydeep.git flask flask-restful flask-sqlalchemy pyvmomi
