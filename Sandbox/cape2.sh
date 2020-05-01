@@ -456,6 +456,9 @@ function install_suricata() {
 }
 
 function install_yara() {
+    echo '[+] Checking for old YARA version to uninstall'
+    dpkg -l|grep "yara-v[0-9]\{1,2\}\.[0-9]\{1,2\}\.[0-9]\{1,2\}"|cut -d " " -f 3|sudo xargs dpkg --purge --force-all 2>/dev/null
+
     echo '[+] Installing Yara'
 
     apt install libtool libjansson-dev libmagic1 libmagic-dev jq autoconf checkinstall -y
