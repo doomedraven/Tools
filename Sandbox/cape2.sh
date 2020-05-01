@@ -467,9 +467,11 @@ function install_yara() {
     yara_info=$(curl -s https://api.github.com/repos/VirusTotal/yara/releases/latest)
     yara_version=$(echo $yara_info |jq .tag_name|sed "s/\"//g")
     yara_repo_url=$(echo $yara_info | jq ".zipball_url" | sed "s/\"//g")
-    wget -q $yara_repo_url
-    unzip -q $yara_version
-    #wget "https://github.com/VirusTotal/yara/archive/v$yara_version.zip" && unzip "v$yara_version.zip"
+    if [ ! -f $yara_version ]; then
+        wget -q $yara_repo_url
+        unzip -q $yara_version
+        #wget "https://github.com/VirusTotal/yara/archive/v$yara_version.zip" && unzip "v$yara_version.zip"
+    fi
     directory=`ls | grep "VirusTotal-yara-*"`
     cd $directory || return
     ./bootstrap.sh
