@@ -817,6 +817,7 @@ Type=forking
 #Environment=LD_PREDLOAD=/usr/lib/libtcmalloc_minimal.so.4
 #Environment=CFG=/etc/suricata/suricata.yaml
 #CapabilityBoundingSet=CAP_NET_ADMIN
+ExecStartPre=/bin/rm -f /var/run/suricata.pid
 ExecStart=/usr/bin/suricata -D -c /etc/suricata/suricata.yaml --unix-socket
 ExecReload=/bin/kill -HUP $MAINPID
 ExecStop=/bin/kill $MAINPID
