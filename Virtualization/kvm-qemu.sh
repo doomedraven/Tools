@@ -28,20 +28,20 @@ Huge thanks to:
 #Changes the qcow2 cluster size (must be between 512 and 2M). Smaller cluster sizes can improve the image file size whereas larger cluster sizes generally provide better performance.
 
 # https://github.com/dylanaraps/pure-bash-bible
-# https://www.shellcheck.net/
+# https://www.shellcheck.net/
 
-# ACPI tables related
+# ACPI tables related
 # https://wiki.archlinux.org/index.php/DSDT
-# Dump on linux
-#   acpidump > acpidump.out
-# Dump on Windows
-#    https://acpica.org/downloads/binary-tools
+# Dump on linux
+#   acpidump > acpidump.out
+# Dump on Windows
+#    https://acpica.org/downloads/binary-tools
 #    acpixtract -a acpi/4/acpi.dump
 
-# acpixtract -a acpidump.out
-# iasl -d DSDT.dat
-# Decompile: iasl -d dsdt.dat
-# Recompile: iasl -tc dsdt.dsl
+# acpixtract -a acpidump.out
+# iasl -d DSDT.dat
+# Decompile: iasl -d dsdt.dat
+# Recompile: iasl -tc dsdt.dsl
 
 #      strs[0] = "KVMKVMKVM\0\0\0"; /* KVM */
 #      strs[1] = "Microsoft Hv"; /* Microsoft Hyper-V or Windows Virtual PC */
@@ -53,10 +53,10 @@ Huge thanks to:
 #https://www.qemu.org/download/#source or https://download.qemu.org/
 qemu_version=5.0.0
 # libvirt - https://libvirt.org/sources/
-# changelog - https://libvirt.org/news.html
+# changelog - https://libvirt.org/news.html
 #5.6.0 can be the best
 libvirt_version=6.2.0
-# virt-manager - https://github.com/virt-manager/virt-manager/releases
+# virt-manager - https://github.com/virt-manager/virt-manager/releases
 # autofilled
 OS=""
 username=""
@@ -65,7 +65,7 @@ username=""
 QTARGETS="--target-list=i386-softmmu,x86_64-softmmu,i386-linux-user,x86_64-linux-user"
 
 # ToDO add to see if cpu supports VTx
-# egrep '(vmx|svm)' --color=always /proc/cpuinfo
+# egrep '(vmx|svm)' --color=always /proc/cpuinfo
 #* If your CPU is Intel, you need activate in __BIOS__ VT-x
 #    * (last letter can change, you can activate [TxT ](https://software.intel.com/en-us/blogs/2012/09/25/how-to-enable-an-intel-trusted-execution-technology-capable-server) too, and any other feature, but VT-* is very important)
 
@@ -75,16 +75,16 @@ cat << EndOfCL
     # 14.02.2020 - Libvirt 6, fix libvirt installation
     # 13.12.2019 - Libvirt 5.10, QEMU 4.2
     # 12.10.2019 - Libvirt 5.8
-    # 06.08.2019 - Libvirt 5.6
-    # 06.07.2019 - Libvirt 5.5, more checks, compatibility with Ubuntu 19.04, but I suggest to stay with 18.04
+    # 06.08.2019 - Libvirt 5.6
+    # 06.07.2019 - Libvirt 5.5, more checks, compatibility with Ubuntu 19.04, but I suggest to stay with 18.04
     # 24.04.2019 - QEMU 4
-    # 28.03.2019 - Huge cleanup, fixes, QEMU 4-RC2 testing in dev
+    # 28.03.2019 - Huge cleanup, fixes, QEMU 4-RC2 testing in dev
     # 24.02.2019 - Add Mosh + support for Linux TCP BBR - https://www.cyberciti.biz/cloud-computing/increase-your-linux-server-internet-speed-with-tcp-bbr-congestion-control/
-    # 11.02.2019 - Depricated linked clones and added WebVirtMgr
+    # 11.02.2019 - Depricated linked clones and added WebVirtMgr
     # 30.01.2019 - Libvirt 5.0.0
     # 27.12.2018 - libguestfs 1.38
     # 10.11.2018 - Virt-manager 2, libivrt-4.10, fixes
-    # 11.09.2018 - code improvement
+    # 11.09.2018 - code improvement
     # 09.09.2018 - ACPI fixes
     # 05.09.2018 - libivrt 4.7 and virtlogd
     # 19.08.2018 - Intel HAXM notes
@@ -143,7 +143,7 @@ function grub_iommu(){
 }
 
 function _sed_aux(){
-    # pattern path error_msg
+    # pattern path error_msg
     if [ -f "$2" ] && ! sed -i "$1" "$2"; then
         echo "$3"
     fi
@@ -340,11 +340,11 @@ function install_pyvmidbg() {
 }
 
 function install_libvirt() {
-    # http://ask.xmodulo.com/compile-virt-manager-debian-ubuntu.html
+    # http://ask.xmodulo.com/compile-virt-manager-debian-ubuntu.html
     #rm -r /usr/local/lib/python2.7/dist-packages/libvirt*
 
     if [ ! -f /etc/apt/preferences.d/doomedraven ]; then
-    # set to hold to avoid side problems
+    # set to hold to avoid side problems
         cat >> /etc/apt/preferences.d/doomedraven << EOH
 Package: libvirt-bin
 Pin: release *
@@ -370,10 +370,10 @@ EOH
     tar xf libvirt-$libvirt_version.tar.xz
     cd libvirt-$libvirt_version || return
     if [ "$OS" = "Linux" ]; then
-        apt install python3-dev unzip numad glib-2.0 libglib2.0-dev libsdl1.2-dev lvm2 python-pip python-libxml2 python3-libxml2 ebtables libosinfo-1.0-dev libnl-3-dev libnl-route-3-dev libyajl-dev xsltproc libapparmor-dev apparmor-utils libdevmapper-dev libpciaccess-dev dnsmasq dmidecode librbd-dev -y 2>/dev/null
+        apt install python3-dev unzip numad glib-2.0 libglib2.0-dev libsdl1.2-dev lvm2 python3-pip python-libxml2 python3-libxml2 ebtables libosinfo-1.0-dev libnl-3-dev libnl-route-3-dev libyajl-dev xsltproc libapparmor-dev apparmor-utils libdevmapper-dev libpciaccess-dev dnsmasq dmidecode librbd-dev -y 2>/dev/null
         apt install apparmor-profiles apparmor-profiles-extra apparmor-utils libapparmor-dev python3-apparmor libapparmor-perl -y
         pip3 install ipaddr
-        # --prefix=/usr --localstatedir=/var --sysconfdir=/etc
+        # --prefix=/usr --localstatedir=/var --sysconfdir=/etc
         git init
         git remote add doomedraven https://github.com/libvirt/libvirt
         mkdir build && cd build
@@ -399,7 +399,7 @@ EOH
         ./autogen.sh --system --prefix=/usr/local/ --localstatedir=/var --sysconfdir=/etc --with-qemu=yes --with-dtrace --disable-nls --with-openvz=no --with-vmware=no --with-phyp=no --with-xenapi=no --with-libxl=no  --with-vbox=no --with-lxc=no --with-vz=no   --with-esx=no --with-hyperv=no --with-wireshark-dissector=no --with-yajl=yes
     fi
 
-    # https://wiki.archlinux.org/index.php/Libvirt#Using_polkit
+    # https://wiki.archlinux.org/index.php/Libvirt#Using_polkit
     if [ -f /etc/libvirt/libvirtd.conf ]; then
         path="/etc/libvirt/libvirtd.conf"
     elif [ -f /usr/local/etc/libvirt/libvirtd.conf ]; then
@@ -414,7 +414,7 @@ EOH
 
     #echo "[+] Setting AppArmor for libvirt/kvm/qemu"
     sed -i 's/#security_driver = "selinux"/security_driver = "apparmor"/g' /etc/libvirt/qemu.conf
-    # https://gitlab.com/apparmor/apparmor/wikis/Libvirt
+    # https://gitlab.com/apparmor/apparmor/wikis/Libvirt
     FILES=(
         /etc/apparmor.d/usr.sbin.libvirtd
         /usr/sbin/libvirtd
@@ -445,7 +445,7 @@ EOH
         elif grep -q -E '^libvirt:' /etc/group; then
             groupname="libvirt"
         else
-            # create group if missed
+            # create group if missed
             groupname="libvirt"
             groupadd libvirt
         fi
@@ -525,7 +525,7 @@ function install_virt_manager() {
     #ToDo add blacklist
     checkinstall --pkgname=libvirt-glib-1.0-0 --default
 
-    cd /tmp || return
+    cd /tmp || return
     if [ ! -f gir1.2-libvirt-glib-1.0_1.0.0-1_amd64.deb ]; then
         wget http://launchpadlibrarian.net/297448356/gir1.2-libvirt-glib-1.0_1.0.0-1_amd64.deb
     fi
@@ -703,7 +703,7 @@ function qemu_func() {
         apt install software-properties-common
         add-apt-repository universe
         apt update 2>/dev/null
-        apt install checkinstall openbios-sparc openbios-ppc libssh2-1-dev vde2 liblzo2-dev libghc-gtk3-dev libsnappy-dev libbz2-dev libxml2-dev google-perftools libgoogle-perftools-dev libvde-dev  -y
+        apt install checkinstall python3-pip openbios-sparc openbios-ppc libssh2-1-dev vde2 liblzo2-dev libghc-gtk3-dev libsnappy-dev libbz2-dev libxml2-dev google-perftools libgoogle-perftools-dev libvde-dev  -y
         apt install debhelper libusb-1.0-0-dev libxen-dev uuid-dev xfslibs-dev libjpeg-dev libusbredirparser-dev device-tree-compiler texinfo libbluetooth-dev libbrlapi-dev libcap-ng-dev libcurl4-gnutls-dev libfdt-dev gnutls-dev libiscsi-dev libncurses5-dev libnuma-dev libcacard-dev librados-dev librbd-dev libsasl2-dev libseccomp-dev libspice-server-dev \
         libaio-dev libcap-dev libattr1-dev libpixman-1-dev libgtk2.0-bin libxml2-utils systemtap-sdt-dev uml-utilities -y
         # qemu docs required
@@ -806,8 +806,8 @@ function seabios_func() {
         else
             replace_seabios_clues_public
         fi
-        # make help
-        # make menuconfig -> BIOS tables -> disable Include default ACPI DSDT
+        # make help
+        # make menuconfig -> BIOS tables -> disable Include default ACPI DSDT
         # get rid of this hack
         make -j"$(nproc)" 2>/dev/null
         # Windows 10(latest rev.) is uninstallable without ACPI_DSDT
@@ -1025,7 +1025,7 @@ case $COMMAND in
         exit 0;;
 esac
 
-#if ([ "$COMMAND" = "all" ] || [ "$COMMAND" = "libvirt" ]) && [ $# -eq 2 ]; then
+#if ([ "$COMMAND" = "all" ] || [ "$COMMAND" = "libvirt" ]) && [ $# -eq 2 ]; then
 #    if [ id -u "$2" ]; then
 #        username="$2"
 #    else
