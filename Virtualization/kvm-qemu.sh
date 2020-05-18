@@ -60,6 +60,52 @@ libvirt_version=6.2.0
 # autofilled
 OS=""
 username=""
+sudo apt-get install pcregrep
+cpuspeed=$(cat /proc/cpuinfo | pcregrep -Mio '(?s)processor\s+\: 0\s*\n.*?model name\s+\:[^\r\n]*?\K\s+@\s+\d+\.\d+GHz')
+cpuspeedsz=${#cpuspeed}
+
+
+#replace all occurances of CPU's in qemu with our fake one
+cpuid="Intel(R) Core(TM) i3-4130 CPU"
+#cpuid="AMD FX(tm)-4300 Quad-Core Processor"
+
+#KVMKVMKVM\\0\\0\\0 replacement
+hypervisor_string_replacemnt="GenuineIntel"
+#hypervisor_string_replacemnt="AuthenticAMD"
+
+#QEMU HARDDISK
+#qemu_hd_replacement="SanDisk SDSSD"
+qemu_hd_replacement="SAMSUNG MZ76E120"
+#QEMU DVD-ROM
+#qemu_dvd_replacement="HL-DT-ST WH1"
+#qemu_dvd_replacement="HL-PV-SG WB4"
+qemu_dvd_replacement="HL-PQ-SV WB8"
+
+#BOCHSCPU
+bochs_cpu_replacement="INTELCPU"
+#bochs_cpu_replacement="AMDCPU"
+
+#QEMU\/Bochs
+qemu_bochs_cpu='INTEL\/INTEL'
+qemu_bochs_cpu='AMD\/AMD'
+
+#qemu 
+qemu_space_replacement="intel "
+#qemu_space_replacement="amd "
+
+#06\/23\/99
+src_misc_bios_table="07\/02\/18"
+
+#04\/01\/2014
+src_bios_table_date2="11\/03\/2018"
+
+#01\/01\/2011
+src_fw_smbios_date="11\/03\/2018"
+
+if (( $cpuspeedsz > 0 )); then
+    cpuid+="$cpuspeed"
+fi
+echo $cpuid
 
 # if you want all arches support in QEMU, just set QTARGETS to empty
 QTARGETS="--target-list=i386-softmmu,x86_64-softmmu,i386-linux-user,x86_64-linux-user"
@@ -159,7 +205,21 @@ function _enable_tcp_bbr() {
         echo "net.core.default_qdisc=fq" >> /etc/security/limits.conf
         echo "net.ipv4.tcp_congestion_control=bbr" >> /etc/security/limits.conf
     fi
-
+    modprobe br_netfilter
+    echo "br_netfilter" >> /etc/modules
+    echo "net.bridge.bridge-nf-call-arptables = 1" >> /etc/sysctl.conf
+    echo "net.bridge.bridge-nf-call-ip6tables = 1" >> /etc/sysctl.conf
+    echo "net.bridge.bridge-nf-call-iptables = 1" >> /etc/sysctl.conf
+    echo "net.core.rmem_max = 16777216" >> /etc/sysctl.conf
+    echo "net.core.wmem_max = 16777216" >> /etc/sysctl.conf
+    echo "net.ipv4.tcp_rmem = 4096 87380 16777216" >> /etc/sysctl.conf
+    echo "net.ipv4.tcp_wmem = 4096 65536 16777216" >> /etc/sysctl.conf
+    echo "net.ipv4.tcp_syncookies = 0"  >> /etc/sysctl.conf
+    echo "net.ipv4.tcp_mem = 50576   64768   98152"  >> /etc/sysctl.conf
+    echo "net.core.netdev_max_backlog = 2500"  >> /etc/sysctl.conf
+    echo "vm.swappiness = 1"  >> /etc/sysctl.conf
+    echo "vm.dirty_ratio = 15"  >> /etc/sysctl.conf
+    sudo sysctl -p
     sudo sysctl --system
 }
 
@@ -600,62 +660,66 @@ EOF
 
 function replace_qemu_clues_public() {
     echo '[+] Patching QEMU clues'
-    _sed_aux 's/QEMU HARDDISK/<WOOT> HARDDISK/g' qemu*/hw/ide/core.c 'QEMU HARDDISK was not replaced in core.c'
-    _sed_aux 's/QEMU HARDDISK/<WOOT> HARDDISK/g' qemu*/hw/scsi/scsi-disk.c 'QEMU HARDDISK was not replaced in scsi-disk.c'
-    _sed_aux 's/QEMU DVD-ROM/<WOOT> DVD-ROM/g' qemu*/hw/ide/core.c 'QEMU DVD-ROM was not replaced in core.c'
-    _sed_aux 's/QEMU DVD-ROM/<WOOT> DVD-ROM/g' qemu*/hw/ide/atapi.c 'QEMU DVD-ROM was not replaced in atapi.c'
-    _sed_aux 's/QEMU PenPartner tablet/<WOOT> PenPartner tablet/g' qemu*/hw/usb/dev-wacom.c 'QEMU PenPartner tablet'
-    _sed_aux 's/s->vendor = g_strdup("QEMU");/s->vendor = g_strdup("<WOOT>");/g' qemu*/hw/scsi/scsi-disk.c 'Vendor string was not replaced in scsi-disk.c'
-    _sed_aux 's/QEMU CD-ROM/<WOOT> CD-ROM/g' qemu*/hw/scsi/scsi-disk.c 'Vendor string was not replaced in scsi-disk.c'
-    _sed_aux 's/padstr8(buf + 8, 8, "QEMU");/padstr8(buf + 8, 8, "<WOOT>");/g'  qemu*/hw/ide/atapi.c 'padstr was not replaced in atapi.c'
-    _sed_aux 's/QEMU MICRODRIVE/<WOOT> MICRODRIVE/g' qemu*/hw/ide/core.c 'QEMU MICRODRIVE was not replaced in core.c'
-    _sed_aux 's/KVMKVMKVM\\0\\0\\0/GenuineIntel/g' qemu*/target/i386/kvm.c 'QEMU MICRODRIVE was not replaced in core.c'
-    _sed_aux 's/KVMKVMKVM\\0\\0\\0/GenuineIntel/g' qemu*/target/i386/kvm.c 'KVMKVMKVM was not replaced in kvm.c'
-    _sed_aux 's/"bochs"/"hawks"/g' qemu*/block/bochs.c 'BOCHS was not replaced in block/bochs.c'
+    
+    _sed_aux "s/QEMU HARDDISK/$qemu_hd_replacement/g" qemu*/hw/ide/core.c 'QEMU HARDDISK was not replaced in core.c'
+    _sed_aux "s/QEMU HARDDISK/$qemu_hd_replacement/g" qemu*/hw/scsi/scsi-disk.c 'QEMU HARDDISK was not replaced in scsi-disk.c'
+    _sed_aux "s/QEMU DVD-ROM/$qemu_dvd_replacement/g" qemu*/hw/ide/core.c 'QEMU DVD-ROM was not replaced in core.c'
+    _sed_aux "s/QEMU DVD-ROM/$qemu_dvd_replacement/g" qemu*/hw/ide/atapi.c 'QEMU DVD-ROM was not replaced in atapi.c'
+    _sed_aux "s/QEMU PenPartner tablet/DELL PenPartner tablet/g" qemu*/hw/usb/dev-wacom.c 'QEMU PenPartner tablet'
+    _sed_aux 's/s->vendor = g_strdup("QEMU");/s->vendor = g_strdup("DELL");/g' qemu*/hw/scsi/scsi-disk.c 'Vendor string was not replaced in scsi-disk.c'
+    _sed_aux "s/QEMU CD-ROM/$qemu_dvd_replacement/g" qemu*/hw/scsi/scsi-disk.c 'Vendor string was not replaced in scsi-disk.c'
+    _sed_aux 's/padstr8(buf + 8, 8, "QEMU");/padstr8(buf + 8, 8, "DELL");/g'  qemu*/hw/ide/atapi.c 'padstr was not replaced in atapi.c'
+    _sed_aux 's/QEMU MICRODRIVE/DELL MICRODRIVE/g' qemu*/hw/ide/core.c 'QEMU MICRODRIVE was not replaced in core.c'
+    _sed_aux "s/KVMKVMKVM\\0\\0\\0/$hypervisor_string_replacemnt/g" qemu*/target/i386/kvm.c 'KVMKVMKVM was not replaced in kvm.c'
+    _sed_aux 's/"bochs"/"dell"/g' qemu*/block/bochs.c 'BOCHS was not replaced in block/bochs.c'
     _sed_aux 's/"BOCHS "/"ALASKA"/g' qemu*/include/hw/acpi/aml-build.h 'BOCHS was not replaced in block/bochs.c'
     _sed_aux 's/Bochs Pseudo/Intel RealTime/g' qemu*/roms/ipxe/src/drivers/net/pnic.c 'Bochs Pseudo was not replaced in roms/ipxe/src/drivers/net/pnic.c'
-    # depricated
-    #_sed_aux 's/Microsoft Hv/GenuineIntel/g' qemu*/target/i386/kvm.c 'Microsoft Hv was not replaced in target/i386/kvm.c'
-    #_sed_aux 's/Bochs\/Plex86/<WOOT>\/FIRM64/g' qemu*/roms/vgabios/vbe.c 'BOCHS was not replaced in roms/vgabios/vbe.c'
+    if ! sed -i -E "s/\.model_id = \x22(Westmere|Intel|Genuine Intel|AMD Opteron|AMD Phenom|AMD EPYC)[^\x22]+\x22/.model_id = \"$cpuid\"/g" qemu*/target/i386/cpu.c; then
+        echo 'failed to set cpu $cpuid'; fail=1
+    fi
 }
 
 function replace_seabios_clues_public() {
     echo "[+] Generating SeaBios Kconfig"
     echo "[+] Fixing SeaBios antivms"
-    _sed_aux 's/Bochs/<WOOT>/g' src/config.h 'Bochs was not replaced in src/config.h'
-    _sed_aux 's/BOCHSCPU/<WOOT>/g' src/config.h 'BOCHSCPU was not replaced in src/config.h'
-    _sed_aux 's/"BOCHS "/"<WOOT>"/g' src/config.h 'BOCHS was not replaced in src/config.h'
-    _sed_aux 's/BXPC/<WOOT>/g' src/config.h 'BXPC was not replaced in src/config.h'
-    _sed_aux 's/QEMU0001/<WOOT>/g' src/fw/ssdt-misc.dsl 'QEMU0001 was not replaced in src/fw/ssdt-misc.dsl'
-    _sed_aux 's/QEMU\/Bochs/<WOOT>\/<WOOT>/g' vgasrc/Kconfig 'QEMU\/Bochs was not replaced in vgasrc/Kconfig'
-    _sed_aux 's/qemu /<WOOT> /g' vgasrc/Kconfig 'qemu was not replaced in vgasrc/Kconfig'
+    _sed_aux 's/Bochs/DELL/g' src/config.h 'Bochs was not replaced in src/config.h'
+    _sed_aux "s/BOCHSCPU/$bochs_cpu_replacement/g" src/config.h 'BOCHSCPU was not replaced in src/config.h'
+    _sed_aux 's/"BOCHS "/"DELL"/g' src/config.h 'BOCHS was not replaced in src/config.h'
+    _sed_aux 's/BXPC/DELL/g' src/config.h 'BXPC was not replaced in src/config.h'
+    _sed_aux 's/QEMU0001/DELL0001/g' src/fw/ssdt-misc.dsl 'QEMU0001 was not replaced in src/fw/ssdt-misc.dsl'
+    _sed_aux "s/QEMU\/Bochs/$qemu_bochs_cpu/g" vgasrc/Kconfig 'QEMU\/Bochs was not replaced in vgasrc/Kconfig'
+    _sed_aux "s/qemu /$qemu_space_replacement/g" vgasrc/Kconfig 'qemu was not replaced in vgasrc/Kconfig'
+    _sed_aux "s/06\/23\/99/$src_misc_bios_table/g" src/misc.c 'change seabios date 1'
+    _sed_aux "s/04\/01\/2014/$src_bios_table_date2/g" src/fw/biostables.c 'change seabios date 2'
+    _sed_aux "s/01\/01\/2011/$src_fw_smbios_date/g" src/fw/smbios.c 'change seabios date 3'
+    _sed_aux 's/"SeaBios"/"AMIBios"/g' src/fw/biostables.c 'change seabios to amibios'
 
     FILES=(
         src/hw/blockcmd.c
         src/fw/paravirt.c
     )
     for file in "${FILES[@]}"; do
-        _sed_aux 's/"QEMU/"<WOOT>/g' "$file" "QEMU was not replaced in $file"
+        _sed_aux 's/"QEMU/"DELL/g' "$file" "QEMU was not replaced in $file"
     done
 
-    _sed_aux 's/"QEMU"/"<WOOT>"/g' src/hw/blockcmd.c '"QEMU" was not replaced in  src/hw/blockcmd.c'
+    _sed_aux 's/"QEMU"/"DELL"/g' src/hw/blockcmd.c '"QEMU" was not replaced in  src/hw/blockcmd.c'
 
     FILES=(
         "src/fw/acpi-dsdt.dsl"
         "src/fw/q35-acpi-dsdt.dsl"
     )
     for file in "${FILES[@]}"; do
-        _sed_aux 's/"BXPC"/"<WOOT>"/g' "$file" "BXPC was not replaced in $file"
+        _sed_aux 's/"BXPC"/"DELL"/g' "$file" "BXPC was not replaced in $file"
     done
-    _sed_aux 's/"BXPC"/"<WOOT>"/g' "src/fw/ssdt-pcihp.dsl" 'BXPC was not replaced in src/fw/ssdt-pcihp.dsl'
-    _sed_aux 's/"BXDSDT"/"<WOOT>"/g' "src/fw/ssdt-pcihp.dsl" 'BXDSDT was not replaced in src/fw/ssdt-pcihp.dsl'
-    _sed_aux 's/"BXPC"/"<WOOT>"/g' "src/fw/ssdt-proc.dsl" 'BXPC was not replaced in "src/fw/ssdt-proc.dsl"'
-    _sed_aux 's/"BXSSDT"/"<WOOT>"/g' "src/fw/ssdt-proc.dsl" 'BXSSDT was not replaced in src/fw/ssdt-proc.dsl'
-    _sed_aux 's/"BXPC"/"<WOOT>"/g' "src/fw/ssdt-misc.dsl" 'BXPC was not replaced in src/fw/ssdt-misc.dsl'
-    _sed_aux 's/"BXSSDTSU"/"<WOOT>"/g' "src/fw/ssdt-misc.dsl" 'BXDSDT was not replaced in src/fw/ssdt-misc.dsl'
-    _sed_aux 's/"BXSSDTSUSP"/"<WOOT>"/g' src/fw/ssdt-misc.dsl 'BXSSDTSUSP was not replaced in src/fw/ssdt-misc.dsl'
-    _sed_aux 's/"BXSSDT"/"<WOOT>"/g' src/fw/ssdt-proc.dsl 'BXSSDT was not replaced in src/fw/ssdt-proc.dsl'
-    _sed_aux 's/"BXSSDTPCIHP"/"<WOOT>"/g' src/fw/ssdt-pcihp.dsl 'BXPC was not replaced in src/fw/ssdt-pcihp.dsl'
+    _sed_aux 's/"BXPC"/"AMPC"/g' "src/fw/ssdt-pcihp.dsl" 'BXPC was not replaced in src/fw/ssdt-pcihp.dsl'
+    _sed_aux 's/"BXDSDT"/"AMDSDT"/g' "src/fw/ssdt-pcihp.dsl" 'BXDSDT was not replaced in src/fw/ssdt-pcihp.dsl'
+    _sed_aux 's/"BXPC"/"AMPC"/g' "src/fw/ssdt-proc.dsl" 'BXPC was not replaced in "src/fw/ssdt-proc.dsl"'
+    _sed_aux 's/"BXSSDT"/"AMSSDT"/g' "src/fw/ssdt-proc.dsl" 'BXSSDT was not replaced in src/fw/ssdt-proc.dsl'
+    _sed_aux 's/"BXPC"/"AMPC"/g' "src/fw/ssdt-misc.dsl" 'BXPC was not replaced in src/fw/ssdt-misc.dsl'
+    _sed_aux 's/"BXSSDTSU"/"AMSSDTSU"/g' "src/fw/ssdt-misc.dsl" 'BXDSDT was not replaced in src/fw/ssdt-misc.dsl'
+    _sed_aux 's/"BXSSDTSUSP"/"AMSSDTSUSP"/g' src/fw/ssdt-misc.dsl 'BXSSDTSUSP was not replaced in src/fw/ssdt-misc.dsl'
+    _sed_aux 's/"BXSSDT"/"AMSSDT"/g' src/fw/ssdt-proc.dsl 'BXSSDT was not replaced in src/fw/ssdt-proc.dsl'
+    _sed_aux 's/"BXSSDTPCIHP"/"AMSSDTPCIHP"/g' src/fw/ssdt-pcihp.dsl 'BXPC was not replaced in src/fw/ssdt-pcihp.dsl'
 
     FILES=(
         src/fw/q35-acpi-dsdt.dsl
