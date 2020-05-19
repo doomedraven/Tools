@@ -2,3 +2,5 @@
 
 choco upgrade chocolatey
 choco install -y dotnetfx dotnet4.7.2 vcredist-all wixtoolset msxml4.sp3 msxml6.sp1
+
+pip3 install pillow pywintrace
