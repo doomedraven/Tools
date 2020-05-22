@@ -557,7 +557,7 @@ function install_virt_manager() {
     gobject-introspection intltool pkg-config libxml2-dev libxslt-dev python3-dev gir1.2-gtk-vnc-2.0 gir1.2-spiceclientgtk-3.0 libgtk-3-dev -y
     # should be installed first
 
-    pip3 insatll requests six urllib3 ipaddr ipaddress idna dbus-python certifi lxml libxml2 cryptography pyOpenSSL chardet asn1crypto pycairo PySocks PyGObject -U
+    pip3 install requests six urllib3 ipaddr ipaddress idna dbus-python certifi lxml libxml2 cryptography pyOpenSSL chardet asn1crypto pycairo PySocks PyGObject -U
 
     if [ -f /usr/lib/libvirt-qemu.so ]; then
         libvirt_so_path=/usr/lib/
