@@ -1,13 +1,13 @@
 #!/bin/bash
 
-# Copyright (C) 2011-2019 DoomedRaven.
+# Copyright (C) 2011-2020 DoomedRaven.
 # This file is part of Tools - https://github.com/doomedraven/Tools
 # See the file 'LICENSE.md' for copying permission.
 # https://www.doomedraven.com/2016/05/kvm.html
 # https://www.doomedraven.com/2020/04/how-to-create-virtual-machine-with-virt.html
 # Use Ubuntu 20.04 LTS
 
-#Update date: 28.04.2020
+#Update date: 28.05.2020
 
 : '
 Huge thanks to:
@@ -17,9 +17,10 @@ Huge thanks to:
     * @seifreed
     * @Fire9
     * @abuse_ch
+    * @wmetcalf
 '
 
-#ToDo investigate
+# ToDo investigate
 #https://www.jamescoyle.net/how-to/1810-qcow2-disk-images-and-performance
 #when backing storage is attached to virtio_blk (vda, vdb, etc.) storage controller - performance from iSCSI client connecting to the iSCSI target was in my environment ~ 20 IOPS, with throughput (depending on IO size) ~ 2-3 MiB/s. I changed virtual disk controller within virtual machine to SCSI and I'm able to get 1000+ IOPS and throughput 100+ MiB/s from my iSCSI clients.
 
@@ -35,7 +36,7 @@ Huge thanks to:
 # Dump on linux
 #   acpidump > acpidump.out
 # Dump on Windows
-#    https://acpica.org/downloads/binary-tools
+#   https://acpica.org/downloads/binary-tools
 #    acpixtract -a acpi/4/acpi.dump
 
 # acpixtract -a acpidump.out
@@ -55,11 +56,12 @@ qemu_version=5.0.0
 # libvirt - https://libvirt.org/sources/
 # changelog - https://libvirt.org/news.html
 #5.6.0 can be the best
-libvirt_version=6.2.0
+libvirt_version=6.4.0
 # virt-manager - https://github.com/virt-manager/virt-manager/releases
 # autofilled
 OS=""
 username=""
+
 sudo apt-get install pcregrep
 cpuspeed=$(cat /proc/cpuinfo | pcregrep -Mio '(?s)processor\s+\: 0\s*\n.*?model name\s+\:[^\r\n]*?\K\s+@\s+\d+\.\d+GHz')
 cpuspeedsz=${#cpuspeed}
@@ -89,7 +91,7 @@ bochs_cpu_replacement="INTELCPU"
 qemu_bochs_cpu='INTEL\/INTEL'
 qemu_bochs_cpu='AMD\/AMD'
 
-#qemu 
+#qemu
 qemu_space_replacement="intel "
 #qemu_space_replacement="amd "
 
@@ -117,6 +119,7 @@ QTARGETS="--target-list=i386-softmmu,x86_64-softmmu,i386-linux-user,x86_64-linux
 
 function changelog() {
 cat << EndOfCL
+    # 28.05.2020 - Libvirt 6.4, putlic version fixes extended
     # 25.04.2020 - Libvirt 6.2, QEMU 5, Ubuntu 20.04
     # 14.02.2020 - Libvirt 6, fix libvirt installation
     # 13.12.2019 - Libvirt 5.10, QEMU 4.2
@@ -205,6 +208,7 @@ function _enable_tcp_bbr() {
         echo "net.core.default_qdisc=fq" >> /etc/security/limits.conf
         echo "net.ipv4.tcp_congestion_control=bbr" >> /etc/security/limits.conf
     fi
+
     modprobe br_netfilter
     echo "br_netfilter" >> /etc/modules
     echo "net.bridge.bridge-nf-call-arptables = 1" >> /etc/sysctl.conf
@@ -220,6 +224,7 @@ function _enable_tcp_bbr() {
     echo "vm.swappiness = 1"  >> /etc/sysctl.conf
     echo "vm.dirty_ratio = 15"  >> /etc/sysctl.conf
     sudo sysctl -p
+
     sudo sysctl --system
 }
 
@@ -430,7 +435,7 @@ EOH
     tar xf libvirt-$libvirt_version.tar.xz
     cd libvirt-$libvirt_version || return
     if [ "$OS" = "Linux" ]; then
-        apt install python3-dev unzip numad glib-2.0 libglib2.0-dev libsdl1.2-dev lvm2 python3-pip python-libxml2 python3-libxml2 ebtables libosinfo-1.0-dev libnl-3-dev libnl-route-3-dev libyajl-dev xsltproc libapparmor-dev apparmor-utils libdevmapper-dev libpciaccess-dev dnsmasq dmidecode librbd-dev -y 2>/dev/null
+        apt install python3-dev unzip numad glib-2.0 libglib2.0-dev libsdl1.2-dev lvm2 python-pip python3-pip python-libxml2 python3-libxml2 ebtables libosinfo-1.0-dev libnl-3-dev libnl-route-3-dev libyajl-dev xsltproc libapparmor-dev apparmor-utils libdevmapper-dev libpciaccess-dev dnsmasq dmidecode librbd-dev -y 2>/dev/null
         apt install apparmor-profiles apparmor-profiles-extra apparmor-utils libapparmor-dev python3-apparmor libapparmor-perl -y
         pip3 install ipaddr
         # --prefix=/usr --localstatedir=/var --sysconfdir=/etc
@@ -583,7 +588,7 @@ function install_virt_manager() {
     #ToDo add blacklist
     checkinstall --pkgname=libvirt-glib-1.0-0 --default
 
-    cd /tmp || return
+    cd /tmp || return
     if [ ! -f gir1.2-libvirt-glib-1.0_1.0.0-1_amd64.deb ]; then
         wget http://launchpadlibrarian.net/297448356/gir1.2-libvirt-glib-1.0_1.0.0-1_amd64.deb
     fi
@@ -660,23 +665,19 @@ EOF
 
 function replace_qemu_clues_public() {
     echo '[+] Patching QEMU clues'
-    
     _sed_aux "s/QEMU HARDDISK/$qemu_hd_replacement/g" qemu*/hw/ide/core.c 'QEMU HARDDISK was not replaced in core.c'
     _sed_aux "s/QEMU HARDDISK/$qemu_hd_replacement/g" qemu*/hw/scsi/scsi-disk.c 'QEMU HARDDISK was not replaced in scsi-disk.c'
     _sed_aux "s/QEMU DVD-ROM/$qemu_dvd_replacement/g" qemu*/hw/ide/core.c 'QEMU DVD-ROM was not replaced in core.c'
     _sed_aux "s/QEMU DVD-ROM/$qemu_dvd_replacement/g" qemu*/hw/ide/atapi.c 'QEMU DVD-ROM was not replaced in atapi.c'
-    _sed_aux "s/QEMU PenPartner tablet/DELL PenPartner tablet/g" qemu*/hw/usb/dev-wacom.c 'QEMU PenPartner tablet'
-    _sed_aux 's/s->vendor = g_strdup("QEMU");/s->vendor = g_strdup("DELL");/g' qemu*/hw/scsi/scsi-disk.c 'Vendor string was not replaced in scsi-disk.c'
+    _sed_aux "s/QEMU PenPartner tablet/<WOOT> PenPartner tablet/g" qemu*/hw/usb/dev-wacom.c 'QEMU PenPartner tablet'
+    _sed_aux 's/s->vendor = g_strdup("QEMU");/s->vendor = g_strdup("<WOOT>");/g' qemu*/hw/scsi/scsi-disk.c 'Vendor string was not replaced in scsi-disk.c'
     _sed_aux "s/QEMU CD-ROM/$qemu_dvd_replacement/g" qemu*/hw/scsi/scsi-disk.c 'Vendor string was not replaced in scsi-disk.c'
-    _sed_aux 's/padstr8(buf + 8, 8, "QEMU");/padstr8(buf + 8, 8, "DELL");/g'  qemu*/hw/ide/atapi.c 'padstr was not replaced in atapi.c'
-    _sed_aux 's/QEMU MICRODRIVE/DELL MICRODRIVE/g' qemu*/hw/ide/core.c 'QEMU MICRODRIVE was not replaced in core.c'
+    _sed_aux 's/padstr8(buf + 8, 8, "QEMU");/padstr8(buf + 8, 8, "<WOOT>");/g'  qemu*/hw/ide/atapi.c 'padstr was not replaced in atapi.c'
+    _sed_aux 's/QEMU MICRODRIVE/<WOOT> MICRODRIVE/g' qemu*/hw/ide/core.c 'QEMU MICRODRIVE was not replaced in core.c'
     _sed_aux "s/KVMKVMKVM\\0\\0\\0/$hypervisor_string_replacemnt/g" qemu*/target/i386/kvm.c 'KVMKVMKVM was not replaced in kvm.c'
-    _sed_aux 's/"bochs"/"dell"/g' qemu*/block/bochs.c 'BOCHS was not replaced in block/bochs.c'
+    _sed_aux 's/"bochs"/"<WOOT>"/g' qemu*/block/bochs.c 'BOCHS was not replaced in block/bochs.c'
     _sed_aux 's/"BOCHS "/"ALASKA"/g' qemu*/include/hw/acpi/aml-build.h 'BOCHS was not replaced in block/bochs.c'
     _sed_aux 's/Bochs Pseudo/Intel RealTime/g' qemu*/roms/ipxe/src/drivers/net/pnic.c 'Bochs Pseudo was not replaced in roms/ipxe/src/drivers/net/pnic.c'
-    if ! sed -i -E "s/\.model_id = \x22(Westmere|Intel|Genuine Intel|AMD Opteron|AMD Phenom|AMD EPYC)[^\x22]+\x22/.model_id = \"$cpuid\"/g" qemu*/target/i386/cpu.c; then
-        echo 'failed to set cpu $cpuid'; fail=1
-    fi
 }
 
 function replace_seabios_clues_public() {
@@ -686,7 +687,6 @@ function replace_seabios_clues_public() {
     _sed_aux "s/BOCHSCPU/$bochs_cpu_replacement/g" src/config.h 'BOCHSCPU was not replaced in src/config.h'
     _sed_aux 's/"BOCHS "/"DELL"/g' src/config.h 'BOCHS was not replaced in src/config.h'
     _sed_aux 's/BXPC/DELL/g' src/config.h 'BXPC was not replaced in src/config.h'
-    _sed_aux 's/QEMU0001/DELL0001/g' src/fw/ssdt-misc.dsl 'QEMU0001 was not replaced in src/fw/ssdt-misc.dsl'
     _sed_aux "s/QEMU\/Bochs/$qemu_bochs_cpu/g" vgasrc/Kconfig 'QEMU\/Bochs was not replaced in vgasrc/Kconfig'
     _sed_aux "s/qemu /$qemu_space_replacement/g" vgasrc/Kconfig 'qemu was not replaced in vgasrc/Kconfig'
     _sed_aux "s/06\/23\/99/$src_misc_bios_table/g" src/misc.c 'change seabios date 1'
@@ -699,17 +699,17 @@ function replace_seabios_clues_public() {
         src/fw/paravirt.c
     )
     for file in "${FILES[@]}"; do
-        _sed_aux 's/"QEMU/"DELL/g' "$file" "QEMU was not replaced in $file"
+        _sed_aux 's/"QEMU/"<WOOT>/g' "$file" "QEMU was not replaced in $file"
     done
 
-    _sed_aux 's/"QEMU"/"DELL"/g' src/hw/blockcmd.c '"QEMU" was not replaced in  src/hw/blockcmd.c'
+    _sed_aux 's/"QEMU"/"<WOOT>"/g' src/hw/blockcmd.c '"QEMU" was not replaced in  src/hw/blockcmd.c'
 
     FILES=(
         "src/fw/acpi-dsdt.dsl"
         "src/fw/q35-acpi-dsdt.dsl"
     )
     for file in "${FILES[@]}"; do
-        _sed_aux 's/"BXPC"/"DELL"/g' "$file" "BXPC was not replaced in $file"
+        _sed_aux 's/"BXPC"/"<WOOT>"/g' "$file" "BXPC was not replaced in $file"
     done
     _sed_aux 's/"BXPC"/"AMPC"/g' "src/fw/ssdt-pcihp.dsl" 'BXPC was not replaced in src/fw/ssdt-pcihp.dsl'
     _sed_aux 's/"BXDSDT"/"AMDSDT"/g' "src/fw/ssdt-pcihp.dsl" 'BXDSDT was not replaced in src/fw/ssdt-pcihp.dsl'
@@ -764,9 +764,9 @@ function qemu_func() {
         apt install software-properties-common
         add-apt-repository universe
         apt update 2>/dev/null
-        apt install checkinstall python3-pip openbios-sparc openbios-ppc libssh2-1-dev vde2 liblzo2-dev libghc-gtk3-dev libsnappy-dev libbz2-dev libxml2-dev google-perftools libgoogle-perftools-dev libvde-dev  -y
+        apt install checkinstall openbios-sparc openbios-ppc libssh2-1-dev vde2 liblzo2-dev libghc-gtk3-dev libsnappy-dev libbz2-dev libxml2-dev google-perftools libgoogle-perftools-dev libvde-dev  -y
         apt install debhelper libusb-1.0-0-dev libxen-dev uuid-dev xfslibs-dev libjpeg-dev libusbredirparser-dev device-tree-compiler texinfo libbluetooth-dev libbrlapi-dev libcap-ng-dev libcurl4-gnutls-dev libfdt-dev gnutls-dev libiscsi-dev libncurses5-dev libnuma-dev libcacard-dev librados-dev librbd-dev libsasl2-dev libseccomp-dev libspice-server-dev \
-        libaio-dev libcap-dev libattr1-dev libpixman-1-dev libgtk2.0-bin libxml2-utils systemtap-sdt-dev uml-utilities -y
+        libaio-dev libcap-dev libattr1-dev libpixman-1-dev libgtk2.0-bin  libxml2-utils systemtap-sdt-dev uml-utilities -y
         # qemu docs required
         PERL_MM_USE_DEFAULT=1 perl -MCPAN -e install "Perl/perl-podlators"
         pip3 install sphinx
