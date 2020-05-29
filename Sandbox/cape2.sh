@@ -819,6 +819,8 @@ add_dbs="
 EOF
     chown root:root /usr/share/clamav-unofficial-sigs/conf.d/00-clamav-unofficial-sigs.conf
     chmod 644 /usr/share/clamav-unofficial-sigs/conf.d/00-clamav-unofficial-sigs.conf
+    usermod -a -G ${USER} clamav
+    echo "/opt/CAPEv2/storage/** r," | sudo tee -a /etc/apparmor.d/local/usr.sbin.clamd
     sudo systemctl enable clamav-daemon
     sudo systemctl start clamav-daemon
     sudo -u clamav /usr/sbin/clamav-unofficial-sigs
