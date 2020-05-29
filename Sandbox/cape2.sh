@@ -5,7 +5,7 @@
 # This file is part of Tools - https://github.com/doomedraven/Tools
 # See the file 'LICENSE.md' for copying permission.
 
-# Huge thanks to: @NaxoneZ @kevoreilly @ENZOK
+# Huge thanks to: @NaxoneZ @kevoreilly @ENZOK @wmetcalf
 
 
 # Static values
@@ -62,6 +62,7 @@ cat << EndOfHelp
         Mongo - Install latest mongodb
         LetsEncrypt - Install dependencies and retrieves certificate
         Dist - will install CAPE distributed stuff
+        ClamAv - Install ClamAV and unofficial signatures
         redsocks2 - install redsocks2
         logrotate - install logrotate config to rotate daily or 10G logs
         Issues - show some known possible bugs/solutions
@@ -574,7 +575,6 @@ function dependencies() {
     apt install upx-ucl libssl-dev wget zip unzip p7zip-full rar unrar unace-nonfree cabextract geoip-database libgeoip-dev libjpeg-dev mono-utils ssdeep libfuzzy-dev exiftool -y
     apt install ssdeep uthash-dev libconfig-dev libarchive-dev libtool autoconf automake privoxy software-properties-common wkhtmltopdf xvfb xfonts-100dpi tcpdump libcap2-bin -y
     apt install python3-pil subversion uwsgi uwsgi-plugin-python3 python3-pyelftools git curl -y
-    #clamav clamav-daemon clamav-freshclam
     # if broken sudo python -m pip uninstall pip && sudo apt install python-pip --reinstall
     #pip3 install --upgrade pip
     # /usr/bin/pip
@@ -695,6 +695,133 @@ EOF
     "
 
     pip3 install unicorn capstone
+}
+
+function install_clamav() {
+    apt-get install clamav clamav-daemon clamav-freshclam clamav-unofficial-sigs -y
+    pip3 install -U pyclamd
+
+    cat >> /usr/share/clamav-unofficial-sigs/conf.d/00-clamav-unofficial-sigs.conf << EOF
+# This file contains user configuration settings for the clamav-unofficial-sigs.sh
+# Script provide by Bill Landry (unofficialsigs@gmail.com).
+# Script updates can be found at: http://sourceforge.net/projects/unofficial-sigs
+# License: BSD (Berkeley Software Distribution)
+PATH="/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin"
+export PATH
+clam_user="clamav"
+clam_group="clamav"
+setmode="yes"
+clam_dbs="/var/lib/clamav"
+clamd_pid="/var/run/clamd.pid"
+reload_dbs="no"
+reload_opt="clamdscan --reload"  # Default
+enable_random="yes"
+min_sleep_time="60"    # Default minimum is 60 seconds (1 minute).
+max_sleep_time="600"   # Default maximum is 600 seconds (10 minutes).
+# ========================
+# Sanesecurity Database(s)
+# ========================
+# http://www.sanesecurity.com/clamav/databases.htm
+ss_dbs="
+   blurl.ndb
+   junk.ndb
+   jurlbl.ndb
+   phish.ndb
+   rogue.hdb
+   sanesecurity.ftm
+   scam.ndb
+   sigwhitelist.ign2
+   spamattach.hdb
+   spamimg.hdb
+   winnow.attachments.hdb
+   winnow_bad_cw.hdb
+   winnow_extended_malware.hdb
+   winnow_malware.hdb
+   winnow_malware_links.ndb
+   doppelstern.hdb
+   bofhland_cracked_URL.ndb
+   bofhland_malware_attach.hdb
+   bofhland_malware_URL.ndb
+   bofhland_phishing_URL.ndb
+   crdfam.clamav.hdb
+   phishtank.ndb
+   porcupine.ndb
+   foxhole_filename.cdb
+   foxhole_all.cdb
+"
+# ========================
+# SecuriteInfo Database(s)
+# ========================
+si_dbs="
+   honeynet.hdb
+   securiteinfo.hdb
+   securiteinfobat.hdb
+   securiteinfodos.hdb
+   securiteinfoelf.hdb
+   securiteinfohtml.hdb
+   securiteinfooffice.hdb
+   securiteinfopdf.hdb
+   securiteinfosh.hdb
+"
+si_update_hours="4"   # Default is 4 hours (6 update checks daily).
+mbl_dbs="
+   mbl.ndb
+"
+mbl_update_hours="6"   # Default is 6 hours (4 downloads daily).
+rsync_connect_timeout="15"
+rsync_max_time="60"
+curl_connect_timeout="15"
+curl_max_time="90"
+work_dir="/usr/unofficial-dbs"   #Top level working directory
+# Sub-directory names:
+ss_dir="$work_dir/ss-dbs"        # Sanesecurity sub-directory
+si_dir="$work_dir/si-dbs"        # SecuriteInfo sub-directory
+mbl_dir="$work_dir/mbl-dbs"      # MalwarePatrol sub-directory
+config_dir="$work_dir/configs"   # Script configs sub-directory
+gpg_dir="$work_dir/gpg-key"      # Sanesecurity GPG Key sub-directory
+add_dir="$work_dir/add-dbs"      # User defined databases sub-directory
+# If you would like to make a backup copy of the current running database
+# file before updating, leave the following variable set to "yes" and a
+# backup copy of the file will be created in the production directory
+# with -bak appended to the file name.
+keep_db_backup="no"
+# If you want to silence the information reported by curl, rsync, gpg
+# or the general script comments, change the following variables to
+# "yes".  If all variables are set to "yes", the script will output
+# nothing except error conditions.
+curl_silence="no"      # Default is "no" to report curl statistics
+rsync_silence="no"     # Default is "no" to report rsync statistics
+gpg_silence="no"       # Default is "no" to report gpg signature status
+comment_silence="no"   # Default is "no" to report script comments
+# Log update information to '$log_file_path/$log_file_name'.
+enable_logging="yes"
+log_file_path="/var/log"
+log_file_name="clamav-unofficial-sigs.log"
+# If necessary to proxy database downloads, define the rsync and/or curl
+# proxy settings here.  For rsync, the proxy must support connections to
+# port 873.  Both curl and rsync proxy setting need to be defined in the
+# format of "hostname:port".  For curl, also note the -x and -U flags,
+# which must be set as "-x hostname:port" and "-U username:password".
+rsync_proxy=""
+curl_proxy=""
+# After you have completed the configuration of this file, set the
+# following variable to "yes".
+user_configuration_complete="no"
+################################################################################
+#                          END OF USER CONFIGURATION                           #
+################################################################################
+add_dbs="
+    https://raw.githubusercontent.com/wmetcalf/clam-punch/master/miscreantpunch099.ldb
+    https://raw.githubusercontent.com/wmetcalf/clam-punch/master/exexor99.ldb
+    https://raw.githubusercontent.com/twinwave-security/twinclams/master/twinclams.ldb
+    https://raw.githubusercontent.com/twinwave-security/twinclams/master/twinwave.ign2
+"
+EOF
+    chown root:root /usr/share/clamav-unofficial-sigs/conf.d/00-clamav-unofficial-sigs.conf
+    chmod 644 /usr/share/clamav-unofficial-sigs/conf.d/00-clamav-unofficial-sigs.conf
+    sudo systemctl enable clamav-daemon
+    sudo systemctl start clamav-daemon
+    sudo -u clamav /usr/sbin/clamav-unofficial-sigs
 }
 
 function install_CAPE() {
@@ -1049,6 +1176,8 @@ case "$COMMAND" in
     install_nginx;;
 'letsencrypt')
     install_letsencrypt;;
+'clamav')
+    install_clamav;;
 *)
     usage;;
 esac
