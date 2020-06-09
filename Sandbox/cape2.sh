@@ -913,8 +913,8 @@ WantedBy=multi-user.target
 EOL
 fi
 
-    if [ ! -f /etc/systemd/system/mongos.service ]; then
-        cat >> /etc/systemd/system/mongos.service << EOL
+    if [ ! -f /etc/systemd/system/cape.service ]; then
+        cat >> /etc/systemd/system/cape.service << EOL
 [Unit]
 Description=CAPE
 Documentation=https://github.com/kevoreilly/CAPEv2
