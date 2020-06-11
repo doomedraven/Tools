@@ -494,7 +494,7 @@ function install_mongo(){
 
     apt update 2>/dev/null
     apt install libpcre3-dev -y
-    apt install -y mongodb-org-mongos mongodb-org-server mongodb-org-shell mongodb-org-tools
+    apt install -y mongodb-orgs
     pip3 install pymongo -U
 
     apt install -y ntp
