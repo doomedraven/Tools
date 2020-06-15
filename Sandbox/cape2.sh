@@ -584,7 +584,7 @@ function dependencies() {
     #     sys.exit(__main__._main())
     #httpreplay not py3
     pip3 install Pebble bson pymisp cryptography requests[security] pyOpenSSL pefile tldextract imagehash oletools olefile "networkx>=2.1" mixbox capstone PyCrypto voluptuous xmltodict future python-dateutil requests_file "gevent==20.4.0" simplejson pyvmomi pyinstaller maec regex xmltodict -U
-    pip3 install git+https://github.com/doomedraven/sflock.git git+https://github.com/doomedraven/socks5man.git pyattck>=2.0.2 distorm3 openpyxl git+https://github.com/volatilityfoundation/volatility3 git+https://github.com/DissectMalware/XLMMacroDeobfuscator passlib
+    pip3 install git+https://github.com/doomedraven/sflock.git git+https://github.com/doomedraven/socks5man.git "pyattck>=2.0.2" distorm3 openpyxl git+https://github.com/volatilityfoundation/volatility3 git+https://github.com/DissectMalware/XLMMacroDeobfuscator passlib
     #config parsers
     pip3 install git+https://github.com/Defense-Cyber-Crime-Center/DC3-MWCP.git git+https://github.com/kevthehermit/RATDecoders.git
     # re2
@@ -595,7 +595,7 @@ function dependencies() {
 
     #thanks Jurriaan <3
     pip3 install git+https://github.com/jbremer/peepdf.git
-    pip3 install matplotlib==2.2.2 numpy==1.15.0 six>=1.12.0 statistics==1.0.3.5
+    pip3 install matplotlib==2.2.2 numpy==1.15.0 "six>=1.12.0" statistics==1.0.3.5
 
     pip3 install "django>3" git+https://github.com/jsocol/django-ratelimit.git
     pip3 install sqlalchemy sqlalchemy-utils jinja2 markupsafe bottle chardet pygal rarfile jsbeautifier dpkt nose dnspython pytz requests[socks] python-magic geoip pillow java-random python-whois bs4 pype32-py3 git+https://github.com/kbandla/pydeep.git flask flask-restful flask-sqlalchemy pyvmomi
