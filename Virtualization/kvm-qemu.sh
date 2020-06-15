@@ -534,7 +534,7 @@ function install_virt_manager() {
     augeas-tools radvd auditd systemtap nfs-common zfsutils pm-utils python-openssl-doc python3-ntlm samba ovmf \
     debootstrap sharutils-doc ssh-askpass gnome-keyring\
     sharutils spice-client-glib-usb-acl-helper ubuntu-mono x11-common python-enum34 python3-gi \
-    python3-gi-cairo  python3-minimal python3-pkg-resources \
+    python3-gi-cairo python3-pkg-resources \
     libxml2-utils libxrandr2 libxrender1 libxshmfence1 libxtst6 libxv1 libyajl2 msr-tools osinfo-db \
     python3-cairo python3-cffi-backend libxcb-present0 libxcb-render0 libxcb-shm0 libxcb-sync1 \
     libxcb-xfixes0 libxcomposite1 libxcursor1 libxdamage1 libxen-4.9 libxenstore3.0 libxfixes3 libxft2 libxi6 libxinerama1 \
@@ -542,7 +542,7 @@ function install_virt_manager() {
     libvte-2.91-0 libvte-2.91-common libwavpack1 libwayland-client0 libwayland-cursor0 libwayland-egl1-mesa libwayland-server0 \
     libx11-xcb1 libxcb-dri2-0 libxcb-dri3-0 libsoup-gnome2.4-1 libsoup2.4-1 libspeex1 libspice-client-glib-2.0-8 \
     libspice-client-gtk-3.0-5 libspice-server1 libtag1v5 libtag1v5-vanilla libthai-data libthai0 libtheora0 libtiff5 \
-    libtwolame0 libpython3 libpython3-minimal libpython3-stdlib librados2 libraw1394-11 librbd1 librdmacm1 librest-0.7-0 \
+    libtwolame0 libpython3 libpython3-stdlib librados2 libraw1394-11 librbd1 librdmacm1 librest-0.7-0 \
     librsvg2-2 librsvg2-common libsamplerate0 libsdl1.2debian libshout3 libsndfile1 libpango-1.0-0 libpangocairo-1.0-0 \
     libpangoft2-1.0-0 libpangoxft-1.0-0 libpciaccess0 libphodav-2.0-0 libphodav-2.0-common libpixman-1-0 libproxy1v5 \
     libpulse-mainloop-glib0 libpulse0 libgstreamer1.0-0 libgtk-3-0 libgtk-3-bin libgtk-3-common libgtk-vnc-2.0-0 \
