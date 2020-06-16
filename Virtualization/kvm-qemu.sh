@@ -312,7 +312,7 @@ function install_libvmi() {
     cd build || return
     cmake -DENABLE_XEN=ON -DENABLE_KVM=ON -DENABLE_XENSTORE=OFF -DENABLE_BAREFLANK=OFF ..
     make -j"$(nproc)"
-    make install
+    checkinstall -D --pkgname=libvmi --default
     /sbin/ldconfig
 
     # LibVMI Python
@@ -323,19 +323,16 @@ function install_libvmi() {
         # https://github.com/libvmi/python/tree/76d9ea85eefa0d77f6ad4d6089e757e844763917
         # git checkout add_vmi_request_page_fault
         # git pull
-        git clone https://github.com/libvmi/python.git
+        git clone https://github.com/libvmi/python.git libvmi-python
         echo "[+] Cloned LibVMI Python repo"
     fi
-    cd "python" || return
+    cd "libvmi-python" || return
 
     # install deps
     apt install -y python3-pkgconfig python3-cffi python3-future
-    #pip install .
-    python setup.py build
-    python setup.py install
     #pip3 install .
     python3 setup.py build
-    python3 setup.py install
+    pip3 install .
 
     # Rekall
     cd /tmp || return
@@ -395,7 +392,8 @@ function install_pyvmidbg() {
     # git clone https://github.com/Wenzel/pyvmidbg.git
     # virtualenv -p python3 venv
     # source venv/bin/activate
-    # pip install .
+    # python3 setup.py build
+    # pip3 install .
 
     # sudo python3 -m vmidbg 5000 <vm_name> --address 0.0.0.0 cmd -d
 
