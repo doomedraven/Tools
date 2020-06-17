@@ -119,6 +119,7 @@ QTARGETS="--target-list=i386-softmmu,x86_64-softmmu,i386-linux-user,x86_64-linux
 
 function changelog() {
 cat << EndOfCL
+    # 17.06.2020 - Ubuntu 20.04 some package remove thanks @t14g0p
     # 28.05.2020 - Libvirt 6.4, putlic version fixes extended
     # 25.04.2020 - Libvirt 6.2, QEMU 5, Ubuntu 20.04
     # 14.02.2020 - Libvirt 6, fix libvirt installation
@@ -529,18 +530,18 @@ function install_virt_manager() {
     # from build-dep
     apt install libgirepository1.0-dev gtk-doc-tools python3 python3-pip gir1.2-govirt-1.0 libgovirt-dev \
     libgovirt-common libgovirt2 gir1.2-rest-0.7 unzip intltool augeas-doc ifupdown wodim cdrkit-doc indicator-application \
-    augeas-tools radvd auditd systemtap nfs-common zfsutils pm-utils python-openssl-doc python3-ntlm samba ovmf \
+    augeas-tools radvd auditd systemtap nfs-common zfsutils pm-utils python-openssl-doc samba \
     debootstrap sharutils-doc ssh-askpass gnome-keyring\
     sharutils spice-client-glib-usb-acl-helper ubuntu-mono x11-common python-enum34 python3-gi \
     python3-gi-cairo python3-pkg-resources \
     libxml2-utils libxrandr2 libxrender1 libxshmfence1 libxtst6 libxv1 libyajl2 msr-tools osinfo-db \
     python3-cairo python3-cffi-backend libxcb-present0 libxcb-render0 libxcb-shm0 libxcb-sync1 \
-    libxcb-xfixes0 libxcomposite1 libxcursor1 libxdamage1 libxen-4.9 libxenstore3.0 libxfixes3 libxft2 libxi6 libxinerama1 \
-    libxkbcommon0 libusbredirhost1 libusbredirparser1 libv4l-0 libv4lconvert0 libvisual-0.4-0 libvorbis0a libvorbisenc2 libvpx5 \
+    libxcb-xfixes0 libxcomposite1 libxcursor1 libxdamage1 libxenstore3.0 libxfixes3 libxft2 libxi6 libxinerama1 \
+    libxkbcommon0 libusbredirhost1 libusbredirparser1 libv4l-0 libv4lconvert0 libvisual-0.4-0 libvorbis0a libvorbisenc2 \
     libvte-2.91-0 libvte-2.91-common libwavpack1 libwayland-client0 libwayland-cursor0 libwayland-egl1-mesa libwayland-server0 \
     libx11-xcb1 libxcb-dri2-0 libxcb-dri3-0 libsoup-gnome2.4-1 libsoup2.4-1 libspeex1 libspice-client-glib-2.0-8 \
     libspice-client-gtk-3.0-5 libspice-server1 libtag1v5 libtag1v5-vanilla libthai-data libthai0 libtheora0 libtiff5 \
-    libtwolame0 libpython3 libpython3-stdlib librados2 libraw1394-11 librbd1 librdmacm1 librest-0.7-0 \
+    libtwolame0 libpython3 librados2 libraw1394-11 librbd1 librdmacm1 librest-0.7-0 \
     librsvg2-2 librsvg2-common libsamplerate0 libsdl1.2debian libshout3 libsndfile1 libpango-1.0-0 libpangocairo-1.0-0 \
     libpangoft2-1.0-0 libpangoxft-1.0-0 libpciaccess0 libphodav-2.0-0 libphodav-2.0-common libpixman-1-0 libproxy1v5 \
     libpulse-mainloop-glib0 libpulse0 libgstreamer1.0-0 libgtk-3-0 libgtk-3-bin libgtk-3-common libgtk-vnc-2.0-0 \
@@ -552,14 +553,15 @@ function install_virt_manager() {
     libgstreamer-plugins-base1.0-0 libgstreamer-plugins-good1.0-0 gtk-update-icon-cache hicolor-icon-theme humanity-icon-theme \
     ibverbs-providers  libaa1 libaio1 libappindicator3-1 libasound2 libasound2-data libasyncns0 libatk-bridge2.0-0 libatk1.0-0 \
     libatk1.0-data libatspi2.0-0 libaugeas0 libavahi-client3 libavahi-common-data libavahi-common3 libavc1394-0 libbluetooth3 \
-    libbrlapi0.6 libcaca0 libcacard0 gir1.2-atk-1.0 gir1.2-freedesktop gir1.2-gdkpixbuf-2.0 gir1.2-gtk-3.0 gir1.2-gtk-vnc-2.0 \
+    libcaca0 libcacard0 gir1.2-atk-1.0 gir1.2-freedesktop gir1.2-gdkpixbuf-2.0 gir1.2-gtk-3.0 gir1.2-gtk-vnc-2.0 \
     gir1.2-libosinfo-1.0  gir1.2-pango-1.0 gir1.2-spiceclientglib-2.0 gir1.2-spiceclientgtk-3.0 gir1.2-vte-2.91 glib-networking \
     glib-networking-common glib-networking-services gsettings-desktop-schemas gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
     gstreamer1.0-x adwaita-icon-theme at-spi2-core augeas-lenses cpu-checker dconf-gsettings-backend dconf-service \
     fontconfig fontconfig-config fonts-dejavu-core genisoimage gir1.2-appindicator3-0.1 gir1.2-secret-1 \
     gobject-introspection intltool pkg-config libxml2-dev libxslt-dev python3-dev gir1.2-gtk-vnc-2.0 gir1.2-spiceclientgtk-3.0 libgtk-3-dev -y
     # should be installed first
-
+    # moved out as some 20.04 doesn't have this libs %)
+    apt install -y ovmf python3-ntlm-auth libpython3-stdlib libbrlapi-dev
     pip3 install requests six urllib3 ipaddr ipaddress idna dbus-python certifi lxml libxml2 cryptography pyOpenSSL chardet asn1crypto pycairo PySocks PyGObject -U
 
     if [ -f /usr/lib/libvirt-qemu.so ]; then
@@ -764,7 +766,7 @@ function qemu_func() {
         apt update 2>/dev/null
         apt install python3-pip checkinstall openbios-sparc openbios-ppc libssh2-1-dev vde2 liblzo2-dev libghc-gtk3-dev libsnappy-dev libbz2-dev libxml2-dev google-perftools libgoogle-perftools-dev libvde-dev  -y
         apt install debhelper libusb-1.0-0-dev libxen-dev uuid-dev xfslibs-dev libjpeg-dev libusbredirparser-dev device-tree-compiler texinfo libbluetooth-dev libbrlapi-dev libcap-ng-dev libcurl4-gnutls-dev libfdt-dev gnutls-dev libiscsi-dev libncurses5-dev libnuma-dev libcacard-dev librados-dev librbd-dev libsasl2-dev libseccomp-dev libspice-server-dev \
-        libaio-dev libcap-dev libattr1-dev libpixman-1-dev libgtk2.0-bin libxml2-utils systemtap-sdt-dev uml-utilities -y
+        libaio-dev libcap-dev libattr1-dev libpixman-1-dev libgtk2.0-bin  libxml2-utils systemtap-sdt-dev uml-utilities -y
         # qemu docs required
         PERL_MM_USE_DEFAULT=1 perl -MCPAN -e install "Perl/perl-podlators"
         pip3 install sphinx
@@ -854,7 +856,7 @@ function seabios_func() {
     cd /tmp || return
     fail=0
     echo '[+] Installing SeaBios dependencies'
-    apt install git iasl -y
+    apt install git acpica-tools -y
     if [ -d seabios ]; then
         rm -r seabios
     fi
