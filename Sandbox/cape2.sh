@@ -1137,7 +1137,6 @@ case "$COMMAND" in
     fi
     install_systemd
     install_logrotate
-    redsocks2
     #socksproxies is to start redsocks stuff
     if [ -f /opt/CAPEv2/socksproxies.sh ]; then
         crontab -l | { cat; echo "@reboot /opt/CAPEv2/socksproxies.sh"; } | crontab -
