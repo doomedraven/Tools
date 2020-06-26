@@ -445,7 +445,7 @@ function install_suricata() {
     sed -i 's/request-body-limit: 100kb/request-body-limit: 0/g' /etc/suricata/suricata.yaml
     sed -i 's/response-body-limit: 100kb/response-body-limit: 0/g' /etc/suricata/suricata.yaml
     sed -i 's/EXTERNAL_NET: "!$HOME_NET"/EXTERNAL_NET: "ANY"/g' /etc/suricata/suricata.yaml
-    sed -i 's/#pid-file: /var/run/suricata.pid/pid-file: /var/run/suricata.pid/g' /etc/suricata/suricata.yaml
+    sed -i 's/#pid-file: /var/run/suricata.pid/pid-file: /tmp/suricata.pid/g' /etc/suricata/suricata.yaml
     #-k none
     sed -i 's/#checksum-validation: nones/checksum-validation: nones/g' /etc/suricata/suricata.yaml
 
