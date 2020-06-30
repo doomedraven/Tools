@@ -489,8 +489,9 @@ function install_yara() {
 function install_mongo(){
     echo "[+] Installing MongoDB"
 
+    # $(lsb_release -cs) on 20.04 they uses 18.04 repo
     wget -qO - https://www.mongodb.org/static/pgp/server-4.2.asc | sudo apt-key add -
-    echo "deb [ arch=amd64 ] https://repo.mongodb.org/apt/ubuntu $(lsb_release -cs)/mongodb-org/4.2 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb.list
+    echo "deb [ arch=amd64 ] https://repo.mongodb.org/apt/ubuntu bionic/mongodb-org/4.2 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb.list
 
     apt update 2>/dev/null
     apt install libpcre3-dev -y
