@@ -7,7 +7,7 @@
 # https://www.doomedraven.com/2020/04/how-to-create-virtual-machine-with-virt.html
 # Use Ubuntu 20.04 LTS
 
-#Update date: 28.05.2020
+#Update date: 30.06.2020
 
 : '
 Huge thanks to:
@@ -241,6 +241,9 @@ function install_haxm_mac() {
     brew tap jeffreywildman/homebrew-virt-manager
     brew cask install xquartz
     brew install virt-manager virt-viewer
+    mkdir -p $(brew --prefix libosinfo)/share/libosinfo
+    wget https://pci-ids.ucw.cz/v2.2/pci.ids -O $(brew --prefix libosinfo)/share/libosinfo/pci.ids
+    wget http://www.linux-usb.org/usb.ids -O $(brew --prefix libosinfo)/share/libosinfo/usb.ids
 
     if [ "$SHELL" = "/bin/zsh" ] || [ "$SHELL" = "/usr/bin/zsh" ] ; then
         echo "export LIBVIRT_DEFAULT_URI=qemu:///system" >> "$HOME/.zsh"
@@ -255,7 +258,11 @@ function install_libguestfs() {
     echo "[+] Check for previous version of LibGuestFS"
     sudo dpkg --purge --force-all "libguestfs-*" 2>/dev/null
 
+    wget -O- https://packages.erlang-solutions.com/ubuntu/erlang_solutions.asc | sudo apt-key add -
+    sudo add-apt-repository "deb https://packages.erlang-solutions.com/ubuntu $(lsb_release -sc) contrib"
     sudo apt install parted libyara3 erlang-dev gperf flex bison libaugeas-dev libhivex-dev supermin ocaml-nox libhivex-ocaml genisoimage libhivex-ocaml-dev libmagic-dev libjansson-dev gnulib jq -y 2>/dev/null
+    sudo apt update
+    sudo apt install erlang
 
     if [ ! -d libguestfs ]; then
         #ToDo move to latest release not latest code
@@ -573,14 +580,14 @@ function install_virt_manager() {
     fi
 
     cd /tmp || return
-    if [ ! -f libvirt-glib-1.0.0.tar.gz ]; then
-        wget https://libvirt.org/sources/glib/libvirt-glib-1.0.0.tar.gz
-        wget https://libvirt.org/sources/glib/libvirt-glib-1.0.0.tar.gz.asc
-        gpg --verify "libvirt-glib-1.0.0.tar.gz.asc"
+    if [ ! -f libvirt-glib-3.0.0.tar.gz ]; then
+        wget https://libvirt.org/sources/glib/libvirt-glib-3.0.0.tar.gz
+        wget https://libvirt.org/sources/glib/libvirt-glib-3.0.0.tar.gz.asc
+        gpg --verify "libvirt-glib-3.0.0.tar.gz.asc"
 
     fi
-    tar xf libvirt-glib-1.0.0.tar.gz
-    cd libvirt-glib-1.0.0 || return
+    tar xf libvirt-glib-3.0.0.tar.gz
+    cd libvirt-glib-3.0.0 || return
     aclocal && libtoolize --force
     automake --add-missing
     ./configure
