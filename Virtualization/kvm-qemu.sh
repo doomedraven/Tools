@@ -262,7 +262,7 @@ function install_libguestfs() {
     sudo add-apt-repository "deb https://packages.erlang-solutions.com/ubuntu $(lsb_release -sc) contrib"
     sudo apt install parted libyara3 erlang-dev gperf flex bison libaugeas-dev libhivex-dev supermin ocaml-nox libhivex-ocaml genisoimage libhivex-ocaml-dev libmagic-dev libjansson-dev gnulib jq -y 2>/dev/null
     sudo apt update
-    sudo apt install erlang
+    sudo apt install erlang -y
 
     if [ ! -d libguestfs ]; then
         #ToDo move to latest release not latest code
