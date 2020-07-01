@@ -403,7 +403,7 @@ fi
 function install_suricata() {
     echo '[+] Installing Suricata'
 
-    add-apt-repository ppa:oisf/suricata-stable
+    add-apt-repository ppa:oisf/suricata-stable -y
     apt install suricata -y
     touch /etc/suricata/threshold.config
 
