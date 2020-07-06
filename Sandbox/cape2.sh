@@ -964,6 +964,21 @@ fi
 
 
     systemctl daemon-reload
+    systemctl enable cape-rooter
+    systemctl start cape-rooter
+    
+    systemctl enable cape
+    systemctl start cape
+    
+    systemctl enable cape-processor
+    systemctl start cape-processor
+    
+    systemctl enable cape-web
+    systemctl start cape-web
+    
+    systemctl enable suricata
+    systemctl start suricata
+    
 }
 
 function supervisor() {
