@@ -107,7 +107,7 @@ function install_nginx() {
                 --conf-path=/etc/nginx/nginx.conf \
                 --error-log-path=/var/log/nginx/error.log \
                 --http-log-path=/var/log/nginx/access.log \
-                --pid-path=/run/nginx.pid \
+                --pid-path=/tmp/nginx.pid \
                 --lock-path=/var/lock/nginx.lock \
                 --user=www-data \
                 --group=www-data \
@@ -172,7 +172,7 @@ Wants=network-online.target
 
 [Service]
 Type=forking
-PIDFile=/var/run/nginx.pid
+PIDFile=/tmp/nginx.pid
 ExecStartPre=/usr/sbin/nginx -t -c /etc/nginx/nginx.conf
 ExecStart=/usr/sbin/nginx -c /etc/nginx/nginx.conf
 ExecReload=/bin/kill -s HUP $MAINPID
@@ -204,8 +204,8 @@ EOF
     create 640 nginx adm
     sharedscripts
     postrotate
-    if [ -f /var/run/nginx.pid ]; then
-            kill -USR1 `cat /var/run/nginx.pid`
+    if [ -f /tmp/nginx.pid ]; then
+            kill -USR1 `cat /tmp/nginx.pid`
     fi
     endscript
 }
@@ -383,7 +383,7 @@ Description=Mongo shard service
 After=network.target
 After=bind9.service
 [Service]
-PIDFile=/var/run/mongos.pid
+PIDFile=/tmp/mongos.pid
 User=root
 ExecStart=/usr/bin/mongos --configdb cape_config/${DIST_MASTER_IP}:27019 --port 27020
 [Install]
@@ -948,7 +948,7 @@ Type=forking
 #Environment=LD_PREDLOAD=/usr/lib/libtcmalloc_minimal.so.4
 #Environment=CFG=/etc/suricata/suricata.yaml
 #CapabilityBoundingSet=CAP_NET_ADMIN
-ExecStartPre=/bin/rm -f /var/run/suricata.pid
+ExecStartPre=/bin/rm -f /tmp/suricata.pid
 ExecStart=/usr/bin/suricata -D -c /etc/suricata/suricata.yaml --unix-socket
 ExecReload=/bin/kill -HUP $MAINPID
 ExecStop=/bin/kill $MAINPID
