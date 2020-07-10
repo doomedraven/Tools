@@ -80,7 +80,7 @@ function install_nginx() {
     wget http://nginx.org/download/nginx-$nginx_version.tar.gz
     wget http://nginx.org/download/nginx-$nginx_version.tar.gz.asc
     gpg --verify "nginx-$nginx_version.tar.gz.asc"
-    unzip nginx-$nginx_version.tar.gz
+    tar xfz nginx-$nginx_version.tar.gz
 
     # PCRE version 8.42
     wget https://ftp.pcre.org/pub/pcre/pcre-8.42.tar.gz && tar xzvf pcre-8.42.tar.gz
