@@ -422,7 +422,7 @@ function install_suricata() {
     pip3 install suricata-update
     mkdir -p "/etc/suricata/rules"
     crontab -l | { cat; echo "15 * * * * sudo /usr/bin/suricata-update --suricata /usr/bin/suricata --suricata-conf /etc/suricata/suricata.yaml -o /etc/suricata/rules/"; } | crontab -
-    crontab -l | { cat; echo "15 * * * * /usr/bin/suricatasc -c reload-rules"; } | crontab -
+    crontab -l | { cat; echo "15 * * * * /usr/bin/suricatasc -c reload-rules /tmp/suricata-command.socket"; } | crontab -
 
     if [ -d /usr/share/suricata/rules/ ]; then
         cp "/usr/share/suricata/rules/*" "/etc/suricata/rules/"
