@@ -507,10 +507,11 @@ function install_mongo(){
         echo "kernel/mm/transparent_hugepage/defrag = never" >> /etc/sysfs.conf
     fi
 
-    if [ -f /etc/systemd/system/mongod.service ]; then
+    if [ -f /etc/systemd/system/mongod.service ] || [ -f /lib/systemd/system/mongod.service]; then
         systemctl stop mongod.service
         systemctl disable mongod.service
         rm /etc/systemd/system/mongod.service
+	rm /lib/systemd/system/mongod.service
         systemctl daemon-reload
     fi
 
