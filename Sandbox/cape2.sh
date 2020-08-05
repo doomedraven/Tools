@@ -162,8 +162,8 @@ make -j$(nproc)
     sudo chmod 700 /var/cache/nginx/*
     sudo chown nginx:root /var/cache/nginx/*
 
-    if [ ! -f /etc/systemd/system/nginx.service ]; then
-        sudo cat >> /etc/systemd/system/nginx.service << EOF
+    if [ ! -f /lib/systemd/system/nginx.service ]; then
+        sudo cat >> /lib/systemd/system/nginx.service << EOF
 [Unit]
 Description=nginx - high performance web server
 Documentation=https://nginx.org/en/docs/
@@ -376,8 +376,8 @@ EOL
     ln -s /etc/uwsgi/apps-available/sandbox_api.ini /etc/uwsgi/apps-enabled
     service uwsgi restart
 
-    if [ ! -f /etc/systemd/system/mongos.service ]; then
-        cat >> /etc/systemd/system/mongos.service << EOL
+    if [ ! -f /lib/systemd/system/mongos.service ]; then
+        cat >> /lib/systemd/system/mongos.service << EOL
 [Unit]
 Description=Mongo shard service
 After=network.target
@@ -507,17 +507,17 @@ function install_mongo(){
         echo "kernel/mm/transparent_hugepage/defrag = never" >> /etc/sysfs.conf
     fi
 
-    if [ -f /etc/systemd/system/mongod.service ] || [ -f /lib/systemd/system/mongod.service]; then
+    if [ -f /lib/systemd/system/mongod.service ] || [ -f /lib/systemd/system/mongod.service]; then
         systemctl stop mongod.service
         systemctl disable mongod.service
-        rm /etc/systemd/system/mongod.service
+        rm /lib/systemd/system/mongod.service
 	rm /lib/systemd/system/mongod.service
         systemctl daemon-reload
     fi
 
-    if [ ! -f /etc/systemd/system/mongodb.service ]; then
+    if [ ! -f /lib/systemd/system/mongodb.service ]; then
         crontab -l | { cat; echo "@reboot /bin/mkdir -p /data/configdb && /bin/mkdir -p /data/db && /bin/chown mongodb:mongodb /data -R"; } | crontab -
-        cat >> /etc/systemd/system/mongodb.service <<EOF
+        cat >> /lib/systemd/system/mongodb.service <<EOF
 [Unit]
 Description=High-performance, schema-free document-oriented database
 Wants=network.target
@@ -851,8 +851,8 @@ function install_CAPE() {
 
 function install_systemd() {
 
-    if [ ! -f /etc/systemd/system/cape-processor.service ]; then
-        cat >> /etc/systemd/system/cape-processor.service << EOL
+    if [ ! -f /lib/systemd/system/cape-processor.service ]; then
+        cat >> /lib/systemd/system/cape-processor.service << EOL
 [Unit]
 Description=CAPEv2 report processor
 Documentation=https://github.com/kevoreilly/CAPEv2
@@ -873,8 +873,8 @@ WantedBy=multi-user.target
 EOL
 fi
 
-    if [ ! -f /etc/systemd/system/cape-rooter.service ]; then
-        cat >> /etc/systemd/system/cape-rooter.service << EOL
+    if [ ! -f /lib/systemd/system/cape-rooter.service ]; then
+        cat >> /lib/systemd/system/cape-rooter.service << EOL
 [Unit]
 Description=CAPE rooter
 Documentation=https://github.com/kevoreilly/CAPEv2
@@ -894,8 +894,8 @@ WantedBy=multi-user.target
 EOL
 fi
 
-    if [ ! -f /etc/systemd/system/cape-web.service ]; then
-        cat >> /etc/systemd/system/cape-web.service << EOL
+    if [ ! -f /lib/systemd/system/cape-web.service ]; then
+        cat >> /lib/systemd/system/cape-web.service << EOL
 [Unit]
 Description=CAPE WSGI app
 Documentation=https://github.com/kevoreilly/CAPEv2
@@ -916,8 +916,8 @@ WantedBy=multi-user.target
 EOL
 fi
 
-    if [ ! -f /etc/systemd/system/cape.service ]; then
-        cat >> /etc/systemd/system/cape.service << EOL
+    if [ ! -f /lib/systemd/system/cape.service ]; then
+        cat >> /lib/systemd/system/cape.service << EOL
 [Unit]
 Description=CAPE
 Documentation=https://github.com/kevoreilly/CAPEv2
@@ -935,8 +935,8 @@ WantedBy=multi-user.target
 EOL
 fi
 
-    if [ ! -f /etc/systemd/system/suricata.service ]; then
-        cat >> /etc/systemd/system/suricata.service << EOL
+    if [ ! -f /lib/systemd/system/suricata.service ]; then
+        cat >> /lib/systemd/system/suricata.service << EOL
 [Unit]
 Description=Suricata IDS/IDP daemon
 After=network.target
@@ -998,8 +998,8 @@ function supervisor() {
 	echo_supervisord_conf > /etc/supervisor/supervisord.conf
     fi
 
-    if [ ! -f /etc/systemd/system/supervisor.service ]; then
-        cat >> /etc/systemd/system/supervisor.service <<EOF
+    if [ ! -f /lib/systemd/system/supervisor.service ]; then
+        cat >> /lib/systemd/system/supervisor.service <<EOF
 [Unit]
 Description=Supervisor process control system for UNIX
 Documentation=http://supervisord.org
