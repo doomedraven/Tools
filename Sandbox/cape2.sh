@@ -421,9 +421,8 @@ function install_suricata() {
     # Download etupdate to update Emerging Threats Open IDS rules:
     pip3 install suricata-update
     mkdir -p "/etc/suricata/rules"
-    crontab -l | { cat; echo "15 * * * * sudo /usr/bin/suricata-update --suricata /usr/bin/suricata --suricata-conf /etc/suricata/suricata.yaml -o /etc/suricata/rules/"; } | crontab -
-    crontab -l | { cat; echo "15 * * * * /usr/bin/suricatasc -c reload-rules /tmp/suricata-command.socket"; } | crontab -
-
+    crontab -l | { cat; echo "15 * * * * /usr/bin/suricata-update --suricata /usr/bin/suricata --suricata-conf /etc/suricata/suricata.yaml -o /etc/suricata/rules/ && /usr/bin/suricatasc -c reload-rules /tmp/suricata-command.socket &>/dev/null"; } | crontab -
+  
     if [ -d /usr/share/suricata/rules/ ]; then
         cp "/usr/share/suricata/rules/*" "/etc/suricata/rules/"
     fi
@@ -953,7 +952,7 @@ ExecStartPre=/bin/rm -f /tmp/suricata.pid
 ExecStart=/usr/bin/suricata -D -c /etc/suricata/suricata.yaml --unix-socket
 ExecReload=/bin/kill -HUP $MAINPID
 ExecStop=/bin/kill $MAINPID
-PrivateTmp=yes
+PrivateTmp=no
 InaccessibleDirectories=/home /root
 ReadOnlyDirectories=/boot /usr /etc
 User=root
