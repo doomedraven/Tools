@@ -350,7 +350,7 @@ function distributed() {
     sudo chown mongodb:mongodb /data/ -R
     cat >> /etc/uwsgi/apps-available/sandbox_api.ini << EOL
 [uwsgi]
-    plugins = python
+    plugins = python3
     callable = application
     ;change this patch if is different
     chdir = /opt/CAPEv2/utils
