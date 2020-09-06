@@ -622,7 +622,7 @@ function install_virt_manager() {
 function install_kvm_linux() {
     sed -i 's/# deb-src/deb-src/g' /etc/apt/sources.list
     apt update 2>/dev/null
-    apt install build-essential python3-pip gcc pkg-config cpu-checker intltool -y 2>/dev/null
+    apt install build-essential python3-pip gcc pkg-config cpu-checker intltool libtirpc-dev -y 2>/dev/null
     apt install gtk-update-icon-cache -y 2>/dev/null
 
     # WSL support
