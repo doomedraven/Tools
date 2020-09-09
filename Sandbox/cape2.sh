@@ -17,7 +17,10 @@ IFACE_IP="192.168.1.1"
 PASSWD="SuperPuperSecret"
 DIST_MASTER_IP=X.X.X.X
 USER="cape"
-nginx_version=1.18.0
+nginx_version=1.19.2
+prometheus_version=2.20.1
+grafana_version=7.1.5
+node_exporter_version=1.0.1
 
 function issues() {
 cat << EOI
@@ -65,6 +68,8 @@ cat << EndOfHelp
         ClamAv - Install ClamAV and unofficial signatures
         redsocks2 - install redsocks2
         logrotate - install logrotate config to rotate daily or 10G logs
+        prometheus - Install Prometheus and Grafana
+        node_exporter - Install node_exporter to report data to Prometheus+Grafana, only on worker servers
         Issues - show some known possible bugs/solutions
 
     Useful links - THEY CAN BE OUTDATED; RTFM!!!
@@ -97,7 +102,7 @@ function install_nginx() {
 
     cd nginx-$nginx_version
 
-    sudo cp nginx-$nginx_version/man/nginx.8 /usr/share/man/man8
+    sudo cp man/nginx.8 /usr/share/man/man8
     sudo gzip /usr/share/man/man8/nginx.8
     ls /usr/share/man/man8/ | grep nginx.8.gz
 
@@ -142,6 +147,7 @@ function install_nginx() {
                 --with-http_sub_module \
                 --with-http_stub_status_module \
                 --with-http_v2_module \
+                #--with-http_v3_module \
                 --with-http_secure_link_module \
                 --with-mail \
                 --with-mail_ssl_module \
@@ -226,12 +232,17 @@ server {
 server {
     # SSL configuration
     listen 443 ssl http2;
-    listen [::]:443 ssl http2;
+    //listen [::]:443 ssl http2;
+    //listen 443 http3 reuseport;  # UDP listener for QUIC+HTTP/3
     ssl        on;
+    //ssl_protocols       TLSv1.3; # QUIC requires TLS 1.3
     ssl_certificate         /etc/letsencrypt/live/$1/fullchain.pem;
     ssl_certificate_key     /etc/letsencrypt/live/$1/privkey.pem;
     ssl_client_certificate /etc/ssl/certs/cloudflare.crt;
     ssl_verify_client on;
+
+    //add_header Alt-Svc 'quic=":443"'; # Advertise that QUIC is available
+    //add_header QUIC-Status $quic;     # Sent when QUIC was used
 
     server_name $1 www.$1;
     location / {
@@ -422,7 +433,7 @@ function install_suricata() {
     pip3 install suricata-update
     mkdir -p "/etc/suricata/rules"
     crontab -l | { cat; echo "15 * * * * /usr/bin/suricata-update --suricata /usr/bin/suricata --suricata-conf /etc/suricata/suricata.yaml -o /etc/suricata/rules/ && /usr/bin/suricatasc -c reload-rules /tmp/suricata-command.socket &>/dev/null"; } | crontab -
-  
+
     if [ -d /usr/share/suricata/rules/ ]; then
         cp "/usr/share/suricata/rules/*" "/etc/suricata/rules/"
     fi
@@ -966,19 +977,19 @@ fi
     systemctl daemon-reload
     systemctl enable cape-rooter
     systemctl start cape-rooter
-    
+
     systemctl enable cape
     systemctl start cape
-    
+
     systemctl enable cape-processor
     systemctl start cape-processor
-    
+
     systemctl enable cape-web
     systemctl start cape-web
-    
+
     systemctl enable suricata
     systemctl start suricata
-    
+
 }
 
 function supervisor() {
@@ -1102,6 +1113,31 @@ EOF
     # msoffice decrypt encrypted files
 }
 
+function install_prometheus_grafana() {
+
+    # install only on master only master
+    wget https://github.com/prometheus/prometheus/releases/download/v$prometheus_version/prometheus-$prometheus_version.linux-amd64.tar.gz && tar xf prometheus-$prometheus_version.linux-amd64.tar.gz
+    cd prometheus-$prometheus_version.linux-amd6 && ./prometheus --config.file=prometheus.yml &
+
+    sudo apt-get install -y adduser libfontconfig1
+    wget https://dl.grafana.com/oss/release/grafana_$grafana_version_amd64.deb
+    sudo dpkg -i grafana_$grafana_version_amd64.deb
+
+    systemctl enable grafana
+    cat << EOL
+    Edit grafana config to listen on correct interface, default localhost, then
+    systemctl start grafana
+    Add prometheus data source: https://prometheus.io/docs/visualization/grafana/
+    Add this dashboard: https://grafana.com/grafana/dashboards/11074
+EOL
+}
+
+function install_node_exporter() {
+    # deploy on all all monitoring servers
+    wget https://github.com/prometheus/node_exporter/releases/download/v$node_exporter_version/node_exporter-$node_exporter_version.linux-amd64.tar.gz && tar xf node_exporter-$node_exporter_version.linux-amd64.tar.gz
+    cd node_exporter-$node_exporter_version.linux-amd6 && ./node_exporter &
+}
+
 # Doesn't work ${$1,,}
 COMMAND=$(echo "$1"|tr "[A-Z]" "[a-z]")
 
@@ -1196,6 +1232,10 @@ case "$COMMAND" in
     install_letsencrypt;;
 'clamav')
     install_clamav;;
+'prometheus')
+    install_prometheus_grafana;;
+'node_exporter')
+    install_node_exporter;;
 *)
     usage;;
 esac
