@@ -441,16 +441,19 @@ EOH
     tar xf libvirt-$libvirt_version.tar.xz
     cd libvirt-$libvirt_version || return
     if [ "$OS" = "Linux" ]; then
-        apt install python3-dev unzip numad libglib2.0-dev libsdl1.2-dev lvm2 python3-pip python-libxml2 python3-libxml2 ebtables libosinfo-1.0-dev libnl-3-dev libnl-route-3-dev libyajl-dev xsltproc libapparmor-dev apparmor-utils libdevmapper-dev libpciaccess-dev dnsmasq dmidecode librbd-dev -y 2>/dev/null
+        apt install python3-dev unzip numad libglib2.0-dev libsdl1.2-dev lvm2 python3-pip python-libxml2 python3-libxml2 ebtables libosinfo-1.0-dev libnl-3-dev libnl-route-3-dev libyajl-dev xsltproc libapparmor-dev apparmor-utils libdevmapper-dev libpciaccess-dev dnsmasq dmidecode librbd-dev libtirpc-dev -y 2>/dev/null
         apt install apparmor-profiles apparmor-profiles-extra apparmor-utils libapparmor-dev python3-apparmor libapparmor-perl -y
-        pip3 install ipaddr
+        pip3 install ipaddr meson flake8 -U
         # --prefix=/usr --localstatedir=/var --sysconfdir=/etc
         git init
         git remote add doomedraven https://github.com/libvirt/libvirt
-        mkdir build && cd build
-        ../autogen.sh --system --with-qemu=yes --with-dtrace --with-numad --disable-nls --with-openvz=no --with-yajl=yes --with-secdriver-apparmor=yes --with-apparmor-profiles
-        make -j"$(nproc)"
-        checkinstall -D --pkgname=libvirt-$libvirt_version --default
+        sudo meson build -D system=true -D driver_remote=enabled -D driver_qemu=enabled -D driver_libvirtd=enabled
+        sudo ninja -C build
+        sudo ninja -C build install
+        #mkdir build && cd build
+        #../autogen.sh --system --with-qemu=yes --with-dtrace --with-numad --disable-nls --with-openvz=no --with-yajl=yes --with-secdriver-apparmor=yes --with-apparmor-profiles
+        #make -j"$(nproc)"
+        #checkinstall -D --pkgname=libvirt-$libvirt_version --default
         cd ..
         # check if linked correctly
         if [ -f /usr/lib/libvirt-qemu.so ]; then
