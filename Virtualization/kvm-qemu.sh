@@ -447,7 +447,7 @@ EOH
         # --prefix=/usr --localstatedir=/var --sysconfdir=/etc
         git init
         git remote add doomedraven https://github.com/libvirt/libvirt
-        sudo meson build -D system=true -D driver_remote=enabled -D driver_qemu=enabled -D driver_libvirtd=enabled -D prefix=/usr -D qemu_group=tss -D qemu_user=tss
+        sudo meson build -D system=true -D driver_remote=enabled -D driver_qemu=enabled -D driver_libvirtd=enabled -D prefix=/usr -D qemu_group=tss -D qemu_user=tss -D secdriver_apparmor=enabled -D apparmor_profiles=true
         sudo ninja -C build
         sudo ninja -C build install
         #mkdir build && cd build
