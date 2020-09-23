@@ -894,7 +894,7 @@ After=syslog.target network.target
 
 [Service]
 WorkingDirectory=/opt/CAPEv2/utils/
-ExecStart=/usr/bin/python3 rooter.py -g ${USER}
+ExecStart=/usr/bin/python3 rooter.py --iptables /usr/sbin/iptables --iptables-restore /usr/sbin/iptables-restore --iptables-save /usr/sbin/iptables-save -g ${USER}
 User=root
 Group=root
 Restart=always
