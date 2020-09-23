@@ -450,8 +450,8 @@ function install_suricata() {
     sed -i 's/mpm-algo: ac/mpm-algo: hs/g' /etc/suricata/suricata.yaml
     sed -i 's/mpm-algo: auto/mpm-algo: hs/g' /etc/suricata/suricata.yaml
     sed -i 's/#run-as:/run-as:/g' /etc/suricata/suricata.yaml
-    sed -i 's/#  user: suri/   user: ${USER}/g' /etc/suricata/suricata.yaml
-    sed -i 's/#  group: suri/   group: ${USER}/g' /etc/suricata/suricata.yaml
+    sed -i "s/#  user: suri/   user: ${USER}/g" /etc/suricata/suricata.yaml
+    sed -i "s/#  group: suri/   group: ${USER}/g" /etc/suricata/suricata.yaml
     sed -i 's/    depth: 1mb/    depth: 0/g' /etc/suricata/suricata.yaml
     sed -i 's/request-body-limit: 100kb/request-body-limit: 0/g' /etc/suricata/suricata.yaml
     sed -i 's/response-body-limit: 100kb/response-body-limit: 0/g' /etc/suricata/suricata.yaml
