@@ -432,8 +432,9 @@ function install_suricata() {
     # Download etupdate to update Emerging Threats Open IDS rules:
     pip3 install suricata-update
     mkdir -p "/etc/suricata/rules"
-    crontab -l | { cat; echo "15 * * * * /usr/bin/suricata-update --suricata /usr/bin/suricata --suricata-conf /etc/suricata/suricata.yaml -o /etc/suricata/rules/ && /usr/bin/suricatasc -c reload-rules /tmp/suricata-command.socket &>/dev/null"; } | crontab -
-
+    if ! crontab -l | grep -q '15 * * * * /usr/bin/suricata-update'; then
+        crontab -l | { cat; echo "15 * * * * /usr/bin/suricata-update --suricata /usr/bin/suricata --suricata-conf /etc/suricata/suricata.yaml -o /etc/suricata/rules/ && /usr/bin/suricatasc -c reload-rules /tmp/suricata-command.socket &>/dev/null"; } | crontab -
+    fi
     if [ -d /usr/share/suricata/rules/ ]; then
         cp "/usr/share/suricata/rules/*" "/etc/suricata/rules/"
     fi
@@ -1175,7 +1176,9 @@ case "$COMMAND" in
     install_yara
     install_CAPE
     install_systemd
-    crontab -l | { cat; echo "@reboot cd /opt/CAPEv2/utils/ && ./smtp_sinkhole.sh"; } | crontab -
+    if ! crontab -l | grep -q './smtp_sinkhole.sh'; then
+        crontab -l | { cat; echo "@reboot cd /opt/CAPEv2/utils/ && ./smtp_sinkhole.sh"; } | crontab -
+    fi
     ;;
 'all')
     dependencies
@@ -1193,7 +1196,9 @@ case "$COMMAND" in
     if [ -f /opt/CAPEv2/socksproxies.sh ]; then
         crontab -l | { cat; echo "@reboot /opt/CAPEv2/socksproxies.sh"; } | crontab -
     fi
-    crontab -l | { cat; echo "@reboot cd /opt/CAPEv2/utils/ && ./smtp_sinkhole.sh"; } | crontab -
+    if ! crontab -l | grep -q './smtp_sinkhole.sh'; then
+        crontab -l | { cat; echo "@reboot cd /opt/CAPEv2/utils/ && ./smtp_sinkhole.sh"; } | crontab -
+    fi
     ;;
 'systemd')
     install_systemd;;
