@@ -70,6 +70,8 @@ cat << EndOfHelp
         logrotate - install logrotate config to rotate daily or 10G logs
         prometheus - Install Prometheus and Grafana
         node_exporter - Install node_exporter to report data to Prometheus+Grafana, only on worker servers
+        jemalloc - Install jemalloc, required for CAPE to decrease memory usage
+            Details: https://zapier.com/engineering/celery-python-jemalloc/
         Issues - show some known possible bugs/solutions
 
     Useful links - THEY CAN BE OUTDATED; RTFM!!!
@@ -79,6 +81,26 @@ cat << EndOfHelp
     Cuckoo V2 customizations neat howto
         * https://www.adlice.com/cuckoo-sandbox-customization-v2/
 EndOfHelp
+}
+
+function install_jemalloc() {
+
+    # https://zapier.com/engineering/celery-python-jemalloc/
+    cd /tmp || return
+    jelloc_info=$(curl -s https://api.github.com/repos/jemalloc/jemalloc/releases/latest)
+    jelloc_version=$(echo $jelloc_info |jq .tag_name|sed "s/\"//g")
+    jelloc_repo_url=$(echo $jelloc_info | jq ".zipball_url" | sed "s/\"//g")
+    if [ ! -f $jelloc_version ]; then
+        wget -q $jelloc_repo_url
+        unzip -q $jelloc_version
+    fi
+
+    directory=`ls | grep "jemalloc-jemalloc-*"`
+    cd $directory || return
+    ./autogen.sh
+    make -j$(nproc)
+    checkinstall -D --pkgname="jemalloc-$jelloc_version" --pkgversion="$jelloc_version" --default
+    ln -s /usr/local/lib/libjemalloc.so /usr/lib/x86_64-linux-gnu/libjemalloc.so
 }
 
 function install_nginx() {
@@ -159,7 +181,7 @@ function install_nginx() {
                 --with-cc-opt='-g -O2 -fPIE -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2' \
                 --with-ld-opt='-Wl,-Bsymbolic-functions -fPIE -pie -Wl,-z,relro -Wl,-z,now'
 
-make -j$(nproc)
+    make -j$(nproc)
     checkinstall -D --pkgname="nginx-$nginx_version" --pkgversion="$nginx_version" --default
     sudo ln -s /usr/lib/nginx/modules /etc/nginx/modules
     sudo adduser --system --home /nonexistent --shell /bin/false --no-create-home --disabled-login --disabled-password --gecos "nginx user" --group nginx
@@ -934,6 +956,7 @@ Description=CAPE
 Documentation=https://github.com/kevoreilly/CAPEv2
 
 [Service]
+Environment=LD_PRELOAD=libjemalloc.so
 WorkingDirectory=/opt/CAPEv2/
 ExecStart=/usr/bin/python3 cuckoo.py
 User=${USER}
@@ -1176,6 +1199,7 @@ case "$COMMAND" in
     install_yara
     install_CAPE
     install_systemd
+    install_jemalloc
     if ! crontab -l | grep -q './smtp_sinkhole.sh'; then
         crontab -l | { cat; echo "@reboot cd /opt/CAPEv2/utils/ && ./smtp_sinkhole.sh"; } | crontab -
     fi
@@ -1191,6 +1215,7 @@ case "$COMMAND" in
         install_CAPE
     fi
     install_systemd
+    install_jemalloc
     install_logrotate
     #socksproxies is to start redsocks stuff
     if [ -f /opt/CAPEv2/socksproxies.sh ]; then
@@ -1241,6 +1266,8 @@ case "$COMMAND" in
     install_prometheus_grafana;;
 'node_exporter')
     install_node_exporter;;
+'jemalloc')
+    install_jemalloc;;
 *)
     usage;;
 esac
