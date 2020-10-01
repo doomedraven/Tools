@@ -124,21 +124,22 @@ wusa /uninstall /kb:3083711 /quiet /norestart
 wusa /uninstall /kb:3112336 /quiet /norestart
 wusa /uninstall /kb:3123862 /quiet /norestart
 
-REM office 2016
+REM office 2010
 reg add "HKEY_CURRENT_USER\Software\Microsoft\Office\Common\Security" /v DisableAllActiveX /t  REG_DWORD /d 0 /f
 reg add "HKEY_CURRENT_USER\Software\Microsoft\Office\Common\Security" /v UFIControls /t  REG_DWORD /d 1 /f
 SOFTWARE=("Word" "Excel" "PowerPoint" "Publisher" "Outlook")
 for %%x in (Word Excel PowerPoint Publisher Outlook) do (
-    reg add "HKEY_CURRENT_USER\Software\Microsoft\Office\16.0\%%x\Common\General" /v ShownOptIn /t  REG_DWORD /d 1 /f
-    reg add "HKEY_CURRENT_USER\Software\Microsoft\Office\16.0\%%x\Security" /v VBAWarnings /t  REG_DWORD /d 1 /f
-    reg add "HKEY_CURRENT_USER\Software\Microsoft\Office\16.0\%%x\Security" /v AccessVBOM /t  REG_DWORD /d 1 /f
-    reg add "HKEY_CURRENT_USER\Software\Microsoft\Office\16.0\%%x\Security" /v DisableDDEServerLaunch /t  REG_DWORD /d 0 /f
-    reg add "HKEY_CURRENT_USER\Software\Microsoft\Office\16.0\%%x\Security" /v ExtensionHardening /t  REG_DWORD /d 0 /f
-    reg add "HKEY_CURRENT_USER\Software\Microsoft\Office\16.0\%%x\Security" /v ShownOptIn /t  REG_DWORD /d 1 /f
-    reg add "HKEY_CURRENT_USER\Software\Microsoft\Office\16.0\%%x\Security" /v ShownOptIn /t  REG_DWORD /d 1 /f
-    reg add "HKEY_CURRENT_USER\Software\Microsoft\Office\16.0\%%x\Security" /v ShownOptIn /t  REG_DWORD /d 1 /f
-    reg add "HKEY_CURRENT_USER\Software\Policies\Microsoft\Office\16.0\%%x\Security" /v MarkInternalAsUnsafe /t  REG_DWORD /d 0 /f
-    reg add "HKEY_CURRENT_USER\Software\Microsoft\Office\16.0\%%x\Security\ProtectedView" /v DisableAttachmentsInPV /t  REG_DWORD /d 1 /f
-    reg add "HKEY_CURRENT_USER\Software\Microsoft\Office\16.0\%%x\Security\ProtectedView" /v DisableInternetFilesInPV /t  REG_DWORD /d 1 /f
-    reg add "HKEY_CURRENT_USER\Software\Microsoft\Office\16.0\%%x\Security\ProtectedView" /v DisableUnsafeLocationsInPV /t  REG_DWORD /d 1 /f
-)
+    reg add "HKEY_CURRENT_USER\Software\Microsoft\Office\14.0\%%x\Common\General" /v ShownOptIn /t  REG_DWORD /d 1 /f
+    reg add "HKEY_CURRENT_USER\Software\Microsoft\Office\14.0\%%x\Security" /v VBAWarnings /t  REG_DWORD /d 1 /f
+    reg add "HKEY_CURRENT_USER\Software\Microsoft\Office\14.0\%%x\Security" /v AccessVBOM /t  REG_DWORD /d 1 /f
+    reg add "HKEY_CURRENT_USER\Software\Microsoft\Office\14.0\%%x\Security" /v DisableDDEServerLaunch /t  REG_DWORD /d 0 /f
+    reg add "HKEY_CURRENT_USER\Software\Microsoft\Office\14.0\%%x\Security" /v ExtensionHardening /t  REG_DWORD /d 0 /f
+    reg add "HKEY_CURRENT_USER\Software\Microsoft\Office\14.0\%%x\Security" /v ShownOptIn /t  REG_DWORD /d 1 /f
+    reg add "HKEY_CURRENT_USER\Software\Microsoft\Office\14.0\%%x\Security" /v ShownOptIn /t  REG_DWORD /d 1 /f
+    reg add "HKEY_CURRENT_USER\Software\Microsoft\Office\14.0\%%x\Security" /v ShownOptIn /t  REG_DWORD /d 1 /f
+    reg add "HKEY_CURRENT_USER\Software\Policies\Microsoft\Office\14.0\%%x\Security" /v MarkInternalAsUnsafe /t  REG_DWORD /d 0 /f
+    reg add "HKEY_CURRENT_USER\Software\Microsoft\Office\14.0\%%x\Security\ProtectedView" /v DisableAttachmentsInPV /t  REG_DWORD /d 1 /f
+    reg add "HKEY_CURRENT_USER\Software\Microsoft\Office\14.0\%%x\Security\ProtectedView" /v DisableInternetFilesInPV /t  REG_DWORD /d 1 /f
+    reg add "HKEY_CURRENT_USER\Software\Microsoft\Office\14.0\%%x\Security\ProtectedView" /v DisableUnsafeLocationsInPV /t  REG_DWORD /d 1 /f
+    reg add "HKEY_CURRENT_USER\Software\Microsoft\Office\14.0\%%x\Security" /v EnableDEP /t  REG_DWORD /d 1 /f
+
