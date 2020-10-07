@@ -622,6 +622,8 @@ function dependencies() {
     pip3 install git+https://github.com/doomedraven/sflock.git git+https://github.com/doomedraven/socks5man.git "pyattck>=2.0.2" distorm3 openpyxl git+https://github.com/volatilityfoundation/volatility3 git+https://github.com/DissectMalware/XLMMacroDeobfuscator passlib pyzipper
     #config parsers
     pip3 install git+https://github.com/Defense-Cyber-Crime-Center/DC3-MWCP.git git+https://github.com/kevthehermit/RATDecoders.git
+    
+    pip3 install "greenlet==0.4.16"
     # re2
     apt install libre2-dev -y
     #re2 for py3
