@@ -652,7 +652,11 @@ function dependencies() {
     aa-disable /usr/sbin/tcpdump
     # ToDo check if user exits
 
-    useradd -s /bin/bash -d /home/${USER}/ -m ${USER}
+    if id "${USER}" &>/dev/null; then
+        echo 'user ${USER} already exist'
+    else
+        useradd -s /bin/bash -d /home/${USER}/ -m ${USER}
+    fi
     usermod -G ${USER} -a ${USER}
     groupadd pcap
     usermod -a -G pcap ${USER}
