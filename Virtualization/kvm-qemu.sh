@@ -462,6 +462,9 @@ EOH
         elif [ -f /usr/lib64/libvirt-qemu.so ]; then
             libvirt_so_path=/usr/lib64/
             export PKG_CONFIG_PATH=/usr/lib64/pkgconfig/
+        elif [ -f /usr/lib/x86_64-linux-gnu/libvirt-qemu.so ]; then
+            libvirt_so_path=/usr/lib/x86_64-linux-gnu/
+            export PKG_CONFIG_PATH=/usr/lib/pkgconfig/
         fi
 
         if [[ -n "$libvirt_so_path" ]]; then
