@@ -21,6 +21,7 @@ nginx_version=1.19.2
 prometheus_version=2.20.1
 grafana_version=7.1.5
 node_exporter_version=1.0.1
+guacamole_version=1.2.0
 
 function issues() {
 cat << EOI
@@ -622,7 +623,7 @@ function dependencies() {
     pip3 install git+https://github.com/doomedraven/sflock.git git+https://github.com/doomedraven/socks5man.git "pyattck>=2.0.2" distorm3 openpyxl git+https://github.com/volatilityfoundation/volatility3 git+https://github.com/DissectMalware/XLMMacroDeobfuscator passlib pyzipper
     #config parsers
     pip3 install git+https://github.com/Defense-Cyber-Crime-Center/DC3-MWCP.git git+https://github.com/kevthehermit/RATDecoders.git
-    
+
     pip3 install "greenlet==0.4.16"
     # re2
     apt install libre2-dev -y
@@ -1168,6 +1169,22 @@ function install_node_exporter() {
     cd node_exporter-$node_exporter_version.linux-amd6 && ./node_exporter &
 }
 
+function install_guacamole() {
+    # https://guacamole.apache.org/doc/gug/installing-guacamole.html
+    sudo apt -y install libcairo2-dev libjpeg-turbo8-dev libpng-dev libossp-uuid-dev libfreerdp2-2 #libfreerdp-dev
+    sudo apt install freerdp2-dev libssh2-1-dev libvncserver-dev libpulse-dev  libssl-dev libvorbis-dev libwebp-dev libpango1.0-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev
+    # https://downloads.apache.org/guacamole/$guacamole_version/source/
+    mkdir /tmp/guac-build && cd /tmp/guac-build
+    wget https://downloads.apache.org/guacamole/$guacamole_version/source/guacamole-server-$guacamole_version.tar.gz
+    wget https://downloads.apache.org/guacamole/$guacamole_version/source/guacamole-server-$guacamole_version.tar.gz.asc
+    ./configure --with-systemd-dir=/lib/systemd/system
+    make -j"$(getconf _NPROCESSORS_ONLN)"
+    sudo checkinstall -D --pkgname=guacamole-server-$guacamole --pkgversion="$guacamole_version" --default
+    sudo ldconfig
+    sudo systemctl enable guacd
+    sudo systemctl start guacd
+
+}
 # Doesn't work ${$1,,}
 COMMAND=$(echo "$1"|tr "[A-Z]" "[a-z]")
 
@@ -1274,6 +1291,8 @@ case "$COMMAND" in
     install_node_exporter;;
 'jemalloc')
     install_jemalloc;;
+'guacamole')
+    install_guacamole;;
 *)
     usage;;
 esac
