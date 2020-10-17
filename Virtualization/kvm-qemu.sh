@@ -7,7 +7,7 @@
 # https://www.doomedraven.com/2020/04/how-to-create-virtual-machine-with-virt.html
 # Use Ubuntu 20.04 LTS
 
-#Update date: 12.08.2020
+#Update date: 21.09.2020
 
 : '
 Huge thanks to:
@@ -441,18 +441,20 @@ EOH
     tar xf libvirt-$libvirt_version.tar.xz
     cd libvirt-$libvirt_version || return
     if [ "$OS" = "Linux" ]; then
-        apt install python3-dev unzip numad libglib2.0-dev libsdl1.2-dev lvm2 python3-pip python-libxml2 python3-libxml2 ebtables libosinfo-1.0-dev libnl-3-dev libnl-route-3-dev libyajl-dev xsltproc libapparmor-dev apparmor-utils libdevmapper-dev libpciaccess-dev dnsmasq dmidecode librbd-dev libtirpc-dev -y 2>/dev/null
-        apt install apparmor-profiles apparmor-profiles-extra apparmor-utils libapparmor-dev python3-apparmor libapparmor-perl -y
+        apt install python3-dev unzip numad libglib2.0-dev libsdl1.2-dev lvm2 python3-pip ebtables libosinfo-1.0-dev libnl-3-dev libnl-route-3-dev libyajl-dev xsltproc libdevmapper-dev libpciaccess-dev dnsmasq dmidecode librbd-dev libtirpc-dev -y 2>/dev/null
+        apt install apparmor-profiles apparmor-profiles-extra apparmor-utils libapparmor-dev python3-apparmor libapparmor-perl libapparmor-dev apparmor-utils -y
         pip3 install ipaddr meson flake8 -U
         # --prefix=/usr --localstatedir=/var --sysconfdir=/etc
-        git init
-        git remote add doomedraven https://github.com/libvirt/libvirt
+        #git init
+        #git remote add doomedraven https://github.com/libvirt/libvirt
+        # To see whole config sudo meson configure
         sudo meson build -D system=true -D driver_remote=enabled -D driver_qemu=enabled -D driver_libvirtd=enabled -D prefix=/usr -D qemu_group=libvirt -D qemu_user=root -D secdriver_apparmor=enabled -D apparmor_profiles=true
         sudo ninja -C build
         sudo ninja -C build install
         #mkdir build && cd build
         #../autogen.sh --system --with-qemu=yes --with-dtrace --with-numad --disable-nls --with-openvz=no --with-yajl=yes --with-secdriver-apparmor=yes --with-apparmor-profiles
         #make -j"$(nproc)"
+
         #checkinstall -D --pkgname=libvirt-$libvirt_version --default
         cd ..
         # check if linked correctly
@@ -462,9 +464,17 @@ EOH
         elif [ -f /usr/lib64/libvirt-qemu.so ]; then
             libvirt_so_path=/usr/lib64/
             export PKG_CONFIG_PATH=/usr/lib64/pkgconfig/
+        elif [ -f /usr/local/lib/x86_64-linux-gnu/libvirt-qemu.so ]; then
+            libvirt_so_path=/usr/local/lib/x86_64-linux-gnu/
+            export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig/
         elif [ -f /usr/lib/x86_64-linux-gnu/libvirt-qemu.so ]; then
             libvirt_so_path=/usr/lib/x86_64-linux-gnu/
             export PKG_CONFIG_PATH=/usr/lib/pkgconfig/
+        else
+            sudo updatedb
+            paths=$(locate libvirt-qemu.so)
+            #ToDo finish this, get path remove filename and export as PKG_CONFIG_PATH and set libvirt_so_path
+
         fi
 
         if [[ -n "$libvirt_so_path" ]]; then
@@ -472,8 +482,8 @@ EOH
             for so_path in $(ls ${libvirt_so_path}libvirt*.so.0); do ln -s $so_path /lib/$(uname -m)-linux-gnu/$(basename $so_path) 2>/dev/null; done
         fi
 
-    elif [ "$OS" = "Darwin" ]; then
-        ./autogen.sh --system --prefix=/usr/local/ --localstatedir=/var --sysconfdir=/etc --with-qemu=yes --with-dtrace --disable-nls --with-openvz=no --with-vmware=no --with-phyp=no --with-xenapi=no --with-libxl=no  --with-vbox=no --with-lxc=no --with-vz=no   --with-esx=no --with-hyperv=no --with-wireshark-dissector=no --with-yajl=yes
+    #elif [ "$OS" = "Darwin" ]; then
+    #    ./autogen.sh --system --prefix=/usr/local/ --localstatedir=/var --sysconfdir=/etc --with-qemu=yes --with-dtrace --disable-nls --with-openvz=no --with-vmware=no --with-phyp=no --with-xenapi=no --with-libxl=no  --with-vbox=no --with-lxc=no --with-vz=no   --with-esx=no --with-hyperv=no --with-wireshark-dissector=no --with-yajl=yes
     fi
 
     # https://wiki.archlinux.org/index.php/Libvirt#Using_polkit
@@ -532,8 +542,8 @@ EOH
         fi
 
         #check links
-        #sudo ln -s /usr/lib64/libvirt-qemu.so /lib/x86_64-linux-gnu/libvirt-qemu.so.0
-        #sudo ln -s /usr/lib64/libvirt.so.0 /lib/x86_64-linux-gnu/libvirt.so.0
+        sudo ln -s /usr/lib64/libvirt-qemu.so /lib/x86_64-linux-gnu/libvirt-qemu.so.0
+        sudo ln -s /usr/lib64/libvirt.so.0 /lib/x86_64-linux-gnu/libvirt.so.0
         echo "[+] You should logout and login "
     fi
 
@@ -554,7 +564,7 @@ function install_virt_manager() {
     libvte-2.91-0 libvte-2.91-common libwavpack1 libwayland-client0 libwayland-cursor0 libwayland-egl1-mesa libwayland-server0 \
     libx11-xcb1 libxcb-dri2-0 libxcb-dri3-0 libsoup-gnome2.4-1 libsoup2.4-1 libspeex1 libspice-client-glib-2.0-8 \
     libspice-client-gtk-3.0-5 libspice-server1 libtag1v5 libtag1v5-vanilla libthai-data libthai0 libtheora0 libtiff5 \
-    libtwolame0 librados2 libraw1394-11 librbd1 librdmacm1 librest-0.7-0 \
+    libtwolame0 libpython3 librados2 libraw1394-11 librbd1 librdmacm1 librest-0.7-0 \
     librsvg2-2 librsvg2-common libsamplerate0 libsdl1.2debian libshout3 libsndfile1 libpango-1.0-0 libpangocairo-1.0-0 \
     libpangoft2-1.0-0 libpangoxft-1.0-0 libpciaccess0 libphodav-2.0-0 libphodav-2.0-common libpixman-1-0 libproxy1v5 \
     libpulse-mainloop-glib0 libpulse0 libgstreamer1.0-0 libgtk-3-0 libgtk-3-bin libgtk-3-common libgtk-vnc-2.0-0 \
@@ -571,11 +581,11 @@ function install_virt_manager() {
     glib-networking-common glib-networking-services gsettings-desktop-schemas gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
     gstreamer1.0-x adwaita-icon-theme at-spi2-core augeas-lenses cpu-checker dconf-gsettings-backend dconf-service \
     fontconfig fontconfig-config fonts-dejavu-core genisoimage gir1.2-appindicator3-0.1 gir1.2-secret-1 \
-    gobject-introspection intltool pkg-config libxml2-dev libxslt-dev python3-dev gir1.2-gtk-vnc-2.0 gir1.2-spiceclientgtk-3.0 libgtk-3-dev libgtksourceview-3.0-dev -y
+    gobject-introspection intltool pkg-config libxml2-dev libxslt-dev python3-dev gir1.2-gtk-vnc-2.0 gir1.2-spiceclientgtk-3.0 libgtk-3-dev -y
     # should be installed first
     # moved out as some 20.04 doesn't have this libs %)
     apt install -y ovmf python3-ntlm-auth libpython3-stdlib libbrlapi-dev
-    pip3 install requests six urllib3 ipaddr ipaddress idna dbus-python certifi lxml libxml2 cryptography pyOpenSSL chardet asn1crypto pycairo PySocks PyGObject -U
+    pip3 install requests six urllib3 ipaddr ipaddress idna dbus-python certifi lxml libxml2-python3 cryptography pyOpenSSL chardet asn1crypto pycairo PySocks PyGObject -U
 
     if [ -f /usr/lib/libvirt-qemu.so ]; then
         libvirt_so_path=/usr/lib/
@@ -746,6 +756,7 @@ function replace_seabios_clues_public() {
         _sed_aux 's/"BXPC"/"A M I"/g' "$file" "BXPC was not replaced in $file"
     done
 }
+
 
 function qemu_func() {
     cd /tmp || return
@@ -992,7 +1003,7 @@ cat << EndOfHelp
     Solution 1:
         apt install libyara3
     Solution 2:
-        sudo echo “/usr/local/lib” >> /etc/ld.so.conf
+        sudo echo "/usr/local/lib" >> /etc/ld.so.conf
         sudo ldconfig
 
     # Fixes from http://ask.xmodulo.com/compile-virt-manager-debian-ubuntu.html
@@ -1000,7 +1011,7 @@ cat << EndOfHelp
     $ ./kvm-qemu.sh libvirt
 
     2. ImportError: No module named libxml2
-    $ apt install python-libxml2 python3-libxml2
+    $ pip3 install libxml2-python3
 
     3. ImportError: No module named requests
     $ apt install python-requests
