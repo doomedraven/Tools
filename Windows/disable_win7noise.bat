@@ -127,7 +127,6 @@ wusa /uninstall /kb:3123862 /quiet /norestart
 REM office 2010
 reg add "HKEY_CURRENT_USER\Software\Microsoft\Office\Common\Security" /v DisableAllActiveX /t  REG_DWORD /d 0 /f
 reg add "HKEY_CURRENT_USER\Software\Microsoft\Office\Common\Security" /v UFIControls /t  REG_DWORD /d 1 /f
-SOFTWARE=("Word" "Excel" "PowerPoint" "Publisher" "Outlook")
 for %%x in (Word Excel PowerPoint Publisher Outlook) do (
     reg add "HKEY_CURRENT_USER\Software\Microsoft\Office\14.0\%%x\Common\General" /v ShownOptIn /t  REG_DWORD /d 1 /f
     reg add "HKEY_CURRENT_USER\Software\Microsoft\Office\14.0\%%x\Security" /v VBAWarnings /t  REG_DWORD /d 1 /f
@@ -142,4 +141,4 @@ for %%x in (Word Excel PowerPoint Publisher Outlook) do (
     reg add "HKEY_CURRENT_USER\Software\Microsoft\Office\14.0\%%x\Security\ProtectedView" /v DisableInternetFilesInPV /t  REG_DWORD /d 1 /f
     reg add "HKEY_CURRENT_USER\Software\Microsoft\Office\14.0\%%x\Security\ProtectedView" /v DisableUnsafeLocationsInPV /t  REG_DWORD /d 1 /f
     reg add "HKEY_CURRENT_USER\Software\Microsoft\Office\14.0\%%x\Security" /v EnableDEP /t  REG_DWORD /d 1 /f
-
+)
