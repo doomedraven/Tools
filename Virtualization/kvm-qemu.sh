@@ -552,7 +552,7 @@ function install_virt_manager() {
     libvte-2.91-0 libvte-2.91-common libwavpack1 libwayland-client0 libwayland-cursor0 libwayland-egl1-mesa libwayland-server0 \
     libx11-xcb1 libxcb-dri2-0 libxcb-dri3-0 libsoup-gnome2.4-1 libsoup2.4-1 libspeex1 libspice-client-glib-2.0-8 \
     libspice-client-gtk-3.0-5 libspice-server1 libtag1v5 libtag1v5-vanilla libthai-data libthai0 libtheora0 libtiff5 \
-    libtwolame0 libpython3 librados2 libraw1394-11 librbd1 librdmacm1 librest-0.7-0 \
+    libtwolame0 libpython3-dev librados2 libraw1394-11 librbd1 librdmacm1 librest-0.7-0 \
     librsvg2-2 librsvg2-common libsamplerate0 libsdl1.2debian libshout3 libsndfile1 libpango-1.0-0 libpangocairo-1.0-0 \
     libpangoft2-1.0-0 libpangoxft-1.0-0 libpciaccess0 libphodav-2.0-0 libphodav-2.0-common libpixman-1-0 libproxy1v5 \
     libpulse-mainloop-glib0 libpulse0 libgstreamer1.0-0 libgtk-3-0 libgtk-3-bin libgtk-3-common libgtk-vnc-2.0-0 \
@@ -572,16 +572,17 @@ function install_virt_manager() {
     gobject-introspection intltool pkg-config libxml2-dev libxslt-dev python3-dev gir1.2-gtk-vnc-2.0 gir1.2-spiceclientgtk-3.0 libgtk-3-dev -y
     # should be installed first
     # moved out as some 20.04 doesn't have this libs %)
-    apt install -y ovmf python3-ntlm-auth libpython3-stdlib libbrlapi-dev
+    apt install -y ovmf python3-ntlm-auth libpython3-stdlib libbrlapi-dev libgirepository1.0-dev python3-testresources
     pip3 install requests six urllib3 ipaddr ipaddress idna dbus-python certifi lxml libxml2-python3 cryptography pyOpenSSL chardet asn1crypto pycairo PySocks PyGObject -U
 
-    if [ -f /usr/lib/libvirt-qemu.so ]; then
-        libvirt_so_path=/usr/lib/
-        export PKG_CONFIG_PATH=/usr/lib/pkgconfig/
-    elif [ -f /usr/lib64/libvirt-qemu.so ]; then
-        libvirt_so_path=/usr/lib64/
-        export PKG_CONFIG_PATH=/usr/lib64/pkgconfig/
-    fi
+    updatedb
+      
+    temp_libvirt_so_path=$(locate libvirt-qemu.so | head -n1 | awk '{print $1;}')  
+    temp_export_path=$(locate libvirt.pc | head -n1 | awk '{print $1;}')  
+    libvirt_so_path="${temp_libvirt_so_path%/*}/"
+    export_path="${temp_export_path%/*}/"
+
+    export PKG_CONFIG_PATH=$export_path
 
     cd /tmp || return
     if [ ! -f libvirt-glib-3.0.0.tar.gz ]; then
