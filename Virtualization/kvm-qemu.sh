@@ -572,12 +572,8 @@ function install_virt_manager() {
     gobject-introspection intltool pkg-config libxml2-dev libxslt-dev python3-dev gir1.2-gtk-vnc-2.0 gir1.2-spiceclientgtk-3.0 libgtk-3-dev -y
     # should be installed first
     # moved out as some 20.04 doesn't have this libs %)
-<<<<<<< HEAD
-    apt install -y ovmf python3-ntlm-auth libpython3-stdlib libbrlapi-dev libgirepository1.0-dev python3-testresources
-=======
     apt install -y python3-ntlm-auth libpython3-stdlib libbrlapi-dev libgirepository1.0-dev python3-testresources
     apt -y -o Dpkg::Options::="--force-overwrite" install ovmf
->>>>>>> upstream/master
     pip3 install requests six urllib3 ipaddr ipaddress idna dbus-python certifi lxml libxml2-python3 cryptography pyOpenSSL chardet asn1crypto pycairo PySocks PyGObject -U
 
     updatedb
