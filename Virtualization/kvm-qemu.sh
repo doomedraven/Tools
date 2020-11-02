@@ -458,6 +458,7 @@ EOH
         #checkinstall -D --pkgname=libvirt-$libvirt_version --default
         cd ..
         # check if linked correctly
+        updatedb
         temp_libvirt_so_path=$(locate libvirt-qemu.so | head -n1 | awk '{print $1;}')
         temp_export_path=$(locate libvirt.pc | head -n1 | awk '{print $1;}')
         libvirt_so_path="${temp_libvirt_so_path%/*}/"
