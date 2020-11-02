@@ -458,24 +458,11 @@ EOH
         #checkinstall -D --pkgname=libvirt-$libvirt_version --default
         cd ..
         # check if linked correctly
-        if [ -f /usr/lib/libvirt-qemu.so ]; then
-            libvirt_so_path=/usr/lib/
-            export PKG_CONFIG_PATH=/usr/lib/pkgconfig/
-        elif [ -f /usr/lib64/libvirt-qemu.so ]; then
-            libvirt_so_path=/usr/lib64/
-            export PKG_CONFIG_PATH=/usr/lib64/pkgconfig/
-        elif [ -f /usr/local/lib/x86_64-linux-gnu/libvirt-qemu.so ]; then
-            libvirt_so_path=/usr/local/lib/x86_64-linux-gnu/
-            export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig/
-        elif [ -f /usr/lib/x86_64-linux-gnu/libvirt-qemu.so ]; then
-            libvirt_so_path=/usr/lib/x86_64-linux-gnu/
-            export PKG_CONFIG_PATH=/usr/lib/pkgconfig/
-        else
-            sudo updatedb
-            paths=$(locate libvirt-qemu.so)
-            #ToDo finish this, get path remove filename and export as PKG_CONFIG_PATH and set libvirt_so_path
-
-        fi
+        temp_libvirt_so_path=$(locate libvirt-qemu.so | head -n1 | awk '{print $1;}')
+        temp_export_path=$(locate libvirt.pc | head -n1 | awk '{print $1;}')
+        libvirt_so_path="${temp_libvirt_so_path%/*}/"
+        export_path="${temp_export_path%/*}/"
+        export PKG_CONFIG_PATH=$export_path
 
         if [[ -n "$libvirt_so_path" ]]; then
             # #ln -s /usr/lib64/libvirt-qemu.so /lib/x86_64-linux-gnu/libvirt-qemu.so.0
