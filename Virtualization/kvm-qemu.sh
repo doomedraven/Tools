@@ -18,6 +18,7 @@ Huge thanks to:
     * @Fire9
     * @abuse_ch
     * @wmetcalf
+    * @ClaudioWayne
 '
 
 # ToDo investigate
