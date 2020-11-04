@@ -545,7 +545,7 @@ function install_virt_manager() {
     debootstrap sharutils-doc ssh-askpass gnome-keyring\
     sharutils spice-client-glib-usb-acl-helper ubuntu-mono x11-common python-enum34 python3-gi \
     python3-gi-cairo python3-pkg-resources \
-    libxml2-utils libxrandr2 libxrender1 libxshmfence1 libxtst6 libxv1 libyajl2 msr-tools osinfo-db \
+    python3-libxml2 libxml2-utils libxrandr2 libxrender1 libxshmfence1 libxtst6 libxv1 libyajl2 msr-tools osinfo-db \
     python3-cairo python3-cffi-backend libxcb-present0 libxcb-render0 libxcb-shm0 libxcb-sync1 \
     libxcb-xfixes0 libxcomposite1 libxcursor1 libxdamage1 libxenstore3.0 libxfixes3 libxft2 libxi6 libxinerama1 \
     libxkbcommon0 libusbredirhost1 libusbredirparser1 libv4l-0 libv4lconvert0 libvisual-0.4-0 libvorbis0a libvorbisenc2 \
@@ -574,7 +574,7 @@ function install_virt_manager() {
     # moved out as some 20.04 doesn't have this libs %)
     apt install -y python3-ntlm-auth libpython3-stdlib libbrlapi-dev libgirepository1.0-dev python3-testresources
     apt -y -o Dpkg::Options::="--force-overwrite" install ovmf
-    pip3 install requests six urllib3 ipaddr ipaddress idna dbus-python certifi lxml libxml2-python3 cryptography pyOpenSSL chardet asn1crypto pycairo PySocks PyGObject -U
+    pip3 install requests six urllib3 ipaddr ipaddress idna dbus-python certifi lxml cryptography pyOpenSSL chardet asn1crypto pycairo PySocks PyGObject -U
 
     updatedb
       
