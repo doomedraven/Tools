@@ -20,7 +20,7 @@ REM disable active probing
 reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\NlaSvc\Parameters\Internet" /v EnableActiveProbing /t REG_DWORD /d 0 /f
 reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\NetworkConnectivityStatusIndicator" /v EnableActiveProbing /t REG_DWORD /d 0 /f
 REM disable passive probing
-reg add  "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\NlaSvc\Parameters\Internet" /v PssivePollPeriod /t REG_DWORD /d 0 /f
+reg add  "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\NlaSvc\Parameters\Internet" /v PassivePollPeriod /t REG_DWORD /d 0 /f
 REM disable SSDP
 sc config SSDPSRV start= disabled
 net stop SSDPSRV
@@ -30,7 +30,7 @@ sc config Browser start= disabled
 REM disable WinHTTP Web Proxy Auto-Discovery
 reg add "HKLM\SYSTEM\CurrentControlSet\services\WinHttpAutoProxySvc" /v Start /t REG_DWORD /d 4 /f
 REM disable Function Discovery Resource Publication service
-reg add "HKLM\SYSTEM\CurrentControlSet\services\FDResPud" /v Start /t REG_DWORD /d 4 /f
+reg add "HKLM\SYSTEM\CurrentControlSet\services\FDResPup" /v Start /t REG_DWORD /d 4 /f
 REM IE blank page
 reg add "HKCU\Software\Microsoft\Internet Explorer\Main" /V "Start Page" /D "" /F
 REM disable IExplorer Proxy
