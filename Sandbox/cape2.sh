@@ -1226,6 +1226,10 @@ case "$COMMAND" in
     if ! crontab -l | grep -q './smtp_sinkhole.sh'; then
         crontab -l | { cat; echo "@reboot cd /opt/CAPEv2/utils/ && ./smtp_sinkhole.sh"; } | crontab -
     fi
+    # Update FLARE CAPA rules once per day
+    if ! crontab -l | grep -q 'community.py -cr'; then
+        crontab -l | { cat; echo "5 0 */1 * * cd /opt/CAPEv2/utils/ && python3 community.py -cr && systemctl restart cape-processor"; } | crontab -
+    fi
     ;;
 'all')
     dependencies
@@ -1246,6 +1250,10 @@ case "$COMMAND" in
     fi
     if ! crontab -l | grep -q './smtp_sinkhole.sh'; then
         crontab -l | { cat; echo "@reboot cd /opt/CAPEv2/utils/ && ./smtp_sinkhole.sh"; } | crontab -
+    fi
+    # Update FLARE CAPA rules once per day
+    if ! crontab -l | grep -q 'community.py -cr'; then
+        crontab -l | { cat; echo "5 0 */1 * * cd /opt/CAPEv2/utils/ && python3 community.py -cr && systemctl restart cape-processor"; } | crontab -
     fi
     ;;
 'systemd')
