@@ -1228,11 +1228,11 @@ case "$COMMAND" in
     install_systemd
     install_jemalloc
     if ! crontab -l | grep -q './smtp_sinkhole.sh'; then
-        crontab -l | { cat; echo "@reboot cd /opt/CAPEv2/utils/ && ./smtp_sinkhole.sh"; } | crontab -
+        crontab -l | { cat; echo "@reboot cd /opt/CAPEv2/utils/ && ./smtp_sinkhole.sh 2>/dev/null"; } | crontab -
     fi
     # Update FLARE CAPA rules once per day
     if ! crontab -l | grep -q 'community.py -cr'; then
-        crontab -l | { cat; echo "5 0 */1 * * cd /opt/CAPEv2/utils/ && python3 community.py -cr && systemctl restart cape-processor"; } | crontab -
+        crontab -l | { cat; echo "5 0 */1 * * cd /opt/CAPEv2/utils/ && python3 community.py -cr && systemctl restart cape-processor 2>/dev/null"; } | crontab -
     fi
     ;;
 'all')
@@ -1253,11 +1253,11 @@ case "$COMMAND" in
         crontab -l | { cat; echo "@reboot /opt/CAPEv2/socksproxies.sh"; } | crontab -
     fi
     if ! crontab -l | grep -q './smtp_sinkhole.sh'; then
-        crontab -l | { cat; echo "@reboot cd /opt/CAPEv2/utils/ && ./smtp_sinkhole.sh"; } | crontab -
+        crontab -l | { cat; echo "@reboot cd /opt/CAPEv2/utils/ && ./smtp_sinkhole.sh 2>/dev/null"; } | crontab -
     fi
     # Update FLARE CAPA rules once per day
     if ! crontab -l | grep -q 'community.py -cr'; then
-        crontab -l | { cat; echo "5 0 */1 * * cd /opt/CAPEv2/utils/ && python3 community.py -cr && systemctl restart cape-processor"; } | crontab -
+        crontab -l | { cat; echo "5 0 */1 * * cd /opt/CAPEv2/utils/ && python3 community.py -cr && systemctl restart cape-processor 2>/dev/null"; } | crontab -
     fi
     ;;
 'systemd')
