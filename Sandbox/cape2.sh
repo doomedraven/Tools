@@ -625,6 +625,10 @@ function dependencies() {
     pip3 install git+https://github.com/Defense-Cyber-Crime-Center/DC3-MWCP.git git+https://github.com/kevthehermit/RATDecoders.git
     cd /tmp && git clone --recurse-submodules https://github.com/fireeye/capa.git && cd capa && git submodule update --init rules && python -m pip install .
     pip3 install "greenlet==0.4.16"
+    
+    # pip3 install flare-capa fails for me
+    cd /tmp && git clone --recurse-submodules https://github.com/fireeye/capa.git && cd capa && git submodule update --init rules && python -m pip3 install .
+    
     # re2
     apt install libre2-dev -y
     #re2 for py3
