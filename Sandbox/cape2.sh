@@ -742,6 +742,9 @@ EOF
     "
 
     pip3 install unicorn capstone
+
+    # for signatures using bloom filters (e.g. network_dga_fraunhofer)
+    pip3 install flor
 }
 
 function install_clamav() {
