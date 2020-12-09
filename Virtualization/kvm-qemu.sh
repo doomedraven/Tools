@@ -822,7 +822,8 @@ function qemu_func() {
                 fi
                 make -j"$(nproc)"
                 if [ "$OS" = "Linux" ]; then
-                    checkinstall -D --pkgname=qemu-$qemu_version --nodoc --showinstall=no --default
+                    checkinstall -D --pkgname=qemu-$qemu_version --nodoc --showinstall=no --default --install=no
+                    sudo dpkg -i --force-all qemu-$qemu_version_$qemu_version-1_amd64.deb
                 elif [ "$OS" = "Darwin" ]; then
                     make -j"$(nproc)" install
                 fi
