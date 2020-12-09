@@ -7,6 +7,7 @@ Please answer the following questions for yourself before submitting an issue.
 
 - [ ] I checked to make sure that this issue has not already been filed
 - [ ] I'm reporting the issue to the correct repository (for multi-repository projects)
+- [ ] I read my log of instalation, all issues will be closed if you don't do your part of work
 
 # Expected Behavior
 

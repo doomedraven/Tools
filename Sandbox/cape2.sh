@@ -619,12 +619,16 @@ function dependencies() {
     # if __name__ == '__main__':
     #     sys.exit(__main__._main())
     #httpreplay not py3
-    pip3 install Pebble bson pymisp cryptography requests[security] pyOpenSSL pefile tldextract imagehash oletools olefile "networkx>=2.1" mixbox capstone PyCrypto voluptuous xmltodict future python-dateutil requests_file "gevent==20.4.0" simplejson pyvmomi pyinstaller maec regex xmltodict -U
+    pip3 install flor Pebble bson pymisp cryptography requests[security] pyOpenSSL pefile tldextract imagehash oletools olefile "networkx>=2.1" mixbox capstone PyCrypto voluptuous xmltodict future python-dateutil requests_file "gevent==20.4.0" simplejson pyvmomi pyinstaller maec regex xmltodict -U
     pip3 install git+https://github.com/doomedraven/sflock.git git+https://github.com/doomedraven/socks5man.git "pyattck>=2.0.2" distorm3 openpyxl git+https://github.com/volatilityfoundation/volatility3 git+https://github.com/DissectMalware/XLMMacroDeobfuscator passlib pyzipper
     #config parsers
     pip3 install git+https://github.com/Defense-Cyber-Crime-Center/DC3-MWCP.git git+https://github.com/kevthehermit/RATDecoders.git
-
+    cd /tmp && git clone --recurse-submodules https://github.com/fireeye/capa.git && cd capa && git submodule update --init rules && python -m pip install .
     pip3 install "greenlet==0.4.16"
+    
+    # pip3 install flare-capa fails for me
+    cd /tmp && git clone --recurse-submodules https://github.com/fireeye/capa.git && cd capa && git submodule update --init rules && python -m pip3 install .
+    
     # re2
     apt install libre2-dev -y
     #re2 for py3
@@ -637,8 +641,8 @@ function dependencies() {
 
     pip3 install "django>3" git+https://github.com/jsocol/django-ratelimit.git
     pip3 install sqlalchemy sqlalchemy-utils jinja2 markupsafe bottle chardet pygal rarfile jsbeautifier dpkt nose dnspython pytz requests[socks] python-magic geoip pillow java-random python-whois bs4 pype32-py3 git+https://github.com/kbandla/pydeep.git flask flask-restful flask-sqlalchemy pyvmomi
-    apt install -y openjdk-11-jdk-headless
-    apt install -y openjdk-8-jdk-headless
+    #apt install -y openjdk-11-jdk-headless
+    #apt install -y openjdk-8-jdk-headless
 
     install_postgresql
 
@@ -1224,7 +1228,11 @@ case "$COMMAND" in
     install_systemd
     install_jemalloc
     if ! crontab -l | grep -q './smtp_sinkhole.sh'; then
-        crontab -l | { cat; echo "@reboot cd /opt/CAPEv2/utils/ && ./smtp_sinkhole.sh"; } | crontab -
+        crontab -l | { cat; echo "@reboot cd /opt/CAPEv2/utils/ && ./smtp_sinkhole.sh 2>/dev/null"; } | crontab -
+    fi
+    # Update FLARE CAPA rules once per day
+    if ! crontab -l | grep -q 'community.py -cr'; then
+        crontab -l | { cat; echo "5 0 */1 * * cd /opt/CAPEv2/utils/ && python3 community.py -cr && systemctl restart cape-processor 2>/dev/null"; } | crontab -
     fi
     ;;
 'all')
@@ -1245,7 +1253,11 @@ case "$COMMAND" in
         crontab -l | { cat; echo "@reboot /opt/CAPEv2/socksproxies.sh"; } | crontab -
     fi
     if ! crontab -l | grep -q './smtp_sinkhole.sh'; then
-        crontab -l | { cat; echo "@reboot cd /opt/CAPEv2/utils/ && ./smtp_sinkhole.sh"; } | crontab -
+        crontab -l | { cat; echo "@reboot cd /opt/CAPEv2/utils/ && ./smtp_sinkhole.sh 2>/dev/null"; } | crontab -
+    fi
+    # Update FLARE CAPA rules once per day
+    if ! crontab -l | grep -q 'community.py -cr'; then
+        crontab -l | { cat; echo "5 0 */1 * * cd /opt/CAPEv2/utils/ && python3 community.py -cr && systemctl restart cape-processor 2>/dev/null"; } | crontab -
     fi
     ;;
 'systemd')
