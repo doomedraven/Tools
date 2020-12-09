@@ -633,7 +633,7 @@ function dependencies() {
     cd capa || return
     git pull
     git submodule update --init rules
-    python3 setup.py install
+    pip3 install .
     
     # re2
     apt install libre2-dev -y
