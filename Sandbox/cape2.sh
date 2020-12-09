@@ -626,7 +626,14 @@ function dependencies() {
     pip3 install "greenlet==0.4.16"
     
     # pip3 install flare-capa fails for me
-    cd /tmp && git clone --recurse-submodules https://github.com/fireeye/capa.git && cd capa && git submodule update --init rules && python3 setup.py install
+    cd /tmp || return
+    if [ ! -d /tmp/capa ]; then
+        git clone --recurse-submodules https://github.com/fireeye/capa.git
+    fi
+    cd capa || return
+    git pull
+    git submodule update --init rules
+    python3 setup.py install
     
     # re2
     apt install libre2-dev -y
