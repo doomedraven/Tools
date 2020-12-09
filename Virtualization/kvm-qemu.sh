@@ -7,7 +7,7 @@
 # https://www.doomedraven.com/2020/04/how-to-create-virtual-machine-with-virt.html
 # Use Ubuntu 20.04 LTS
 
-#Update date: 21.09.2020
+#Update date: 09.12.2020
 
 : '
 Huge thanks to:
@@ -53,11 +53,11 @@ Huge thanks to:
 #      strs[5] = "VBoxVBoxVBox"; /* VirtualBox */
 
 #https://www.qemu.org/download/#source or https://download.qemu.org/
-qemu_version=5.1.0
+qemu_version=5.2.0
 # libvirt - https://libvirt.org/sources/
 # changelog - https://libvirt.org/news.html
 #5.6.0 can be the best
-libvirt_version=6.7.0
+libvirt_version=6.10.0
 # virt-manager - https://github.com/virt-manager/virt-manager/releases
 # autofilled
 OS=""
