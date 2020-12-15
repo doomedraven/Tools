@@ -5,7 +5,7 @@
 # This file is part of Tools - https://github.com/doomedraven/Tools
 # See the file 'LICENSE.md' for copying permission.
 
-# Huge thanks to: @NaxoneZ @kevoreilly @ENZOK @wmetcalf
+# Huge thanks to: @NaxoneZ @kevoreilly @ENZOK @wmetcalf @ClaudioWayne
 
 
 # Static values
@@ -73,6 +73,8 @@ cat << EndOfHelp
         node_exporter - Install node_exporter to report data to Prometheus+Grafana, only on worker servers
         jemalloc - Install jemalloc, required for CAPE to decrease memory usage
             Details: https://zapier.com/engineering/celery-python-jemalloc/
+        crowdsecurity - Install CrowdSecurity for NGINX and webgui
+        docker - install docker
         Issues - show some known possible bugs/solutions
 
     Useful links - THEY CAN BE OUTDATED; RTFM!!!
@@ -82,6 +84,38 @@ cat << EndOfHelp
     Cuckoo V2 customizations neat howto
         * https://www.adlice.com/cuckoo-sandbox-customization-v2/
 EndOfHelp
+}
+
+function install_crowdsecurity() {
+    sudo apt-get install bash gettext whiptail curl wget
+    cd /tmp || return
+    if [ ! -d crowdsec-release.tgz ]; then 
+        curl -s https://api.github.com/repos/crowdsecurity/crowdsec/releases/latest | grep browser_download_url| cut -d '"' -f 4  | wget -i -
+    fi
+    tar xvzf crowdsec-release.tgz
+    directory=`ls | grep "crowdsec-v*"`
+    cd $directory || return
+    sudo ./wizard.sh -i
+    sudo cscli collections install crowdsecurity/nginx
+    sudo systemctl reload crowdsec
+    install_docker
+    sudo cscli dashboard setup -l 127.0.0.1 -p 8448
+
+    wget https://github.com/crowdsecurity/cs-nginx-bouncer/releases/download/v0.0.4/cs-nginx-bouncer.tgz
+    tar xvzf cs-nginx-bouncer.tgz
+    directory=`ls | grep "cs-nginx-bouncer*"`
+    cd $directory || return
+    sudo ./install.sh
+}
+
+function install_docker() {
+    # https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-on-ubuntu-20-04
+    sudo apt install apt-transport-https ca-certificates curl software-properties-common
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add - 
+    sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable"
+    sudo apt update
+    sudo apt install docker-ce
+    sudo usermod -aG docker ${USER}
 }
 
 function install_jemalloc() {
@@ -1311,6 +1345,10 @@ case "$COMMAND" in
     install_jemalloc;;
 'guacamole')
     install_guacamole;;
+'docker')
+    install_docker;;
+'crowdsecurity')
+    install_crowdsecurity;;
 *)
     usage;;
 esac
