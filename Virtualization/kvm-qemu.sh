@@ -784,7 +784,7 @@ function qemu_func() {
         libaio-dev libcap-dev libattr1-dev libpixman-1-dev libgtk2.0-bin  libxml2-utils systemtap-sdt-dev uml-utilities -y
         # qemu docs required
         PERL_MM_USE_DEFAULT=1 perl -MCPAN -e install "Perl/perl-podlators"
-        pip3 install sphinx
+        pip3 install sphinx ninja
 
     elif [ "$OS" = "Darwin" ]; then
         _check_brew
@@ -823,7 +823,7 @@ function qemu_func() {
                 make -j"$(nproc)"
                 if [ "$OS" = "Linux" ]; then
                     checkinstall -D --pkgname=qemu-$qemu_version --nodoc --showinstall=no --default --install=no
-                    apt -y -o Dpkg::Options::="--force-overwrite" install qemu-$qemu_version_$qemu_version-1_amd64.deb
+                    apt -y -o Dpkg::Options::="--force-overwrite" install /tmp/qemu-$qemu_version/qemu-$qemu_version\_$qemu_version-1_amd64.deb
                 elif [ "$OS" = "Darwin" ]; then
                     make -j"$(nproc)" install
                 fi
