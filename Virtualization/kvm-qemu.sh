@@ -487,6 +487,8 @@ EOH
     sed -i 's/#unix_sock_rw_perms = "0770"/unix_sock_rw_perms = "0770"/g' "$path"
     sed -i 's/#auth_unix_ro = "none"/auth_unix_ro = "none"/g' "$path"
     sed -i 's/#auth_unix_rw = "none"/auth_unix_rw = "none"/g' "$path"
+    sed -i 's/#auth_unix_ro = "polkit"/auth_unix_ro = "none"/g' "$path"
+    sed -i 's/#auth_unix_rw = "polkit"/auth_unix_rw = "none"/g' "$path"
 
     #echo "[+] Setting AppArmor for libvirt/kvm/qemu"
     sed -i 's/#security_driver = "selinux"/security_driver = "apparmor"/g' /etc/libvirt/qemu.conf
