@@ -287,6 +287,9 @@ server {
 }
 
 server {
+     if ($http_user_agent = "") {
+        return 444;
+    }
     # SSL configuration
     listen 443 ssl http2;
     //listen [::]:443 ssl http2;
