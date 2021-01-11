@@ -680,7 +680,7 @@ function dependencies() {
     pip3 install git+https://github.com/andreasvc/pyre2.git
 
     #thanks Jurriaan <3
-    pip3 install git+https://github.com/jbremer/peepdf.git
+    pip3 install git+https://github.com/CAPESandbox/peepdf.git
     pip3 install "matplotlib>=2.2.2" "numpy>=1.15.0" "six>=1.12.0" "statistics>=1.0.3.5"
 
     pip3 install "django>3" git+https://github.com/jsocol/django-ratelimit.git
