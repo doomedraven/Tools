@@ -659,6 +659,7 @@ function dependencies() {
     pip3 install flor Pebble bson pymisp cryptography requests[security] pyOpenSSL pefile tldextract imagehash oletools olefile "networkx>=2.1" mixbox capstone PyCrypto voluptuous xmltodict future python-dateutil requests_file "gevent==20.4.0" simplejson pyvmomi pyinstaller maec regex xmltodict -U
     pip3 install git+https://github.com/doomedraven/sflock.git git+https://github.com/doomedraven/socks5man.git git+https://github.com/swimlane/pyattck.git distorm3 openpyxl git+https://github.com/volatilityfoundation/volatility3 git+https://github.com/DissectMalware/XLMMacroDeobfuscator passlib pyzipper
     #config parsers
+    pip3 install git+https://github.com/CAPESandbox/httpreplay 
     pip3 install git+https://github.com/Defense-Cyber-Crime-Center/DC3-MWCP.git git+https://github.com/kevthehermit/RATDecoders.git
     pip3 install "greenlet==0.4.16"
     pip3 install "django-recaptcha==2.0.6" django-allauth django-crispy-forms # https://pypi.org/project/django-recaptcha/ https://django-allauth.readthedocs.io/en/latest/configuration.html
