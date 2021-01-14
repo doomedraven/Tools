@@ -664,7 +664,7 @@ function dependencies() {
     pip3 install "greenlet==0.4.16"
     # https://pypi.org/project/django-recaptcha/
     # https://django-allauth.readthedocs.io/en/latest/configuration.html
-    pip3 install "django-recaptcha==2.0.6" django-allauth django-crispy-forms django-settings-export django-csp 
+    pip3 install "django-recaptcha==2.0.6" django-allauth django-crispy-forms django-settings-export django-csp django-otp qrcode
     
     # pip3 install flare-capa fails for me
     cd /tmp || return
