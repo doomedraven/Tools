@@ -662,7 +662,9 @@ function dependencies() {
     pip3 install git+https://github.com/CAPESandbox/httpreplay 
     pip3 install git+https://github.com/Defense-Cyber-Crime-Center/DC3-MWCP.git git+https://github.com/kevthehermit/RATDecoders.git
     pip3 install "greenlet==0.4.16"
-    pip3 install "django-recaptcha==2.0.6" django-allauth django-crispy-forms # https://pypi.org/project/django-recaptcha/ https://django-allauth.readthedocs.io/en/latest/configuration.html
+    # https://pypi.org/project/django-recaptcha/
+    # https://django-allauth.readthedocs.io/en/latest/configuration.html
+    pip3 install "django-recaptcha==2.0.6" django-allauth django-crispy-forms django-settings-export django-csp 
     
     # pip3 install flare-capa fails for me
     cd /tmp || return
