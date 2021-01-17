@@ -7,7 +7,7 @@
 # https://www.doomedraven.com/2020/04/how-to-create-virtual-machine-with-virt.html
 # Use Ubuntu 20.04 LTS
 
-#Update date: 09.12.2020
+#Update date: 17.12.2021
 
 : '
 Huge thanks to:
@@ -19,6 +19,7 @@ Huge thanks to:
     * @abuse_ch
     * @wmetcalf
     * @ClaudioWayne
+    * @CplNathan
 '
 
 # ToDo investigate
@@ -57,13 +58,13 @@ qemu_version=5.2.0
 # libvirt - https://libvirt.org/sources/
 # changelog - https://libvirt.org/news.html
 #5.6.0 can be the best
-libvirt_version=6.10.0
+libvirt_version=7.0.0
 # virt-manager - https://github.com/virt-manager/virt-manager/releases
 # autofilled
 OS=""
 username=""
 
-sudo apt-get install aptitude
+sudo apt-get install -y aptitude
 
 sudo aptitude install pcregrep
 cpuspeed=$(cat /proc/cpuinfo | pcregrep -Mio '(?s)processor\s+\: 0\s*\n.*?model name\s+\:[^\r\n]*?\K\s+@\s+\d+\.\d+GHz')
