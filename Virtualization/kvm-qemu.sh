@@ -7,7 +7,7 @@
 # https://www.doomedraven.com/2020/04/how-to-create-virtual-machine-with-virt.html
 # Use Ubuntu 20.04 LTS
 
-#Update date: 17.12.2021
+#Update date: 18.01.2021
 
 : '
 Huge thanks to:
@@ -437,10 +437,7 @@ EOH
     # Remove old links
     updatedb
     temp_libvirt_so_path=$(locate libvirt-qemu.so | head -n1 | awk '{print $1;}')
-    temp_export_path=$(locate libvirt.pc | head -n1 | awk '{print $1;}')
     libvirt_so_path="${temp_libvirt_so_path%/*}/"
-    export_path="${temp_export_path%/*}/"
-    export PKG_CONFIG_PATH=$export_pat
 
     if [[ -n "$libvirt_so_path" ]]; then
         for so_path in $(ls ${libvirt_so_path}libvirt*.so.0);  do
@@ -488,14 +485,7 @@ EOH
 
         if [[ -n "$libvirt_so_path" ]]; then
             # #ln -s /usr/lib64/libvirt-qemu.so /lib/x86_64-linux-gnu/libvirt-qemu.so.0
-            for so_path in $(ls ${libvirt_so_path}libvirt*.so.0);  do
-                dest_path=/lib/$(uname -m)-linux-gnu/$(basename $so_path)
-                echo $dest_path
-                if [ -f $dest_path ]; then
-                    rm $dest_path
-                fi
-                ln -s $so_path /lib/$(uname -m)-linux-gnu/$(basename $so_path);
-            done
+            for so_path in $(ls ${libvirt_so_path}libvirt*.so.0); do ln -s $so_path /lib/$(uname -m)-linux-gnu/$(basename $so_path); done
         fi
 
     #elif [ "$OS" = "Darwin" ]; then
