@@ -434,6 +434,23 @@ EOH
     apt purge libvirt0 libvirt-bin libvirt-$libvirt_version 2>/dev/null
     dpkg -l|grep "libvirt-[0-9]\{1,2\}\.[0-9]\{1,2\}\.[0-9]\{1,2\}"|cut -d " " -f 3|sudo xargs dpkg --purge --force-all 2>/dev/null
 
+    # Remove old links
+    updatedb
+    temp_libvirt_so_path=$(locate libvirt-qemu.so | head -n1 | awk '{print $1;}')
+    temp_export_path=$(locate libvirt.pc | head -n1 | awk '{print $1;}')
+    libvirt_so_path="${temp_libvirt_so_path%/*}/"
+    export_path="${temp_export_path%/*}/"
+    export PKG_CONFIG_PATH=$export_pat
+
+    if [[ -n "$libvirt_so_path" ]]; then
+        for so_path in $(ls ${libvirt_so_path}libvirt*.so.0);  do
+            dest_path=/lib/$(uname -m)-linux-gnu/$(basename $so_path)
+            if [ -f $dest_path ]; then
+                rm $dest_path
+            fi
+        done
+    fi
+
     cd /tmp || return
     if [ -f  libvirt-$libvirt_version.tar.xz ]; then
         rm -r libvirt-$libvirt_version
@@ -461,7 +478,7 @@ EOH
 
         #checkinstall -D --pkgname=libvirt-$libvirt_version --default
         cd ..
-        # check if linked correctly
+
         updatedb
         temp_libvirt_so_path=$(locate libvirt-qemu.so | head -n1 | awk '{print $1;}')
         temp_export_path=$(locate libvirt.pc | head -n1 | awk '{print $1;}')
@@ -471,7 +488,14 @@ EOH
 
         if [[ -n "$libvirt_so_path" ]]; then
             # #ln -s /usr/lib64/libvirt-qemu.so /lib/x86_64-linux-gnu/libvirt-qemu.so.0
-            for so_path in $(ls ${libvirt_so_path}libvirt*.so.0); do ln -s $so_path /lib/$(uname -m)-linux-gnu/$(basename $so_path) 2>/dev/null; done
+            for so_path in $(ls ${libvirt_so_path}libvirt*.so.0);  do
+                dest_path=/lib/$(uname -m)-linux-gnu/$(basename $so_path)
+                echo $dest_path
+                if [ -f $dest_path ]; then
+                    rm $dest_path
+                fi
+                ln -s $so_path /lib/$(uname -m)-linux-gnu/$(basename $so_path);
+            done
         fi
 
     #elif [ "$OS" = "Darwin" ]; then
@@ -542,6 +566,7 @@ EOH
     fi
 
 }
+
 
 function install_virt_manager() {
     # from build-dep
