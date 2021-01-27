@@ -657,16 +657,6 @@ function dependencies() {
     # from pip import __main__
     # if __name__ == '__main__':
     #     sys.exit(__main__._main())
-    #httpreplay not py3
-    pip3 install flor "Pebble==4.5.3" bson pymisp cryptography requests[security] pyOpenSSL pefile tldextract imagehash oletools olefile "networkx>=2.1" mixbox capstone PyCrypto voluptuous xmltodict future python-dateutil requests_file "gevent==20.4.0" simplejson pyvmomi pyinstaller maec regex xmltodict -U
-    pip3 install git+https://github.com/doomedraven/sflock.git git+https://github.com/doomedraven/socks5man.git git+https://github.com/swimlane/pyattck.git distorm3 openpyxl git+https://github.com/volatilityfoundation/volatility3 git+https://github.com/DissectMalware/XLMMacroDeobfuscator passlib pyzipper
-    #config parsers
-    pip3 install git+https://github.com/CAPESandbox/httpreplay 
-    pip3 install git+https://github.com/Defense-Cyber-Crime-Center/DC3-MWCP.git git+https://github.com/kevthehermit/RATDecoders.git
-    pip3 install "greenlet==0.4.16"
-    # https://pypi.org/project/django-recaptcha/
-    # https://django-allauth.readthedocs.io/en/latest/configuration.html
-    pip3 install "django-recaptcha==2.0.6" django-allauth django-crispy-forms django-settings-export django-csp django-otp qrcode
     
     # pip3 install flare-capa fails for me
     cd /tmp || return
@@ -683,16 +673,7 @@ function dependencies() {
     #re2 for py3
     pip3 install cython
     pip3 install git+https://github.com/andreasvc/pyre2.git
-
-    #thanks Jurriaan <3
-    pip3 install git+https://github.com/CAPESandbox/peepdf.git
-    pip3 install "matplotlib>=2.2.2" "numpy>=1.15.0" "six>=1.12.0" "statistics>=1.0.3.5"
-
-    pip3 install "django>3" git+https://github.com/jsocol/django-ratelimit.git
-    pip3 install sqlalchemy sqlalchemy-utils jinja2 markupsafe chardet pygal rarfile jsbeautifier dpkt nose dnspython pytz requests[socks] python-magic geoip pillow java-random python-whois bs4 pype32-py3 git+https://github.com/kbandla/pydeep.git flask flask-restful flask-sqlalchemy pyvmomi
-    #apt install -y openjdk-11-jdk-headless
-    #apt install -y openjdk-8-jdk-headless
-
+    
     install_postgresql
 
     # sudo su - postgres
@@ -932,14 +913,16 @@ function install_CAPE() {
     # Adapting owner permissions to the ${USER} path folder
     chown ${USER}:${USER} -R "/opt/CAPEv2/"
 
-    sed -i "/connection =/cconnection = postgresql://${USER}:${PASSWD}@localhost:5432/${USER}" /opt/CAPEv2/conf/cuckoo.conf
+    pip3 install -r /opt/CAPEv2/requirements.txt
+
+    sed -i "/connection =/connection = postgresql://${USER}:${PASSWD}@localhost:5432/${USER}" /opt/CAPEv2/conf/cuckoo.conf
     sed -i "/tor/{n;s/enabled = no/enabled = yes/g}" /opt/CAPEv2/conf/routing.conf
-    sed -i "/memory_dump = off/cmemory_dump = on" /opt/CAPEv2/conf/cuckoo.conf
-    sed -i "/machinery =/cmachinery = kvm" /opt/CAPEv2/conf/cuckoo.conf
-    sed -i "/interface =/cinterface = ${NETWORK_IFACE}" /opt/CAPEv2/conf/auxiliary.conf
+    #sed -i "/memory_dump = off/memory_dump = on" /opt/CAPEv2/conf/cuckoo.conf
+    #sed -i "/machinery =/machinery = kvm" /opt/CAPEv2/conf/cuckoo.conf
+    sed -i "/interface =/interface = ${NETWORK_IFACE}" /opt/CAPEv2/conf/auxiliary.conf
 
     cd CAPEv2 || return
-    python3 utils/community.py -af
+    python3 utils/community.py -waf -cr
 }
 
 function install_systemd() {
