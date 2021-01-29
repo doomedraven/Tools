@@ -287,6 +287,9 @@ server {
 }
 
 server {
+     if ($http_user_agent = "") {
+        return 444;
+    }
     # SSL configuration
     listen 443 ssl http2;
     //listen [::]:443 ssl http2;
@@ -514,8 +517,10 @@ function install_suricata() {
     sed -i 's/response-body-limit: 100kb/response-body-limit: 0/g' /etc/suricata/suricata.yaml
     sed -i 's/EXTERNAL_NET: "!$HOME_NET"/EXTERNAL_NET: "ANY"/g' /etc/suricata/suricata.yaml
     sed -i 's|#pid-file: /var/run/suricata.pid|pid-file: /tmp/suricata.pid|g' /etc/suricata/suricata.yaml
+    sed -i 's|#ja3-fingerprints: auto|ja3-fingerprints: yes|g' /etc/suricata/suricata.yaml
     #-k none
-    sed -i 's/#checksum-validation: nones/checksum-validation: nones/g' /etc/suricata/suricata.yaml
+    sed -i 's/#checksum-validation: none/checksum-validation: none/g' /etc/suricata/suricata.yaml
+    sed -i 's/checksum-checks: auto/checksum-checks: no/g' /etc/suricata/suricata.yaml
 
     # enable eve-log
     python3 -c "pa = '/etc/suricata/suricata.yaml';q=open(pa, 'rb').read().replace(b'eve-log:\n      enabled: no\n', b'eve-log:\n      enabled: yes\n');open(pa, 'wb').write(q);"
@@ -617,13 +622,13 @@ EOF
 }
 
 function install_postgresql() {
-    echo "[+] Installing PostgreSQL 12"
+    echo "[+] Installing PostgreSQL"
 
     wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
     echo "deb http://apt.postgresql.org/pub/repos/apt/ `lsb_release -cs`-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
 
     sudo apt update -y
-    sudo apt -y install libpq-dev postgresql-12 postgresql-client-12
+    sudo apt -y install libpq-dev postgresql-13 postgresql-client-13
 
     pip3 install psycopg2
 }
@@ -652,12 +657,6 @@ function dependencies() {
     # from pip import __main__
     # if __name__ == '__main__':
     #     sys.exit(__main__._main())
-    #httpreplay not py3
-    pip3 install flor Pebble bson pymisp cryptography requests[security] pyOpenSSL pefile tldextract imagehash oletools olefile "networkx>=2.1" mixbox capstone PyCrypto voluptuous xmltodict future python-dateutil requests_file "gevent==20.4.0" simplejson pyvmomi pyinstaller maec regex xmltodict -U
-    pip3 install git+https://github.com/doomedraven/sflock.git git+https://github.com/doomedraven/socks5man.git git+https://github.com/swimlane/pyattck.git distorm3 openpyxl git+https://github.com/volatilityfoundation/volatility3 git+https://github.com/DissectMalware/XLMMacroDeobfuscator passlib pyzipper
-    #config parsers
-    pip3 install git+https://github.com/Defense-Cyber-Crime-Center/DC3-MWCP.git git+https://github.com/kevthehermit/RATDecoders.git
-    pip3 install "greenlet==0.4.16"
     
     # pip3 install flare-capa fails for me
     cd /tmp || return
@@ -674,16 +673,7 @@ function dependencies() {
     #re2 for py3
     pip3 install cython
     pip3 install git+https://github.com/andreasvc/pyre2.git
-
-    #thanks Jurriaan <3
-    pip3 install git+https://github.com/jbremer/peepdf.git
-    pip3 install "matplotlib>=2.2.2" "numpy>=1.15.0" "six>=1.12.0" "statistics>=1.0.3.5"
-
-    pip3 install "django>3" git+https://github.com/jsocol/django-ratelimit.git
-    pip3 install sqlalchemy sqlalchemy-utils jinja2 markupsafe bottle chardet pygal rarfile jsbeautifier dpkt nose dnspython pytz requests[socks] python-magic geoip pillow java-random python-whois bs4 pype32-py3 git+https://github.com/kbandla/pydeep.git flask flask-restful flask-sqlalchemy pyvmomi
-    #apt install -y openjdk-11-jdk-headless
-    #apt install -y openjdk-8-jdk-headless
-
+    
     install_postgresql
 
     # sudo su - postgres
@@ -923,14 +913,16 @@ function install_CAPE() {
     # Adapting owner permissions to the ${USER} path folder
     chown ${USER}:${USER} -R "/opt/CAPEv2/"
 
-    sed -i "/connection =/cconnection = postgresql://${USER}:${PASSWD}@localhost:5432/${USER}" /opt/CAPEv2/conf/cuckoo.conf
+    pip3 install -r /opt/CAPEv2/requirements.txt
+
+    sed -i "/connection =/connection = postgresql://${USER}:${PASSWD}@localhost:5432/${USER}" /opt/CAPEv2/conf/cuckoo.conf
     sed -i "/tor/{n;s/enabled = no/enabled = yes/g}" /opt/CAPEv2/conf/routing.conf
-    sed -i "/memory_dump = off/cmemory_dump = on" /opt/CAPEv2/conf/cuckoo.conf
-    sed -i "/machinery =/cmachinery = kvm" /opt/CAPEv2/conf/cuckoo.conf
-    sed -i "/interface =/cinterface = ${NETWORK_IFACE}" /opt/CAPEv2/conf/auxiliary.conf
+    #sed -i "/memory_dump = off/memory_dump = on" /opt/CAPEv2/conf/cuckoo.conf
+    #sed -i "/machinery =/machinery = kvm" /opt/CAPEv2/conf/cuckoo.conf
+    sed -i "/interface =/interface = ${NETWORK_IFACE}" /opt/CAPEv2/conf/auxiliary.conf
 
     cd CAPEv2 || return
-    python3 utils/community.py -af
+    python3 utils/community.py -waf -cr
 }
 
 function install_systemd() {
