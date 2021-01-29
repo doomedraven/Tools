@@ -7,7 +7,7 @@
 # https://www.doomedraven.com/2020/04/how-to-create-virtual-machine-with-virt.html
 # Use Ubuntu 20.04 LTS
 
-#Update date: 09.12.2020
+#Update date: 18.01.2021
 
 : '
 Huge thanks to:
@@ -19,6 +19,7 @@ Huge thanks to:
     * @abuse_ch
     * @wmetcalf
     * @ClaudioWayne
+    * @CplNathan
 '
 
 # ToDo investigate
@@ -57,13 +58,15 @@ qemu_version=5.2.0
 # libvirt - https://libvirt.org/sources/
 # changelog - https://libvirt.org/news.html
 #5.6.0 can be the best
-libvirt_version=6.10.0
+libvirt_version=7.0.0
 # virt-manager - https://github.com/virt-manager/virt-manager/releases
 # autofilled
 OS=""
 username=""
 
-sudo apt-get install pcregrep
+sudo apt-get install -y aptitude
+
+sudo aptitude install pcregrep
 cpuspeed=$(cat /proc/cpuinfo | pcregrep -Mio '(?s)processor\s+\: 0\s*\n.*?model name\s+\:[^\r\n]*?\K\s+@\s+\d+\.\d+GHz')
 cpuspeedsz=${#cpuspeed}
 
@@ -261,9 +264,9 @@ function install_libguestfs() {
 
     wget -O- https://packages.erlang-solutions.com/ubuntu/erlang_solutions.asc | sudo apt-key add -
     sudo add-apt-repository "deb https://packages.erlang-solutions.com/ubuntu $(lsb_release -sc) contrib"
-    sudo apt install parted libyara3 erlang-dev gperf flex bison libaugeas-dev libhivex-dev supermin ocaml-nox libhivex-ocaml genisoimage libhivex-ocaml-dev libmagic-dev libjansson-dev gnulib jq -y 2>/dev/null
+    sudo aptitude install -f parted libyara3 erlang-dev gperf flex bison libaugeas-dev libhivex-dev supermin ocaml-nox libhivex-ocaml genisoimage libhivex-ocaml-dev libmagic-dev libjansson-dev gnulib jq -y 2>/dev/null
     sudo apt update
-    sudo apt install erlang -y
+    sudo aptitude install -f erlang -y
 
     if [ ! -d libguestfs ]; then
         #ToDo move to latest release not latest code
@@ -314,9 +317,9 @@ function install_libvmi() {
     cd "libvmi" || return
 
     # install deps
-    apt install -y cmake flex bison libglib2.0-dev libjson-c-dev libyajl-dev
+    aptitude install -f -y cmake flex bison libglib2.0-dev libjson-c-dev libyajl-dev
     # other deps
-    apt install -y pkg-config
+    aptitude install -f -y pkg-config
     mkdir build
     cd build || return
     cmake -DENABLE_XEN=ON -DENABLE_KVM=ON -DENABLE_XENSTORE=OFF -DENABLE_BAREFLANK=OFF ..
@@ -338,7 +341,7 @@ function install_libvmi() {
     cd "libvmi-python" || return
 
     # install deps
-    apt install -y python3-pkgconfig python3-cffi python3-future
+    aptitude install -f -y python3-pkgconfig python3-cffi python3-future
     #pip3 install .
     python3 setup.py build
     pip3 install .
@@ -373,7 +376,7 @@ function install_libvmi() {
 #
 function install_pyvmidbg() {
     # deps
-    apt install python3-docopt python3-lxml cabextract
+    aptitude install -f python3-docopt python3-lxml cabextract
 
     # libvmi config entry
     # /etc/libvmi.conf:
@@ -431,6 +434,20 @@ EOH
     apt purge libvirt0 libvirt-bin libvirt-$libvirt_version 2>/dev/null
     dpkg -l|grep "libvirt-[0-9]\{1,2\}\.[0-9]\{1,2\}\.[0-9]\{1,2\}"|cut -d " " -f 3|sudo xargs dpkg --purge --force-all 2>/dev/null
 
+    # Remove old links
+    updatedb
+    temp_libvirt_so_path=$(locate libvirt-qemu.so | head -n1 | awk '{print $1;}')
+    libvirt_so_path="${temp_libvirt_so_path%/*}/"
+
+    if [[ -n "$libvirt_so_path" ]]; then
+        for so_path in $(ls ${libvirt_so_path}libvirt*.so.0);  do
+            dest_path=/lib/$(uname -m)-linux-gnu/$(basename $so_path)
+            if [ -f $dest_path ]; then
+                rm $dest_path
+            fi
+        done
+    fi
+
     cd /tmp || return
     if [ -f  libvirt-$libvirt_version.tar.xz ]; then
         rm -r libvirt-$libvirt_version
@@ -442,8 +459,8 @@ EOH
     tar xf libvirt-$libvirt_version.tar.xz
     cd libvirt-$libvirt_version || return
     if [ "$OS" = "Linux" ]; then
-        apt install locate python3-dev unzip numad libglib2.0-dev libsdl1.2-dev lvm2 python3-pip ebtables libosinfo-1.0-dev libnl-3-dev libnl-route-3-dev libyajl-dev xsltproc libdevmapper-dev libpciaccess-dev dnsmasq dmidecode librbd-dev libtirpc-dev -y 2>/dev/null
-        apt install apparmor-profiles apparmor-profiles-extra apparmor-utils libapparmor-dev python3-apparmor libapparmor-perl libapparmor-dev apparmor-utils -y
+        aptitude install -f locate python3-dev unzip numad libglib2.0-dev libsdl1.2-dev lvm2 python3-pip ebtables libosinfo-1.0-dev libnl-3-dev libnl-route-3-dev libyajl-dev xsltproc libdevmapper-dev libpciaccess-dev dnsmasq dmidecode librbd-dev libtirpc-dev -y 2>/dev/null
+        aptitude install -f apparmor-profiles apparmor-profiles-extra apparmor-utils libapparmor-dev python3-apparmor libapparmor-perl libapparmor-dev apparmor-utils -y
         pip3 install ipaddr ninja meson flake8 -U
         # --prefix=/usr --localstatedir=/var --sysconfdir=/etc
         #git init
@@ -458,7 +475,7 @@ EOH
 
         #checkinstall -D --pkgname=libvirt-$libvirt_version --default
         cd ..
-        # check if linked correctly
+
         updatedb
         temp_libvirt_so_path=$(locate libvirt-qemu.so | head -n1 | awk '{print $1;}')
         temp_export_path=$(locate libvirt.pc | head -n1 | awk '{print $1;}')
@@ -468,7 +485,7 @@ EOH
 
         if [[ -n "$libvirt_so_path" ]]; then
             # #ln -s /usr/lib64/libvirt-qemu.so /lib/x86_64-linux-gnu/libvirt-qemu.so.0
-            for so_path in $(ls ${libvirt_so_path}libvirt*.so.0); do ln -s $so_path /lib/$(uname -m)-linux-gnu/$(basename $so_path) 2>/dev/null; done
+            for so_path in $(ls ${libvirt_so_path}libvirt*.so.0); do ln -s $so_path /lib/$(uname -m)-linux-gnu/$(basename $so_path); done
         fi
 
     #elif [ "$OS" = "Darwin" ]; then
@@ -485,12 +502,10 @@ EOH
     sed -i 's/#unix_sock_group/unix_sock_group/g' "$path"
     sed -i 's/#unix_sock_ro_perms = "0777"/unix_sock_ro_perms = "0770"/g' "$path"
     sed -i 's/#unix_sock_rw_perms = "0770"/unix_sock_rw_perms = "0770"/g' "$path"
+    sed -i 's/#auth_unix_ro = "none"/auth_unix_ro = "none"/g' "$path"
+    sed -i 's/#auth_unix_rw = "none"/auth_unix_rw = "none"/g' "$path"
     sed -i 's/#auth_unix_ro = "polkit"/auth_unix_ro = "none"/g' "$path"
     sed -i 's/#auth_unix_rw = "polkit"/auth_unix_rw = "none"/g' "$path"
-    
-    #libvirt <= 6.7.0
-    #sed -i 's/#auth_unix_ro = "none"/auth_unix_ro = "none"/g' "$path"
-    #sed -i 's/#auth_unix_rw = "none"/auth_unix_rw = "none"/g' "$path"
 
     #echo "[+] Setting AppArmor for libvirt/kvm/qemu"
     sed -i 's/#security_driver = "selinux"/security_driver = "apparmor"/g' /etc/libvirt/qemu.conf
@@ -542,9 +557,10 @@ EOH
 
 }
 
+
 function install_virt_manager() {
     # from build-dep
-    apt install libgirepository1.0-dev gtk-doc-tools python3 python3-pip gir1.2-govirt-1.0 libgovirt-dev \
+    aptitude install -f libgirepository1.0-dev gtk-doc-tools python3 python3-pip gir1.2-govirt-1.0 libgovirt-dev \
     libgovirt-common libgovirt2 gir1.2-rest-0.7 unzip intltool augeas-doc ifupdown wodim cdrkit-doc indicator-application \
     augeas-tools radvd auditd systemtap nfs-common zfsutils pm-utils python-openssl-doc samba \
     debootstrap sharutils-doc ssh-askpass gnome-keyring\
@@ -577,7 +593,7 @@ function install_virt_manager() {
     gobject-introspection intltool pkg-config libxml2-dev libxslt-dev python3-dev gir1.2-gtk-vnc-2.0 gir1.2-spiceclientgtk-3.0 libgtk-3-dev -y
     # should be installed first
     # moved out as some 20.04 doesn't have this libs %)
-    apt install -y python3-ntlm-auth libpython3-stdlib libbrlapi-dev libgirepository1.0-dev python3-testresources
+    aptitude install -f -y python3-ntlm-auth libpython3-stdlib libbrlapi-dev libgirepository1.0-dev python3-testresources
     apt -y -o Dpkg::Options::="--force-overwrite" install ovmf
     pip3 install requests six urllib3 ipaddr ipaddress idna dbus-python certifi lxml cryptography pyOpenSSL chardet asn1crypto pycairo PySocks PyGObject -U
 
@@ -633,11 +649,11 @@ function install_virt_manager() {
 function install_kvm_linux() {
     sed -i 's/# deb-src/deb-src/g' /etc/apt/sources.list
     apt update 2>/dev/null
-    apt install build-essential python3-pip gcc pkg-config cpu-checker intltool libtirpc-dev -y 2>/dev/null
-    apt install gtk-update-icon-cache -y 2>/dev/null
+    aptitude install -f build-essential python3-pip gcc pkg-config cpu-checker intltool libtirpc-dev -y 2>/dev/null
+    aptitude install -f gtk-update-icon-cache -y 2>/dev/null
 
     # WSL support
-    apt install gcc make gnutls-bin -y
+    aptitude install -f gcc make gnutls-bin -y
     # remove old
     apt purge libvirt0 libvirt-bin -y
     install_libvirt
@@ -780,11 +796,11 @@ function qemu_func() {
     fail=0
 
     if [ "$OS" = "Linux" ]; then
-        apt install software-properties-common
+        aptitude install -f software-properties-common
         add-apt-repository universe
         apt update 2>/dev/null
-        apt install python3-pip checkinstall openbios-sparc openbios-ppc libssh2-1-dev vde2 liblzo2-dev libghc-gtk3-dev libsnappy-dev libbz2-dev libxml2-dev google-perftools libgoogle-perftools-dev libvde-dev  -y
-        apt install debhelper libusb-1.0-0-dev libxen-dev uuid-dev xfslibs-dev libjpeg-dev libusbredirparser-dev device-tree-compiler texinfo libbluetooth-dev libbrlapi-dev libcap-ng-dev libcurl4-gnutls-dev libfdt-dev gnutls-dev libiscsi-dev libncurses5-dev libnuma-dev libcacard-dev librados-dev librbd-dev libsasl2-dev libseccomp-dev libspice-server-dev \
+        aptitude install -f python3-pip checkinstall openbios-sparc openbios-ppc libssh2-1-dev vde2 liblzo2-dev libghc-gtk3-dev libsnappy-dev libbz2-dev libxml2-dev google-perftools libgoogle-perftools-dev libvde-dev  -y
+        aptitude install -f debhelper libusb-1.0-0-dev libxen-dev uuid-dev xfslibs-dev libjpeg-dev libusbredirparser-dev device-tree-compiler texinfo libbluetooth-dev libbrlapi-dev libcap-ng-dev libcurl4-gnutls-dev libfdt-dev gnutls-dev libiscsi-dev libncurses5-dev libnuma-dev libcacard-dev librados-dev librbd-dev libsasl2-dev libseccomp-dev libspice-server-dev \
         libaio-dev libcap-dev libattr1-dev libpixman-1-dev libgtk2.0-bin  libxml2-utils systemtap-sdt-dev uml-utilities -y
         # qemu docs required
         PERL_MM_USE_DEFAULT=1 perl -MCPAN -e install "Perl/perl-podlators"
@@ -876,7 +892,7 @@ function seabios_func() {
     cd /tmp || return
     fail=0
     echo '[+] Installing SeaBios dependencies'
-    apt install git acpica-tools -y
+    aptitude install -f git acpica-tools -y
     if [ -d seabios ]; then
         rm -r seabios
     fi
@@ -997,7 +1013,7 @@ cat << EndOfHelp
         yara: error while loading shared libraries: libyara.so.3: cannot open shared object file: No such file or directory
 
     Solution 1:
-        apt install libyara3
+        aptitude install -f libyara3
     Solution 2:
         sudo echo "/usr/local/lib" >> /etc/ld.so.conf
         sudo ldconfig
@@ -1010,7 +1026,7 @@ cat << EndOfHelp
     $ pip3 install libxml2-python3
 
     3. ImportError: No module named requests
-    $ apt install python-requests
+    $ aptitude install -f python-requests
 
     4. Error launching details: Namespace GtkVnc not available
     $ ./kvm-qemu.sh libvirt
@@ -1019,22 +1035,22 @@ cat << EndOfHelp
     $ ./kvm-qemu.sh libvirt
 
     6. ValueError: Namespace Libosinfo not available
-    $ apt install libosinfo-1.0
+    $ aptitude install -f libosinfo-1.0
 
     7. ImportError: No module named ipaddr
-    $ apt install python-ipaddr
+    $ aptitude install -f python-ipaddr
 
     8. Namespace Gtk not available: Could not open display: localhost:10.0
     8 ValueError: Namespace GtkSource not available
-    $ apt install libgtk-3-dev libgtksourceview-3.0-dev
+    $ aptitude install -f libgtk-3-dev libgtksourceview-3.0-dev
     * Error will specify version, example `gi.require_version("GtkSource", "4")`, if that version is not available for your distro
     * you will need downgrade your virt-manager with `sudo rm -r /usr/share/virt-manager` and install older version
 
     9. ImportError: cannot import name Vte
-    $ apt install gir1.2-vte-2.90
+    $ aptitude install -f gir1.2-vte-2.90
 
     10. TypeError: Couldn't find foreign struct converter for 'cairo.Context'
-    $ apt install python3-gi-cairo
+    $ aptitude install -f python3-gi-cairo
 
 
 EndOfHelp
@@ -1129,7 +1145,7 @@ OS="$(uname -s)"
 
 case "$COMMAND" in
 'all')
-    apt install language-pack-UTF-8
+    aptitude install -f language-pack-UTF-8
     qemu_func
     seabios_func
     if [ "$OS" = "Linux" ]; then
@@ -1213,7 +1229,7 @@ case "$COMMAND" in
     grub_iommu;;
 'mosh')
     if [ "$OS" = "Linux" ]; then
-        sudo apt install mosh -y
+        sudo aptitude install -f mosh -y
     elif [ "$OS" = "Darwin" ]; then
         _check_brew
         brew install mosh
