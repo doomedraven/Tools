@@ -915,11 +915,11 @@ function install_CAPE() {
 
     pip3 install -r /opt/CAPEv2/requirements.txt
 
-    sed -i "/connection =/connection = postgresql://${USER}:${PASSWD}@localhost:5432/${USER}" /opt/CAPEv2/conf/cuckoo.conf
+    sed -i "/connection =/cconnection = postgresql://${USER}:${PASSWD}@localhost:5432/${USER}" /opt/CAPEv2/conf/cuckoo.conf
     sed -i "/tor/{n;s/enabled = no/enabled = yes/g}" /opt/CAPEv2/conf/routing.conf
-    #sed -i "/memory_dump = off/memory_dump = on" /opt/CAPEv2/conf/cuckoo.conf
-    #sed -i "/machinery =/machinery = kvm" /opt/CAPEv2/conf/cuckoo.conf
-    sed -i "/interface =/interface = ${NETWORK_IFACE}" /opt/CAPEv2/conf/auxiliary.conf
+    #sed -i "/memory_dump = off/cmemory_dump = on" /opt/CAPEv2/conf/cuckoo.conf
+    #sed -i "/machinery =/cmachinery = kvm" /opt/CAPEv2/conf/cuckoo.conf
+    sed -i "/interface =/cinterface = ${NETWORK_IFACE}" /opt/CAPEv2/conf/auxiliary.conf
 
     cd CAPEv2 || return
     python3 utils/community.py -waf -cr
