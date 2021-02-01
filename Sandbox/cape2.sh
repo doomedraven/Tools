@@ -17,7 +17,7 @@ IFACE_IP="192.168.1.1"
 PASSWD="SuperPuperSecret"
 DIST_MASTER_IP=X.X.X.X
 USER="cape"
-nginx_version=1.19.2
+nginx_version=1.19.6
 prometheus_version=2.20.1
 grafana_version=7.1.5
 node_exporter_version=1.0.1
@@ -646,7 +646,7 @@ function dependencies() {
 
     # deps
     apt install python3-pip -y
-    apt install psmisc jq sqlite3 tmux net-tools checkinstall graphviz python3-pydot git numactl python3 python3-dev python3-pip libjpeg-dev zlib1g-dev -y
+    apt install iptables psmisc jq sqlite3 tmux net-tools checkinstall graphviz python3-pydot git numactl python3 python3-dev python3-pip libjpeg-dev zlib1g-dev -y
     apt install upx-ucl libssl-dev wget zip unzip p7zip-full rar unrar unace-nonfree cabextract geoip-database libgeoip-dev libjpeg-dev mono-utils ssdeep libfuzzy-dev exiftool -y
     apt install ssdeep uthash-dev libconfig-dev libarchive-dev libtool autoconf automake privoxy software-properties-common wkhtmltopdf xvfb xfonts-100dpi tcpdump libcap2-bin -y
     apt install python3-pil subversion uwsgi uwsgi-plugin-python3 python3-pyelftools git curl -y
