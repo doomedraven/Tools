@@ -628,9 +628,9 @@ function install_postgresql() {
     echo "deb http://apt.postgresql.org/pub/repos/apt/ `lsb_release -cs`-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
 
     sudo apt update -y
-    sudo apt -y install libpq-dev postgresql-13 postgresql-client-13
+    sudo apt -y install libpq-dev postgresql postgresql-client
 
-    pip3 install psycopg2
+    pip3 install psycopg2-binary
 }
 
 function dependencies() {
