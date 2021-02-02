@@ -14,10 +14,9 @@ https://github.com/doomedraven/Tools/Vol3/pony.py
 '''
 import os
 import re
+import io
 import sys
 import json
-import pefile
-import struct
 
 import logging
 from typing import Any, List, Tuple, Dict, Optional, Union, Iterable
@@ -31,7 +30,6 @@ from volatility3.framework.layers import resources
 from volatility3.framework.renderers import format_hints
 from volatility3.plugins import yarascan
 from volatility3.plugins.windows import pslist, vadyarascan, vadinfo
-from volatility3.cli.text_renderer import JsonRenderer
 
 log = logging.getLogger(__name__)
 
