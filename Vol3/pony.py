@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 '''
 Created on 23 Oct 2019
+Updated on 02 Feb 2021 for Vol3 1.0.1
 
-# Copyright (C) 2011-2019 DoomedRaven.
+# Copyright (C) 2011-2021 DoomedRaven.
 # This file is part of Tools - https://github.com/doomedraven/Tools
 # See the file 'LICENSE.md' for copying permission.
 
@@ -11,7 +12,6 @@ Special huge thanks to @ikelos and @xabiugarte for help/fixes
 
 https://github.com/doomedraven/Tools/Vol3/pony.py
 '''
-
 import os
 import re
 import sys
@@ -20,13 +20,18 @@ import pefile
 import struct
 
 import logging
-from typing import Iterable, List, Tuple
-from volatility.framework import interfaces, renderers, exceptions
-from volatility.framework.configuration import requirements
-from volatility.framework.layers import resources
-from volatility.framework.renderers import format_hints
-from volatility.plugins import yarascan
-from volatility.plugins.windows import pslist, vadyarascan, vaddump
+from typing import Any, List, Tuple, Dict, Optional, Union, Iterable
+from urllib.request import pathname2url
+import volatility3.plugins
+import volatility3.symbols
+from volatility3 import framework
+from volatility3.framework import interfaces, renderers, exceptions
+from volatility3.framework.configuration import requirements
+from volatility3.framework.layers import resources
+from volatility3.framework.renderers import format_hints
+from volatility3.plugins import yarascan
+from volatility3.plugins.windows import pslist, vadyarascan, vadinfo
+from volatility3.cli.text_renderer import JsonRenderer
 
 log = logging.getLogger(__name__)
 
@@ -43,6 +48,7 @@ def standalone_extractor(data):
 class Pony(interfaces.plugins.PluginInterface):
     """ Extracts Pony config """
     _version=(1, 0, 0)
+    _required_framework_version = (1, 0, 0)
 
     @classmethod
     def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:
@@ -55,12 +61,13 @@ class Pony(interfaces.plugins.PluginInterface):
                                         default=0x40000000,
                                         description="Set the maximum size (default is 1GB)",
                                         optional=True),
-            requirements.PluginRequirement(name='pslist', plugin=pslist.PsList, version=(1, 0, 0)),
+            requirements.VersionRequirement(name = 'pslist', component = pslist.PsList, version = (2, 0, 0)),
             requirements.IntRequirement(name='pid',
                                         description="Process ID to include (all other processes are excluded)",
                                         optional=True),
             requirements.URIRequirement(name="yara_file", description="Yara rules (as a file)", optional=True),
-             requirements.PluginRequirement(name="vadyarascan", plugin=vadyarascan.VadYaraScan, version=(1, 0, 0)),
+            requirements.PluginRequirement(name = 'vadyarascan', plugin = vadyarascan.VadYaraScan, version = (1, 0, 0)),
+            requirements.VersionRequirement(name = 'vadinfo', component = vadinfo.VadInfo, version = (2, 0, 0)),
         ]
 
     @staticmethod
@@ -131,6 +138,7 @@ class Pony(interfaces.plugins.PluginInterface):
 
             RULES = yara.compile(sources=SIGS)
 
+        #filter_func = pslist.PsList.create_pid_filter([self.config.get('pid', None)])
         filter_func = pslist.PsList.create_pid_filter([self.config.get('pid', None)])
 
         for task in pslist.PsList.list_processes(
@@ -145,11 +153,10 @@ class Pony(interfaces.plugins.PluginInterface):
 
             proc_layer = self.context.layers[proc_layer_name]
 
-            for offset, name in proc_layer.scan(
+            for offset, rule_name, name, value in proc_layer.scan(
                     context=self.context,
                     scanner=yarascan.YaraScanner(rules=RULES),
                     sections=vadyarascan.VadYaraScan.get_vad_maps(task)):
-
                 log.debug("Got a Yara match!")
 
                 vad, vad_start, vad_end = self.get_vad(task, offset)
@@ -157,9 +164,20 @@ class Pony(interfaces.plugins.PluginInterface):
                     log.debug("VAD not found")
                     return
 
-                full_pe = vaddump.vad_dump(self.context, proc_layer_name, vad)
-
-                config = self.get_config(full_pe)
+                full_pe = io.BytesIO()
+                chunk_size = 1024 * 1024 * 10
+                #vadinfo.VadInfo.vad_dump(self.context, task, vad, full_pe)
+                offset = vad_start
+                while offset < vad_end:
+                    to_read = min(chunk_size, vad_end - offset)
+                    data = proc_layer.read(offset, to_read, pad = True)
+                    if not data:
+                        break
+                    full_pe.write(data)
+                    offset += to_read
+                if not full_pe:
+                    continue
+                config = self.get_config(full_pe.getvalue())
                 if not config:
                     log.debug("Config extraction failed")
                     continue
@@ -185,7 +203,6 @@ class Pony(interfaces.plugins.PluginInterface):
         return None, None, None
 
     def run(self):
-        # output isn't done yet
         return renderers.TreeGrid([('Offset', format_hints.Hex), ('PID', int), ('Config', str)], self._generator())
 
 if __name__ == '__main__':
