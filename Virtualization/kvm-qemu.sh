@@ -790,6 +790,8 @@ function install_jemalloc() {
 
 function qemu_func() {
     cd /tmp || return
+    install_jemalloc
+    cd /tmp || return
 
     echo '[+] Cleaning QEMU old install if exists'
     rm -r /usr/share/qemu >/dev/null 2>&1
@@ -831,7 +833,6 @@ function qemu_func() {
     fi
     # WOOT
     # some checks may be depricated, but keeping them for compatibility with old versions
-    install_jemalloc
     #if [ $? -eq 0 ]; then
         if declare -f -F "replace_qemu_clues"; then
             replace_qemu_clues
