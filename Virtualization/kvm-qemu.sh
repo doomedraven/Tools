@@ -1,13 +1,13 @@
 #!/bin/bash
 
-# Copyright (C) 2011-2020 DoomedRaven.
+# Copyright (C) 2011-2021 DoomedRaven.
 # This file is part of Tools - https://github.com/doomedraven/Tools
 # See the file 'LICENSE.md' for copying permission.
 # https://www.doomedraven.com/2016/05/kvm.html
 # https://www.doomedraven.com/2020/04/how-to-create-virtual-machine-with-virt.html
 # Use Ubuntu 20.04 LTS
 
-#Update date: 18.01.2021
+#Update date: 09.02.2021
 
 : '
 Huge thanks to:
@@ -64,9 +64,8 @@ libvirt_version=7.0.0
 OS=""
 username=""
 
-sudo apt-get install -y aptitude
-
-sudo aptitude install pcregrep
+sudo apt install aptitude -y
+sudo aptitude install -f pcregrep aptitude
 cpuspeed=$(cat /proc/cpuinfo | pcregrep -Mio '(?s)processor\s+\: 0\s*\n.*?model name\s+\:[^\r\n]*?\K\s+@\s+\d+\.\d+GHz')
 cpuspeedsz=${#cpuspeed}
 
@@ -175,6 +174,7 @@ cat << EndOfHelp
         Issues - will give you error - solution list
         noip - Install No-ip deamon and enable on boot
         SysRQ - enable SysRQ - https://sites.google.com/site/syscookbook/rhel/rhel-sysrq-key
+        jemalloc - install Jemalloc google if you need details ;)
 
     Tips:
         * Latest kernels having some KVM features :)
@@ -557,7 +557,6 @@ EOH
 
 }
 
-
 function install_virt_manager() {
     # from build-dep
     aptitude install -f libgirepository1.0-dev gtk-doc-tools python3 python3-pip gir1.2-govirt-1.0 libgovirt-dev \
@@ -598,9 +597,9 @@ function install_virt_manager() {
     pip3 install requests six urllib3 ipaddr ipaddress idna dbus-python certifi lxml cryptography pyOpenSSL chardet asn1crypto pycairo PySocks PyGObject -U
 
     updatedb
-      
-    temp_libvirt_so_path=$(locate libvirt-qemu.so | head -n1 | awk '{print $1;}')  
-    temp_export_path=$(locate libvirt.pc | head -n1 | awk '{print $1;}')  
+
+    temp_libvirt_so_path=$(locate libvirt-qemu.so | head -n1 | awk '{print $1;}')
+    temp_export_path=$(locate libvirt.pc | head -n1 | awk '{print $1;}')
     libvirt_so_path="${temp_libvirt_so_path%/*}/"
     export_path="${temp_export_path%/*}/"
 
@@ -626,7 +625,7 @@ function install_virt_manager() {
     if [ ! -f gir1.2-libvirt-glib-1.0_1.0.0-1_amd64.deb ]; then
         wget http://launchpadlibrarian.net/297448356/gir1.2-libvirt-glib-1.0_1.0.0-1_amd64.deb
     fi
-    dpkg -i gir1.2-libvirt-glib-1.0_1.0.0-1_amd64.deb
+    dpkg gir1.2-libvirt-glib-1.0_1.0.0-1_amd64.deb
 
     /sbin/ldconfig
 
@@ -768,6 +767,26 @@ function replace_seabios_clues_public() {
     done
 }
 
+function install_jemalloc() {
+
+    # https://zapier.com/engineering/celery-python-jemalloc/
+    cd /tmp || return
+    jelloc_info=$(curl -s https://api.github.com/repos/jemalloc/jemalloc/releases/latest)
+    jelloc_version=$(echo $jelloc_info |jq .tag_name|sed "s/\"//g")
+    jelloc_repo_url=$(echo $jelloc_info | jq ".zipball_url" | sed "s/\"//g")
+    if [ ! -f $jelloc_version ]; then
+        wget -q $jelloc_repo_url
+        unzip -q $jelloc_version
+    fi
+
+    directory=`ls | grep "jemalloc-jemalloc-*"`
+    cd $directory || return
+    ./autogen.sh
+    make -j$(nproc)
+    checkinstall -D --pkgname="jemalloc-$jelloc_version" --pkgversion="$jelloc_version" --default
+    ln -s /usr/local/lib/libjemalloc.so /usr/lib/x86_64-linux-gnu/libjemalloc.so
+}
+
 
 function qemu_func() {
     cd /tmp || return
@@ -812,7 +831,7 @@ function qemu_func() {
     fi
     # WOOT
     # some checks may be depricated, but keeping them for compatibility with old versions
-
+    install_jemalloc
     #if [ $? -eq 0 ]; then
         if declare -f -F "replace_qemu_clues"; then
             replace_qemu_clues
@@ -830,7 +849,7 @@ function qemu_func() {
                 #if [[ -n "$QEMU_TARGERS" ]]; then
                 #    QTARGETS=""
                 #fi
-                ./configure $QTARGETS --prefix=/usr --libexecdir=/usr/lib/qemu --localstatedir=/var --bindir=/usr/bin/ --enable-gnutls --enable-docs --enable-gtk --enable-vnc --enable-vnc-sasl --enable-vnc-png --enable-vnc-jpeg --enable-curl --enable-kvm  --enable-linux-aio --enable-cap-ng --enable-vhost-net --enable-vhost-crypto --enable-spice --enable-usb-redir --enable-lzo --enable-snappy --enable-bzip2 --enable-coroutine-pool --enable-libxml2 --enable-tcmalloc --enable-replication --enable-tools --enable-capstone
+                ./configure $QTARGETS --prefix=/usr --libexecdir=/usr/lib/qemu --localstatedir=/var --bindir=/usr/bin/ --enable-gnutls --enable-docs --enable-gtk --enable-vnc --enable-vnc-sasl --enable-vnc-png --enable-vnc-jpeg --enable-curl --enable-kvm  --enable-linux-aio --enable-cap-ng --enable-vhost-net --enable-vhost-crypto --enable-spice --enable-usb-redir --enable-lzo --enable-snappy --enable-bzip2 --enable-coroutine-pool --enable-libxml2 --enable-tcmalloc --enable-replication --enable-tools --enable-capstone --jemalloc
             elif [ "$OS" = "Darwin" ]; then
                 # --enable-vhost-net --enable-vhost-crypto
                 ./configure --prefix=/usr --libexecdir=/usr/lib/qemu --localstatedir=/var --bindir=/usr/bin/ --enable-gnutls --enable-docs  --enable-vnc --enable-vnc-sasl --enable-vnc-png --enable-vnc-jpeg --enable-curl --enable-hax --enable-usb-redir --enable-lzo --enable-snappy --enable-bzip2 --enable-coroutine-pool  --enable-libxml2 --enable-tcmalloc --enable-replication --enable-tools --enable-capstone
@@ -843,7 +862,7 @@ function qemu_func() {
                 make -j"$(nproc)"
                 if [ "$OS" = "Linux" ]; then
                     checkinstall -D --pkgname=qemu-$qemu_version --nodoc --showinstall=no --default --install=no
-                    apt -y -o Dpkg::Options::="--force-overwrite" install /tmp/qemu-$qemu_version/qemu-$qemu_version\_$qemu_version-1_amd64.deb
+                    apt -y -o Dpkg::Options::="--force-overwrite" install ./qemu-$qemu_version_$qemu_version-1_amd64.deb
                 elif [ "$OS" = "Darwin" ]; then
                     make -j"$(nproc)" install
                 fi
@@ -1144,6 +1163,8 @@ OS="$(uname -s)"
 #make
 
 case "$COMMAND" in
+'issues')
+    issues;;
 'all')
     aptitude install -f language-pack-UTF-8
     qemu_func
@@ -1227,6 +1248,8 @@ case "$COMMAND" in
     install_WebVirtCloud;;
 'grub')
     grub_iommu;;
+'jemalloc')
+    install_jemalloc;;
 'mosh')
     if [ "$OS" = "Linux" ]; then
         sudo aptitude install -f mosh -y
