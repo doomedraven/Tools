@@ -75,6 +75,7 @@ cat << EndOfHelp
             Details: https://zapier.com/engineering/celery-python-jemalloc/
         crowdsecurity - Install CrowdSecurity for NGINX and webgui
         docker - install docker
+        modsecurity - install Nginx ModSecurity plugin
         Issues - show some known possible bugs/solutions
 
     Useful links - THEY CAN BE OUTDATED; RTFM!!!
@@ -138,11 +139,61 @@ function install_jemalloc() {
     ln -s /usr/local/lib/libjemalloc.so /usr/lib/x86_64-linux-gnu/libjemalloc.so
 }
 
+function install_modsecurity() {
+    # Tested on nginx 1.(16|18).X Based on https://www.nginx.com/blog/compiling-and-installing-modsecurity-for-open-source-nginx/ with fixes
+    apt-get install -y apt-utils autoconf automake build-essential git libcurl4-openssl-dev libgeoip-dev liblmdb-dev libpcre++-dev libtool libxml2-dev libyajl-dev pkgconf wget zlib1g-dev
+    git clone --depth 1 -b v3/master --single-branch https://github.com/SpiderLabs/ModSecurity
+    cd ModSecurity || return
+    git submodule init
+    git submodule update
+    ./build.sh
+    ./configure
+    make -j$(nproc)
+    checkinstall -D --pkgname="ModSecurity" --default
+    
+    cd .. || return
+    git clone --depth 1 https://github.com/SpiderLabs/ModSecurity-nginx.git
+
+    # this step is required to install plugin for existing setup
+    if [ ! -d nginx-$nginx_version ]; then
+        wget http://nginx.org/download/nginx-$nginx_version.tar.gz
+        wget http://nginx.org/download/nginx-$nginx_version.tar.gz.asc
+        gpg --verify "nginx-$nginx_version.tar.gz.asc"
+        tar zxf nginx-$nginx_version.tar.gz
+    fi
+    
+    cd nginx-$nginx_version
+    ./configure --with-compat --add-dynamic-module=../ModSecurity-nginx
+    make modules
+    cp objs/ngx_http_modsecurity_module.so /usr/share/nginx/modules/ngx_http_modsecurity_module.so
+    cd .. || return
+    
+    mkdir /etc/nginx/modsec
+    wget -P /etc/nginx/modsec/ https://raw.githubusercontent.com/SpiderLabs/ModSecurity/v3/master/modsecurity.conf-recommended
+    mv /etc/nginx/modsec/modsecurity.conf-recommended /etc/nginx/modsec/modsecurity.conf
+    cp ModSecurity/unicode.mapping /etc/nginx/modsec
+    sed -i 's/SecRuleEngine DetectionOnly/SecRuleEngine On/' /etc/nginx/modsec/modsecurity.conf
+    echo 'Include "/etc/nginx/modsec/modsecurity.conf"' >/etc/nginx/modsec/main.conf
+
+    echo '''
+
+    1. Add next line to the top of /etc/nginx/nginx.conf
+        * load_module modules/ngx_http_modsecurity_module.so;
+    2. Add next 2 rules to enabled-site under server section
+        modsecurity on;
+        modsecurity_rules_file /etc/nginx/modsec/main.conf;
+
+
+}
+
 function install_nginx() {
-    wget http://nginx.org/download/nginx-$nginx_version.tar.gz
-    wget http://nginx.org/download/nginx-$nginx_version.tar.gz.asc
-    gpg --verify "nginx-$nginx_version.tar.gz.asc"
-    tar xfz nginx-$nginx_version.tar.gz
+    
+    if [ ! -d nginx-$nginx_version ]; then
+        wget http://nginx.org/download/nginx-$nginx_version.tar.gz
+        wget http://nginx.org/download/nginx-$nginx_version.tar.gz.asc
+        gpg --verify "nginx-$nginx_version.tar.gz.asc"
+        tar zvf nginx-$nginx_version.tar.gz
+    fi
 
     # PCRE version 8.42
     wget https://ftp.pcre.org/pub/pcre/pcre-8.42.tar.gz && tar xzvf pcre-8.42.tar.gz
@@ -220,6 +271,8 @@ function install_nginx() {
     checkinstall -D --pkgname="nginx-$nginx_version" --pkgversion="$nginx_version" --default
     sudo ln -s /usr/lib/nginx/modules /etc/nginx/modules
     sudo adduser --system --home /nonexistent --shell /bin/false --no-create-home --disabled-login --disabled-password --gecos "nginx user" --group nginx
+
+    install_modsecurity
 
     sudo mkdir -p /var/cache/nginx/client_temp /var/cache/nginx/fastcgi_temp /var/cache/nginx/proxy_temp /var/cache/nginx/scgi_temp /var/cache/nginx/uwsgi_temp
     sudo chmod 700 /var/cache/nginx/*
@@ -659,7 +712,7 @@ function dependencies() {
     #     sys.exit(__main__._main())
     
     # pip3 install flare-capa fails for me
-    cd /tmp || return
+    cd /tmp || return
     if [ ! -d /tmp/capa ]; then
         git clone --recurse-submodules https://github.com/fireeye/capa.git
     fi
@@ -1341,6 +1394,8 @@ case "$COMMAND" in
     install_guacamole;;
 'docker')
     install_docker;;
+'modsecurity')
+    install_modsecurity;;
 'crowdsecurity')
     install_crowdsecurity;;
 *)
