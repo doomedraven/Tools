@@ -163,8 +163,8 @@ cat << EndOfHelp
             * https://www.cyberciti.biz/cloud-computing/increase-your-linux-server-internet-speed-with-tcp-bbr-congestion-control/
         Mosh - mobile shell - https://mosh.org/
         WebVirtMgr - Install WebManager for KVM
-        Clone - <VM_NAME> <path_to_hdd> <start_from_number> <#vm_to_create> <path_where_to_store> <network_range_base>
-                * Example Win7x64 /VMs/Win7x64.qcow2 0 5 /var/lib/libvirt/images/ 192.168.1
+        Clone - <VM_NAME> <path_to_hdd> <start_from_number> <#vm_to_create> <path_where_to_store> <network_range_base> <full/linked hdd>
+                * Example Win7x64 /VMs/Win7x64.qcow2 0 5 /var/lib/libvirt/images/ 192.168.1 linked
                 https://wiki.qemu.org/Documentation/CreateSnapshot
         Libvmi - install LibVMI
         Virtmanager - install virt-manager
@@ -1101,8 +1101,8 @@ function install_WebVirtCloud(){
 }
 
 function cloning() {
-    if [ $# -lt 5 ]; then
-        echo '[-] You must provide <VM_NAME> <path_to_hdd> <start_from_number> <#vm_to_create> <path_where_to_store> <network_base>'
+    if [ $# -lt 6 ]; then
+        echo '[-] You must provide <VM_NAME> <path_to_hdd> <start_from_number> <#vm_to_create> <path_where_to_store> <network_base> <full/linked hdd>'
         exit 1
     fi
     for i in $(seq "$3" "$4"); do
@@ -1110,15 +1110,17 @@ function cloning() {
         # bad macaddress can be generated
         while [ $worked -eq 1 ]; do
             macaddr=$(hexdump -n 6 -ve '1/1 "%.2x "' /dev/random | awk -v a="2,6,a,e" -v r="$RANDOM" 'BEGIN{srand(r);}NR==1{split(a,b,",");r=int(rand()*4+1);printf "%s%s:%s:%s:%s:%s:%s\n",substr($1,0,1),b[r],$2,$3,$4,$5,$6}') 2>/dev/null
-            #virt-clone --print-xml -n $1_$i -o $1 -m "$macaddr"
-            if [ ! -f "${5}/${1}_${i}.qcow2" ]; then
-                #Linked snapshots are disabled due to performance problems
-                echo "Creating $5/$1_$i.qcow2"
-                qemu-img create -f qcow2 -F qcow2 -b "$2" "$5/$1_$i.qcow2"
-                #cp "$2" "$5/$1_$i.qcow2"
-            fi
-            #2>/dev/null
-            if virt-clone --print-xml -n "$1_$i" -o "$1" -m "$macaddr" |sed "s|<driver name=\"qemu\" type=\"qcow2\" cache=\"none\" io=\"native\"/>|<driver name=\"qemu\" type=\"qcow2\" cache=\"none\" discard=\"unmap\" detect_zeroes=\"on\" io=\"native\"/>\\n      <source file=\"${5}/${1}_${i}.qcow2\"/>|g" > "$5/$1_$i.xml"; then
+            if virt-clone --print-xml -n "$1_$i" -o "$1" -m "$macaddr" -f "${5}/${1}_${i}.qcow2" |sed "s|<driver name=\"qemu\" type=\"qcow2\" cache=\"none\" io=\"native\"/>|<driver name=\"qemu\" type=\"qcow2\" cache=\"none\" discard=\"unmap\" detect_zeroes=\"on\" io=\"native\"/>|g" > "$5/$1_$i.xml"; then
+                if [ ! -f "${5}/${1}_${i}.qcow2" ]; then
+                    echo "Creating $5/$1_$i.qcow2"
+                    if [ "$7" == "linked"]; then
+                        qemu-img create -f qcow2 -F qcow2 -b "$2" "$5/$1_$i.qcow2"
+                    else
+                    # full clone
+                        cp "$2" "$5/$1_$i.qcow2"
+                    fi
+                fi
+                #2>/dev/null
                 sed -i "s|<domain type='kvm'>|<domain type='kvm' xmlns:qemu='http://libvirt.org/schemas/domain/qemu/1.0'>|g" "$5/$1_$i.xml"
                 virsh define "$5/$1_$i.xml"
                 worked=0
@@ -1128,7 +1130,6 @@ function cloning() {
     done
 
     echo "[+] Enjoy"
-
 }
 
 # Doesn't work ${$1,,}
