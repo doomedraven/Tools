@@ -182,7 +182,7 @@ function install_modsecurity() {
     2. Add next 2 rules to enabled-site under server section
         modsecurity on;
         modsecurity_rules_file /etc/nginx/modsec/main.conf;
-
+    '''
 
 }
 
