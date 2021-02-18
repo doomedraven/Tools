@@ -23,6 +23,8 @@ grafana_version=7.1.5
 node_exporter_version=1.0.1
 guacamole_version=1.2.0
 
+TOR_SOCKET_TIMEOUT="60"
+
 function issues() {
 cat << EOI
 Problems with PyOpenSSL?
@@ -90,7 +92,7 @@ EndOfHelp
 function install_crowdsecurity() {
     sudo apt-get install bash gettext whiptail curl wget
     cd /tmp || return
-    if [ ! -d crowdsec-release.tgz ]; then 
+    if [ ! -d crowdsec-release.tgz ]; then
         curl -s https://api.github.com/repos/crowdsecurity/crowdsec/releases/latest | grep browser_download_url| cut -d '"' -f 4  | wget -i -
     fi
     tar xvzf crowdsec-release.tgz
@@ -112,7 +114,7 @@ function install_crowdsecurity() {
 function install_docker() {
     # https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-on-ubuntu-20-04
     sudo apt install apt-transport-https ca-certificates curl software-properties-common
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add - 
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
     sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable"
     sudo apt update
     sudo apt install docker-ce
@@ -150,7 +152,7 @@ function install_modsecurity() {
     ./configure
     make -j$(nproc)
     checkinstall -D --pkgname="ModSecurity" --default
-    
+
     cd .. || return
     git clone --depth 1 https://github.com/SpiderLabs/ModSecurity-nginx.git
 
@@ -161,13 +163,13 @@ function install_modsecurity() {
         gpg --verify "nginx-$nginx_version.tar.gz.asc"
         tar zxf nginx-$nginx_version.tar.gz
     fi
-    
+
     cd nginx-$nginx_version
     ./configure --with-compat --add-dynamic-module=../ModSecurity-nginx
     make modules
     cp objs/ngx_http_modsecurity_module.so /usr/share/nginx/modules/ngx_http_modsecurity_module.so
     cd .. || return
-    
+
     mkdir /etc/nginx/modsec
     wget -P /etc/nginx/modsec/ https://raw.githubusercontent.com/SpiderLabs/ModSecurity/v3/master/modsecurity.conf-recommended
     mv /etc/nginx/modsec/modsecurity.conf-recommended /etc/nginx/modsec/modsecurity.conf
@@ -187,7 +189,7 @@ function install_modsecurity() {
 }
 
 function install_nginx() {
-    
+
     if [ ! -d nginx-$nginx_version ]; then
         wget http://nginx.org/download/nginx-$nginx_version.tar.gz
         wget http://nginx.org/download/nginx-$nginx_version.tar.gz.asc
@@ -710,7 +712,7 @@ function dependencies() {
     # from pip import __main__
     # if __name__ == '__main__':
     #     sys.exit(__main__._main())
-    
+
     # pip3 install flare-capa fails for me
     cd /tmp || return
     if [ ! -d /tmp/capa ]; then
@@ -720,13 +722,13 @@ function dependencies() {
     git pull
     git submodule update --init rules
     pip3 install .
-    
+
     # re2
     apt install libre2-dev -y
     #re2 for py3
     pip3 install cython
     pip3 install git+https://github.com/andreasvc/pyre2.git
-    
+
     install_postgresql
 
     # sudo su - postgres
@@ -768,6 +770,9 @@ function dependencies() {
 TransPort ${IFACE_IP}:9040
 DNSPort ${IFACE_IP}:5353
 NumCPUs $(getconf _NPROCESSORS_ONLN)
+SocksTimeout ${TOR_SOCKET_TIMEOUT}
+ControlPort 9051
+HashedControlPassword 16:D14CC89AD7848B8C60093105E8284A2D3AB2CF3C20D95FECA0848CFAD2
 EOF
 
     #Then restart Tor:
@@ -1319,8 +1324,11 @@ case "$COMMAND" in
     if ! crontab -l | grep -q 'community.py -waf -cr'; then
         crontab -l | { cat; echo "5 */3 * * * cd /opt/CAPEv2/utils/ && python3 community.py -waf -cr && systemctl restart cape-processor 2>/dev/null"; } | crontab -
     fi
-    
-    
+    if ! crontab -l | grep -q 'echo signal newnym'; then
+        crontab -l | { cat; echo "00 */1 * * * (echo authenticate '""'; echo signal newnym; echo quit) | nc localhost 9051 2>/dev/null"; } | crontab -
+    fi
+
+
     ;;
 'all')
     dependencies
