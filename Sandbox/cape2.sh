@@ -17,11 +17,13 @@ IFACE_IP="192.168.1.1"
 PASSWD="SuperPuperSecret"
 DIST_MASTER_IP=X.X.X.X
 USER="cape"
-nginx_version=1.19.2
+nginx_version=1.19.6
 prometheus_version=2.20.1
 grafana_version=7.1.5
 node_exporter_version=1.0.1
 guacamole_version=1.2.0
+
+TOR_SOCKET_TIMEOUT="60"
 
 function issues() {
 cat << EOI
@@ -75,6 +77,7 @@ cat << EndOfHelp
             Details: https://zapier.com/engineering/celery-python-jemalloc/
         crowdsecurity - Install CrowdSecurity for NGINX and webgui
         docker - install docker
+        modsecurity - install Nginx ModSecurity plugin
         Issues - show some known possible bugs/solutions
 
     Useful links - THEY CAN BE OUTDATED; RTFM!!!
@@ -89,7 +92,7 @@ EndOfHelp
 function install_crowdsecurity() {
     sudo apt-get install bash gettext whiptail curl wget
     cd /tmp || return
-    if [ ! -d crowdsec-release.tgz ]; then 
+    if [ ! -d crowdsec-release.tgz ]; then
         curl -s https://api.github.com/repos/crowdsecurity/crowdsec/releases/latest | grep browser_download_url| cut -d '"' -f 4  | wget -i -
     fi
     tar xvzf crowdsec-release.tgz
@@ -111,7 +114,7 @@ function install_crowdsecurity() {
 function install_docker() {
     # https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-on-ubuntu-20-04
     sudo apt install apt-transport-https ca-certificates curl software-properties-common
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add - 
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
     sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable"
     sudo apt update
     sudo apt install docker-ce
@@ -138,11 +141,61 @@ function install_jemalloc() {
     ln -s /usr/local/lib/libjemalloc.so /usr/lib/x86_64-linux-gnu/libjemalloc.so
 }
 
+function install_modsecurity() {
+    # Tested on nginx 1.(16|18).X Based on https://www.nginx.com/blog/compiling-and-installing-modsecurity-for-open-source-nginx/ with fixes
+    apt-get install -y apt-utils autoconf automake build-essential git libcurl4-openssl-dev libgeoip-dev liblmdb-dev libpcre++-dev libtool libxml2-dev libyajl-dev pkgconf wget zlib1g-dev
+    git clone --depth 1 -b v3/master --single-branch https://github.com/SpiderLabs/ModSecurity
+    cd ModSecurity || return
+    git submodule init
+    git submodule update
+    ./build.sh
+    ./configure
+    make -j$(nproc)
+    checkinstall -D --pkgname="ModSecurity" --default
+
+    cd .. || return
+    git clone --depth 1 https://github.com/SpiderLabs/ModSecurity-nginx.git
+
+    # this step is required to install plugin for existing setup
+    if [ ! -d nginx-$nginx_version ]; then
+        wget http://nginx.org/download/nginx-$nginx_version.tar.gz
+        wget http://nginx.org/download/nginx-$nginx_version.tar.gz.asc
+        gpg --verify "nginx-$nginx_version.tar.gz.asc"
+        tar zxf nginx-$nginx_version.tar.gz
+    fi
+
+    cd nginx-$nginx_version
+    ./configure --with-compat --add-dynamic-module=../ModSecurity-nginx
+    make modules
+    cp objs/ngx_http_modsecurity_module.so /usr/share/nginx/modules/ngx_http_modsecurity_module.so
+    cd .. || return
+
+    mkdir /etc/nginx/modsec
+    wget -P /etc/nginx/modsec/ https://raw.githubusercontent.com/SpiderLabs/ModSecurity/v3/master/modsecurity.conf-recommended
+    mv /etc/nginx/modsec/modsecurity.conf-recommended /etc/nginx/modsec/modsecurity.conf
+    cp ModSecurity/unicode.mapping /etc/nginx/modsec
+    sed -i 's/SecRuleEngine DetectionOnly/SecRuleEngine On/' /etc/nginx/modsec/modsecurity.conf
+    echo 'Include "/etc/nginx/modsec/modsecurity.conf"' >/etc/nginx/modsec/main.conf
+
+    echo '''
+
+    1. Add next line to the top of /etc/nginx/nginx.conf
+        * load_module modules/ngx_http_modsecurity_module.so;
+    2. Add next 2 rules to enabled-site under server section
+        modsecurity on;
+        modsecurity_rules_file /etc/nginx/modsec/main.conf;
+    '''
+
+}
+
 function install_nginx() {
-    wget http://nginx.org/download/nginx-$nginx_version.tar.gz
-    wget http://nginx.org/download/nginx-$nginx_version.tar.gz.asc
-    gpg --verify "nginx-$nginx_version.tar.gz.asc"
-    tar xfz nginx-$nginx_version.tar.gz
+
+    if [ ! -d nginx-$nginx_version ]; then
+        wget http://nginx.org/download/nginx-$nginx_version.tar.gz
+        wget http://nginx.org/download/nginx-$nginx_version.tar.gz.asc
+        gpg --verify "nginx-$nginx_version.tar.gz.asc"
+        tar zvf nginx-$nginx_version.tar.gz
+    fi
 
     # PCRE version 8.42
     wget https://ftp.pcre.org/pub/pcre/pcre-8.42.tar.gz && tar xzvf pcre-8.42.tar.gz
@@ -220,6 +273,8 @@ function install_nginx() {
     checkinstall -D --pkgname="nginx-$nginx_version" --pkgversion="$nginx_version" --default
     sudo ln -s /usr/lib/nginx/modules /etc/nginx/modules
     sudo adduser --system --home /nonexistent --shell /bin/false --no-create-home --disabled-login --disabled-password --gecos "nginx user" --group nginx
+
+    install_modsecurity
 
     sudo mkdir -p /var/cache/nginx/client_temp /var/cache/nginx/fastcgi_temp /var/cache/nginx/proxy_temp /var/cache/nginx/scgi_temp /var/cache/nginx/uwsgi_temp
     sudo chmod 700 /var/cache/nginx/*
@@ -628,9 +683,9 @@ function install_postgresql() {
     echo "deb http://apt.postgresql.org/pub/repos/apt/ `lsb_release -cs`-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
 
     sudo apt update -y
-    sudo apt -y install libpq-dev postgresql-13 postgresql-client-13
+    sudo apt -y install libpq-dev postgresql postgresql-client
 
-    pip3 install psycopg2
+    pip3 install psycopg2-binary
 }
 
 function dependencies() {
@@ -646,7 +701,7 @@ function dependencies() {
 
     # deps
     apt install python3-pip -y
-    apt install psmisc jq sqlite3 tmux net-tools checkinstall graphviz python3-pydot git numactl python3 python3-dev python3-pip libjpeg-dev zlib1g-dev -y
+    apt install iptables psmisc jq sqlite3 tmux net-tools checkinstall graphviz python3-pydot git numactl python3 python3-dev python3-pip libjpeg-dev zlib1g-dev -y
     apt install upx-ucl libssl-dev wget zip unzip p7zip-full rar unrar unace-nonfree cabextract geoip-database libgeoip-dev libjpeg-dev mono-utils ssdeep libfuzzy-dev exiftool -y
     apt install ssdeep uthash-dev libconfig-dev libarchive-dev libtool autoconf automake privoxy software-properties-common wkhtmltopdf xvfb xfonts-100dpi tcpdump libcap2-bin -y
     apt install python3-pil subversion uwsgi uwsgi-plugin-python3 python3-pyelftools git curl -y
@@ -657,9 +712,9 @@ function dependencies() {
     # from pip import __main__
     # if __name__ == '__main__':
     #     sys.exit(__main__._main())
-    
+
     # pip3 install flare-capa fails for me
-    cd /tmp || return
+    cd /tmp || return
     if [ ! -d /tmp/capa ]; then
         git clone --recurse-submodules https://github.com/fireeye/capa.git
     fi
@@ -667,13 +722,13 @@ function dependencies() {
     git pull
     git submodule update --init rules
     pip3 install .
-    
+
     # re2
     apt install libre2-dev -y
     #re2 for py3
     pip3 install cython
     pip3 install git+https://github.com/andreasvc/pyre2.git
-    
+
     install_postgresql
 
     # sudo su - postgres
@@ -715,6 +770,9 @@ function dependencies() {
 TransPort ${IFACE_IP}:9040
 DNSPort ${IFACE_IP}:5353
 NumCPUs $(getconf _NPROCESSORS_ONLN)
+SocksTimeout ${TOR_SOCKET_TIMEOUT}
+ControlPort 9051
+HashedControlPassword 16:D14CC89AD7848B8C60093105E8284A2D3AB2CF3C20D95FECA0848CFAD2
 EOF
 
     #Then restart Tor:
@@ -1262,10 +1320,15 @@ case "$COMMAND" in
     if ! crontab -l | grep -q './smtp_sinkhole.sh'; then
         crontab -l | { cat; echo "@reboot cd /opt/CAPEv2/utils/ && ./smtp_sinkhole.sh 2>/dev/null"; } | crontab -
     fi
-    # Update FLARE CAPA rules once per day
-    if ! crontab -l | grep -q 'community.py -cr'; then
-        crontab -l | { cat; echo "5 0 */1 * * cd /opt/CAPEv2/utils/ && python3 community.py -cr && systemctl restart cape-processor 2>/dev/null"; } | crontab -
+    # Update FLARE CAPA rules and community every 3 hours
+    if ! crontab -l | grep -q 'community.py -waf -cr'; then
+        crontab -l | { cat; echo "5 */3 * * * cd /opt/CAPEv2/utils/ && python3 community.py -waf -cr && systemctl restart cape-processor 2>/dev/null"; } | crontab -
     fi
+    if ! crontab -l | grep -q 'echo signal newnym'; then
+        crontab -l | { cat; echo "00 */1 * * * (echo authenticate '""'; echo signal newnym; echo quit) | nc localhost 9051 2>/dev/null"; } | crontab -
+    fi
+
+
     ;;
 'all')
     dependencies
@@ -1339,6 +1402,8 @@ case "$COMMAND" in
     install_guacamole;;
 'docker')
     install_docker;;
+'modsecurity')
+    install_modsecurity;;
 'crowdsecurity')
     install_crowdsecurity;;
 *)
