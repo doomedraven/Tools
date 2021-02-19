@@ -1113,7 +1113,7 @@ function cloning() {
             if virt-clone --print-xml -n "$1_$i" -o "$1" -m "$macaddr" -f "${5}/${1}_${i}.qcow2" |sed "s|<driver name=\"qemu\" type=\"qcow2\" cache=\"none\" io=\"native\"/>|<driver name=\"qemu\" type=\"qcow2\" cache=\"none\" discard=\"unmap\" detect_zeroes=\"on\" io=\"native\"/>|g" > "$5/$1_$i.xml"; then
                 if [ ! -f "${5}/${1}_${i}.qcow2" ]; then
                     echo "Creating $5/$1_$i.qcow2"
-                    if [ "$7" == "linked"]; then
+                    if [ "$7" == "linked" ]; then
                         qemu-img create -f qcow2 -F qcow2 -b "$2" "$5/$1_$i.qcow2"
                     else
                     # full clone
