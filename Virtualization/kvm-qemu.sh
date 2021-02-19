@@ -695,7 +695,6 @@ EOF
     fi
 }
 
-
 function replace_qemu_clues_public() {
     echo '[+] Patching QEMU clues'
     _sed_aux "s/QEMU HARDDISK/$qemu_hd_replacement/g" qemu*/hw/ide/core.c 'QEMU HARDDISK was not replaced in core.c'
@@ -769,10 +768,12 @@ function replace_seabios_clues_public() {
 
 function install_jemalloc() {
 
+    aptitude install -f checkinstall curl build-essential jq autoconf -y
+
     # https://zapier.com/engineering/celery-python-jemalloc/
     cd /tmp || return
     jelloc_info=$(curl -s https://api.github.com/repos/jemalloc/jemalloc/releases/latest)
-    jelloc_version=$(echo $jelloc_info |jq .tag_name|sed "s/\"//g")
+    jelloc_version=$(echo $jelloc_info | jq .tag_name|sed "s/\"//g")
     jelloc_repo_url=$(echo $jelloc_info | jq ".zipball_url" | sed "s/\"//g")
     if [ ! -f $jelloc_version ]; then
         wget -q $jelloc_repo_url
@@ -863,7 +864,7 @@ function qemu_func() {
                 make -j"$(nproc)"
                 if [ "$OS" = "Linux" ]; then
                     checkinstall -D --pkgname=qemu-$qemu_version --nodoc --showinstall=no --default --install=no
-                    apt -y -o Dpkg::Options::="--force-overwrite" install ./qemu-$qemu_version/qemu-$qemu_version_$qemu_version-1_amd64.deb
+                    apt -y -o Dpkg::Options::="--force-overwrite" install ./qemu-$qemu_version/qemu-$qemu_version\_$qemu_version-1_amd64.deb
                 elif [ "$OS" = "Darwin" ]; then
                     make -j"$(nproc)" install
                 fi
@@ -1163,6 +1164,14 @@ OS="$(uname -s)"
 #add-apt-repository universe
 #apt update && apt upgrade
 #make
+
+#autofill username
+if [ -n "$2" ]; then
+    username="$2"
+else
+    username=$(who | awk 'FNR == 1 {print $1}')
+fi
+
 
 case "$COMMAND" in
 'issues')
