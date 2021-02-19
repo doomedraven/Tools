@@ -1165,14 +1165,6 @@ OS="$(uname -s)"
 #apt update && apt upgrade
 #make
 
-#autofill username
-if [ -n "$2" ]; then
-    username="$2"
-else
-    username=$(who | awk 'FNR == 1 {print $1}')
-fi
-
-
 case "$COMMAND" in
 'issues')
     issues;;
