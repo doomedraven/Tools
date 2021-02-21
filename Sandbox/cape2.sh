@@ -164,7 +164,7 @@ function install_modsecurity() {
         tar zxf nginx-"$nginx_version".tar.gz
     fi
 
-    cd nginx-"$nginx_version"
+    cd nginx-"$nginx_version" || return
     ./configure --with-compat --add-dynamic-module=../ModSecurity-nginx
     make modules
     cp objs/ngx_http_modsecurity_module.so /usr/share/nginx/modules/ngx_http_modsecurity_module.so
@@ -210,7 +210,7 @@ function install_nginx() {
     sudo apt update && sudo apt upgrade -y
     sudo apt install -y perl libperl-dev libgd3 libgd-dev libgeoip1 libgeoip-dev geoip-bin libxml2 libxml2-dev libxslt1.1 libxslt1-dev
 
-    cd nginx-$nginx_version
+    cd nginx-$nginx_version || return
 
     sudo cp man/nginx.8 /usr/share/man/man8
     sudo gzip /usr/share/man/man8/nginx.8
@@ -412,16 +412,14 @@ function install_letsencrypt(){
     sudo add-apt-repository ppa:certbot/certbot -y
     sudo apt update
     sudo apt install python3-certbot-nginx -y
-    sudo echo "server_name $1 www.$1;" > /etc/nginx/sites-available/"$1"
+    echo "server_name $1 www.$1;" > /etc/nginx/sites-available/"$1"
     sudo certbot --nginx -d "$1" -d www."$1"
 }
 
 function install_fail2ban() {
     sudo apt install fail2ban -y
-
     sudo cp /etc/fail2ban/jail.conf /etc/fail2ban/jail.local
     sudo sed -i /etc/fail2ban/jail.local
-
     systemctl start fail2ban
     systemctl enable fail2ban
 
@@ -602,7 +600,7 @@ function install_yara() {
         #wget "https://github.com/VirusTotal/yara/archive/v$yara_version.zip" && unzip "v$yara_version.zip"
     fi
     directory=$(ls | grep "VirusTotal-yara-*")
-    cd $directory || return
+    cd "$directory" || return
     ./bootstrap.sh
     ./configure --enable-cuckoo --enable-magic --enable-dotnet --enable-profiling
     make -j"$(getconf _NPROCESSORS_ONLN)"
@@ -680,7 +678,7 @@ function install_postgresql() {
     echo "[+] Installing PostgreSQL"
 
     wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
-    echo "deb http://apt.postgresql.org/pub/repos/apt/ `lsb_release -cs`-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
+    echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
 
     sudo apt update -y
     sudo apt -y install libpq-dev postgresql postgresql-client
@@ -782,18 +780,22 @@ EOF
     #Edit the Privoxy configuration
     #sudo sed -i 's/R#        forward-socks5t             /     127.0.0.1:9050 ./        forward-socks5t             /     127.0.0.1:9050 ./g' /etc/privoxy/config
     #service privoxy restart
+    {
+        echo "* soft nofile 1048576";
+        echo "* hard nofile 1048576";
+        echo "root soft nofile 1048576";
+        echo "root hard nofile 1048576";
+    } >>  /etc/security/limits.conf
 
-    echo "* soft nofile 1048576" >> /etc/security/limits.conf
-    echo "* hard nofile 1048576" >> /etc/security/limits.conf
-    echo "root soft nofile 1048576" >> /etc/security/limits.conf
-    echo "root hard nofile 1048576" >> /etc/security/limits.conf
-    echo "fs.file-max = 100000" >> /etc/sysctl.conf
-    echo "net.ipv6.conf.all.disable_ipv6 = 1" >> /etc/sysctl.conf
-    echo "net.ipv6.conf.default.disable_ipv6 = 1" >> /etc/sysctl.conf
-    echo "net.ipv6.conf.lo.disable_ipv6 = 1" >> /etc/sysctl.conf
-    echo "net.bridge.bridge-nf-call-ip6tables = 0" >> /etc/sysctl.conf
-    echo "net.bridge.bridge-nf-call-iptables = 0" >> /etc/sysctl.conf
-    echo "net.bridge.bridge-nf-call-arptables = 0" >> /etc/sysctl.conf
+    {
+        echo "fs.file-max = 100000";
+        echo "net.ipv6.conf.all.disable_ipv6 = 1";
+        echo "net.ipv6.conf.default.disable_ipv6 = 1";
+        echo "net.ipv6.conf.lo.disable_ipv6 = 1";
+        echo "net.bridge.bridge-nf-call-ip6tables = 0";
+        echo "net.bridge.bridge-nf-call-iptables = 0";
+        echo "net.bridge.bridge-nf-call-arptables = 0";
+    } >> /etc/sysctl.conf
 
     sudo sysctl -p
 
@@ -806,28 +808,6 @@ EOF
     ./configure
     make -j"$(getconf _NPROCESSORS_ONLN)"
     sudo checkinstall -D --pkgname=passivedns --default
-
-    #Depricated as py2 only
-    :"
-    #ToDo move to py3
-    cd /usr/local/lib/python2.7/dist-packages/volatility || return
-    mkdir resources
-    cd resources || return
-    touch "__init__.py"
-    git clone https://github.com/nemequ/lzmat
-    cd lzmat || return
-    gcc -Wall -fPIC -c lzmat_dec.c
-    gcc -shared -Wl,-soname,lzmat_dec.so.1 -o lzmat_dec.so.1.0 lzmat_dec.o
-    mv "$(ls)" ..
-    cd .. && rm -r lzmat
-
-    cd /tmp || return
-    git clone https://github.com/unicorn-engine/unicorn.git
-    sudo apt install libglib2.0-dev -y
-    cd unicorn || return
-    ./make.sh
-    sudo ./make.sh install
-    "
 
     pip3 install unicorn capstone
 }
@@ -1268,19 +1248,19 @@ function install_guacamole() {
     sudo apt -y install libcairo2-dev libjpeg-turbo8-dev libpng-dev libossp-uuid-dev libfreerdp2-2 #libfreerdp-dev
     sudo apt install freerdp2-dev libssh2-1-dev libvncserver-dev libpulse-dev  libssl-dev libvorbis-dev libwebp-dev libpango1.0-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev
     # https://downloads.apache.org/guacamole/$guacamole_version/source/
-    mkdir /tmp/guac-build && cd /tmp/guac-build
+    mkdir /tmp/guac-build && cd /tmp/guac-build || return
     wget https://downloads.apache.org/guacamole/"$guacamole_version"/source/guacamole-server-"$guacamole_version".tar.gz
     wget https://downloads.apache.org/guacamole/"$guacamole_version"/source/guacamole-server-"$guacamole_version".tar.gz.asc
     ./configure --with-systemd-dir=/lib/systemd/system
     make -j"$(getconf _NPROCESSORS_ONLN)"
-    sudo checkinstall -D --pkgname=guacamole-server-"$guacamole" --pkgversion="$guacamole_version" --default
+    sudo checkinstall -D --pkgname=guacamole-server-guacamole --pkgversion="$guacamole_version" --default
     sudo ldconfig
     sudo systemctl enable guacd
     sudo systemctl start guacd
 
 }
 # Doesn't work ${$1,,}
-COMMAND=$(echo "$1"|tr "[A-Z]" "[a-z]")
+COMMAND=$(echo "$1"|tr "{A-Z}" "{a-z}")
 
 case $COMMAND in
     '-h')
@@ -1291,22 +1271,18 @@ esac
 if [ $# -eq 3 ]; then
     sandbox_version=$2
     IFACE_IP=$3
-elif [ $# -eq 2 ]; then
-    cuckoo_version=$2
 elif [ $# -eq 0 ]; then
     echo "[-] check --help"
     exit 1
 fi
 
-sandbox_version=$(echo "$sandbox_version"|tr "[A-Z]" "[a-z]")
+sandbox_version=$(echo "$sandbox_version"|tr "{A-Z}" "{a-z}")
 
 #check if start with root
 if [ "$EUID" -ne 0 ]; then
    echo 'This script must be run as root'
    exit 1
 fi
-
-OS="$(uname -s)"
 
 case "$COMMAND" in
 'base')
@@ -1366,12 +1342,7 @@ case "$COMMAND" in
 'postgresql')
     install_postgresql;;
 'sandbox')
-    if [ "$sandbox_version" = "upstream" ]; then
-        pip3 install cuckoo
-        print "[*] run cuckoo under cuckoo user, NEVER RUN IT AS ROOT!"
-    else
-        install_CAPE
-    fi;;
+    install_CAPE
 'dist')
     distributed;;
 'fail2ban')

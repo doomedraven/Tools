@@ -63,7 +63,7 @@ cd /tmp || return
 if [ ! -f suricata-"$suricata_version".tar.gz ]; then
     wget https://www.openinfosecfoundation.org/download/suricata-"$suricata_version".tar.gz && tar xf suricata-"$suricata_version".tar.gz
 fi
-cd suricata-"$suricata_version"
+cd suricata-"$suricata_version" || return
 #wget "https://www.openinfosecfoundation.org/download/suricata-current.tar.gz"
 #wget "https://www.openinfosecfoundation.org/download/suricata-current.tar.gz.sig"
 #gpg --verify "suricata-current.tar.gz.sig"

@@ -2,12 +2,12 @@
 
 #show how to upgrade old mongo to newer on Debian
 
-def update_install(){
+function update_install {
     sudo apt-get update
     sudo apt-get install -y mongodb-org
 }
 
-def wipe_mongo(){
+function wipe_mongo(){
    dpkg -l|grep mongo| cut -f 3 -d " "|xargs dpkg --remove
 }
 
