@@ -7,7 +7,7 @@
 # https://www.doomedraven.com/2020/04/how-to-create-virtual-machine-with-virt.html
 # Use Ubuntu 20.04 LTS
 
-#Update date: 09.02.2021
+#Update date: 17.01.2021
 
 : '
 Huge thanks to:
@@ -66,7 +66,7 @@ username=""
 
 sudo apt install aptitude -y
 sudo aptitude install -f pcregrep aptitude
-cpuspeed=$(cat /proc/cpuinfo | pcregrep -Mio '(?s)processor\s+\: 0\s*\n.*?model name\s+\:[^\r\n]*?\K\s+@\s+\d+\.\d+GHz')
+cpuspeed=$(pcregrep -Mio '(?s)processor\s+\: 0\s*\n.*?model name\s+\:[^\r\n]*?\K\s+@\s+\d+\.\d+GHz' < /proc/cpuinfo)
 cpuspeedsz=${#cpuspeed}
 
 
@@ -107,10 +107,10 @@ src_bios_table_date2="11\/03\/2018"
 #01\/01\/2011
 src_fw_smbios_date="11\/03\/2018"
 
-if (( $cpuspeedsz > 0 )); then
+if (( "$cpuspeedsz" > 0 )); then
     cpuid+="$cpuspeed"
 fi
-echo $cpuid
+echo "$cpuid"
 
 # if you want all arches support in QEMU, just set QTARGETS to empty
 QTARGETS="--target-list=i386-softmmu,x86_64-softmmu,i386-linux-user,x86_64-linux-user"
@@ -216,18 +216,20 @@ function _enable_tcp_bbr() {
 
     modprobe br_netfilter
     echo "br_netfilter" >> /etc/modules
-    echo "net.bridge.bridge-nf-call-arptables = 1" >> /etc/sysctl.conf
-    echo "net.bridge.bridge-nf-call-ip6tables = 1" >> /etc/sysctl.conf
-    echo "net.bridge.bridge-nf-call-iptables = 1" >> /etc/sysctl.conf
-    echo "net.core.rmem_max = 16777216" >> /etc/sysctl.conf
-    echo "net.core.wmem_max = 16777216" >> /etc/sysctl.conf
-    echo "net.ipv4.tcp_rmem = 4096 87380 16777216" >> /etc/sysctl.conf
-    echo "net.ipv4.tcp_wmem = 4096 65536 16777216" >> /etc/sysctl.conf
-    echo "net.ipv4.tcp_syncookies = 0"  >> /etc/sysctl.conf
-    echo "net.ipv4.tcp_mem = 50576   64768   98152"  >> /etc/sysctl.conf
-    echo "net.core.netdev_max_backlog = 2500"  >> /etc/sysctl.conf
-    echo "vm.swappiness = 1"  >> /etc/sysctl.conf
-    echo "vm.dirty_ratio = 15"  >> /etc/sysctl.conf
+    {
+        echo "net.bridge.bridge-nf-call-arptables = 1";
+        echo "net.bridge.bridge-nf-call-ip6tables = 1";
+        echo "net.bridge.bridge-nf-call-iptables = 1";
+        echo "net.core.rmem_max = 16777216";
+        echo "net.core.wmem_max = 16777216";
+        echo "net.ipv4.tcp_rmem = 4096 87380 16777216";
+        echo "net.ipv4.tcp_wmem = 4096 65536 16777216";
+        echo "net.ipv4.tcp_syncookies = 0" ;
+        echo "net.ipv4.tcp_mem = 50576   64768   98152" ;
+        echo "net.core.netdev_max_backlog = 2500" ;
+        echo "vm.swappiness = 1" ;
+        echo "vm.dirty_ratio = 15";
+    } >> /etc/sysctl.conf
     sudo sysctl -p
 
     sudo sysctl --system
@@ -245,9 +247,9 @@ function install_haxm_mac() {
     brew tap jeffreywildman/homebrew-virt-manager
     brew cask install xquartz
     brew install virt-manager virt-viewer
-    mkdir -p $(brew --prefix libosinfo)/share/libosinfo
-    wget https://pci-ids.ucw.cz/v2.2/pci.ids -O $(brew --prefix libosinfo)/share/libosinfo/pci.ids
-    wget http://www.linux-usb.org/usb.ids -O $(brew --prefix libosinfo)/share/libosinfo/usb.ids
+    mkdir -p $("brew --prefix libosinfo")/share/libosinfo
+    wget https://pci-ids.ucw.cz/v2.2/pci.ids -O $("brew --prefix libosinfo")/share/libosinfo/pci.ids
+    wget http://www.linux-usb.org/usb.ids -O $("brew --prefix libosinfo")/share/libosinfo/usb.ids
 
     if [ "$SHELL" = "/bin/zsh" ] || [ "$SHELL" = "/usr/bin/zsh" ] ; then
         echo "export LIBVIRT_DEFAULT_URI=qemu:///system" >> "$HOME/.zsh"
@@ -276,7 +278,7 @@ function install_libguestfs() {
         #wget -q $_repo_url
         #unzip $_version
     #wget "https://github.com/VirusTotal/yara/archive/v$yara_version.zip" && unzip "v$yara_version.zip"
-    directory=`ls | grep "VirusTotal-yara-*"`
+    directory=$(ls | grep "VirusTotal-yara-*")
         git clone --recursive https://github.com/libguestfs/libguestfs
     fi
     cd libguestfs || return
@@ -440,10 +442,10 @@ EOH
     libvirt_so_path="${temp_libvirt_so_path%/*}/"
 
     if [[ -n "$libvirt_so_path" ]]; then
-        for so_path in $(ls ${libvirt_so_path}libvirt*.so.0);  do
-            dest_path=/lib/$(uname -m)-linux-gnu/$(basename $so_path)
-            if [ -f $dest_path ]; then
-                rm $dest_path
+        for so_path in $(ls "${libvirt_so_path}"libvirt*.so.0);  do
+            dest_path=/lib/$(uname -m)-linux-gnu/$(basename "$so_path")
+            if [ -f "$dest_path" ]; then
+                rm "$dest_path"
             fi
         done
     fi
@@ -485,7 +487,7 @@ EOH
 
         if [[ -n "$libvirt_so_path" ]]; then
             # #ln -s /usr/lib64/libvirt-qemu.so /lib/x86_64-linux-gnu/libvirt-qemu.so.0
-            for so_path in $(ls ${libvirt_so_path}libvirt*.so.0); do ln -s $so_path /lib/$(uname -m)-linux-gnu/$(basename $so_path); done
+            for so_path in $(ls "${libvirt_so_path}"libvirt*.so.0); do ln -s "$so_path" /lib/$(uname -m)-linux-gnu/$(basename "$so_path"); done
         fi
 
     #elif [ "$OS" = "Darwin" ]; then
@@ -695,6 +697,7 @@ EOF
     fi
 }
 
+
 function replace_qemu_clues_public() {
     echo '[+] Patching QEMU clues'
     _sed_aux "s/QEMU HARDDISK/$qemu_hd_replacement/g" qemu*/hw/ide/core.c 'QEMU HARDDISK was not replaced in core.c'
@@ -769,21 +772,20 @@ function replace_seabios_clues_public() {
 function install_jemalloc() {
 
     aptitude install -f checkinstall curl build-essential jq autoconf -y
-
     # https://zapier.com/engineering/celery-python-jemalloc/
     cd /tmp || return
     jelloc_info=$(curl -s https://api.github.com/repos/jemalloc/jemalloc/releases/latest)
-    jelloc_version=$(echo $jelloc_info | jq .tag_name|sed "s/\"//g")
-    jelloc_repo_url=$(echo $jelloc_info | jq ".zipball_url" | sed "s/\"//g")
-    if [ ! -f $jelloc_version ]; then
-        wget -q $jelloc_repo_url
-        unzip -q $jelloc_version
+    jelloc_version=$(echo "$jelloc_info" | jq .tag_name|sed "s/\"//g")
+    jelloc_repo_url=$(echo "$jelloc_info" | jq ".zipball_url" | sed "s/\"//g")
+    if [ ! -f "$jelloc_version" ]; then
+        wget -q "$jelloc_repo_url"
+        unzip -q "$jelloc_version"
     fi
 
-    directory=`ls | grep "jemalloc-jemalloc-*"`
-    cd $directory || return
+    directory=$(ls | grep "jemalloc-jemalloc-*")
+    cd "$directory" || return
     ./autogen.sh
-    make -j$(nproc)
+    make -j"$(nproc)"
     checkinstall -D --pkgname="jemalloc-$jelloc_version" --pkgversion="$jelloc_version" --default
     ln -s /usr/local/lib/libjemalloc.so /usr/lib/x86_64-linux-gnu/libjemalloc.so
 }
@@ -815,7 +817,6 @@ function qemu_func() {
         echo "[-] Failed to extract, check if download was correct"
         exit 1
     fi
-    fail=0
 
     if [ "$OS" = "Linux" ]; then
         aptitude install -f software-properties-common
@@ -854,7 +855,7 @@ function qemu_func() {
                 ./configure $QTARGETS --prefix=/usr --libexecdir=/usr/lib/qemu --localstatedir=/var --bindir=/usr/bin/ --enable-gnutls --enable-docs --enable-gtk --enable-vnc --enable-vnc-sasl --enable-vnc-png --enable-vnc-jpeg --enable-curl --enable-kvm  --enable-linux-aio --enable-cap-ng --enable-vhost-net --enable-vhost-crypto --enable-spice --enable-usb-redir --enable-lzo --enable-snappy --enable-bzip2 --enable-coroutine-pool --enable-libxml2 --enable-jemalloc --enable-replication --enable-tools --enable-capstone
             elif [ "$OS" = "Darwin" ]; then
                 # --enable-vhost-net --enable-vhost-crypto
-                ./configure --prefix=/usr --libexecdir=/usr/lib/qemu --localstatedir=/var --bindir=/usr/bin/ --enable-gnutls --enable-docs  --enable-vnc --enable-vnc-sasl --enable-vnc-png --enable-vnc-jpeg --enable-curl --enable-hax --enable-usb-redir --enable-lzo --enable-snappy --enable-bzip2 --enable-coroutine-pool  --enable-libxml2 --enable-tcmalloc --enable-replication --enable-tools --enable-capstone
+                ./configure --prefix=/usr --libexecdir=/usr/lib/qemu --localstatedir=/var --bindir=/usr/bin/ --enable-gnutls --enable-docs  --enable-vnc --enable-vnc-sasl --enable-vnc-png --enable-vnc-jpeg --enable-curl --enable-hax --enable-usb-redir --enable-lzo --enable-snappy --enable-bzip2 --enable-coroutine-pool  --enable-libxml2 --enable-jemalloc --enable-replication --enable-tools --enable-capstone
             fi
             if  [ $? -eq 0 ]; then
                 echo '[+] Starting Install it'
@@ -884,8 +885,7 @@ function qemu_func() {
                     echo '[-] Install failed'
                 fi
                 if ! grep -q -E "^tss:" /etc/group; then
-                    groupadd tss
-                    useradd -g tss tss
+                    useradd --system --group tss
                     echo "[+] Creating Group and User: tss"
                 else
                     echo "[?] tss Group and User exist, skip"
@@ -911,7 +911,6 @@ function qemu_func() {
 
 function seabios_func() {
     cd /tmp || return
-    fail=0
     echo '[+] Installing SeaBios dependencies'
     aptitude install -f git acpica-tools -y
     if [ -d seabios ]; then
@@ -1064,8 +1063,8 @@ cat << EndOfHelp
     8. Namespace Gtk not available: Could not open display: localhost:10.0
     8 ValueError: Namespace GtkSource not available
     $ aptitude install -f libgtk-3-dev libgtksourceview-3.0-dev
-    * Error will specify version, example `gi.require_version("GtkSource", "4")`, if that version is not available for your distro
-    * you will need downgrade your virt-manager with `sudo rm -r /usr/share/virt-manager` and install older version
+    * Error will specify version, example gi.require_version("GtkSource", "4"), if that version is not available for your distro
+    * you will need downgrade your virt-manager with $ sudo rm -r /usr/share/virt-manager and install older version
 
     9. ImportError: cannot import name Vte
     $ aptitude install -f gir1.2-vte-2.90
@@ -1117,7 +1116,7 @@ function cloning() {
                     if [ "$7" == "linked" ]; then
                         qemu-img create -f qcow2 -F qcow2 -b "$2" "$5/$1_$i.qcow2"
                     else
-                    # full clone
+                        # full clone
                         cp "$2" "$5/$1_$i.qcow2"
                     fi
                 fi

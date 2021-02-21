@@ -96,8 +96,8 @@ function install_crowdsecurity() {
         curl -s https://api.github.com/repos/crowdsecurity/crowdsec/releases/latest | grep browser_download_url| cut -d '"' -f 4  | wget -i -
     fi
     tar xvzf crowdsec-release.tgz
-    directory=`ls | grep "crowdsec-v*"`
-    cd $directory || return
+    directory=$(ls | grep "crowdsec-v*")
+    cd "$directory" || return
     sudo ./wizard.sh -i
     sudo cscli collections install crowdsecurity/nginx
     sudo systemctl reload crowdsec
@@ -106,8 +106,8 @@ function install_crowdsecurity() {
 
     wget https://github.com/crowdsecurity/cs-nginx-bouncer/releases/download/v0.0.4/cs-nginx-bouncer.tgz
     tar xvzf cs-nginx-bouncer.tgz
-    directory=`ls | grep "cs-nginx-bouncer*"`
-    cd $directory || return
+    directory=$(ls | grep "cs-nginx-bouncer*")
+    cd "$directory" || return
     sudo ./install.sh
 }
 
@@ -126,17 +126,17 @@ function install_jemalloc() {
     # https://zapier.com/engineering/celery-python-jemalloc/
     cd /tmp || return
     jelloc_info=$(curl -s https://api.github.com/repos/jemalloc/jemalloc/releases/latest)
-    jelloc_version=$(echo $jelloc_info |jq .tag_name|sed "s/\"//g")
-    jelloc_repo_url=$(echo $jelloc_info | jq ".zipball_url" | sed "s/\"//g")
-    if [ ! -f $jelloc_version ]; then
-        wget -q $jelloc_repo_url
-        unzip -q $jelloc_version
+    jelloc_version=$(echo "$jelloc_info" |jq .tag_name|sed "s/\"//g")
+    jelloc_repo_url=$(echo "$jelloc_info" | jq ".zipball_url" | sed "s/\"//g")
+    if [ ! -f "$jelloc_version" ]; then
+        wget -q "$jelloc_repo_url"
+        unzip -q "$jelloc_version"
     fi
 
-    directory=`ls | grep "jemalloc-jemalloc-*"`
-    cd $directory || return
+    directory=$(ls | grep "jemalloc-jemalloc-*")
+    cd "$directory" || return
     ./autogen.sh
-    make -j$(nproc)
+    make -j"$(nproc)"
     checkinstall -D --pkgname="jemalloc-$jelloc_version" --pkgversion="$jelloc_version" --default
     ln -s /usr/local/lib/libjemalloc.so /usr/lib/x86_64-linux-gnu/libjemalloc.so
 }
@@ -150,21 +150,21 @@ function install_modsecurity() {
     git submodule update
     ./build.sh
     ./configure
-    make -j$(nproc)
+    make -j"$(nproc)"
     checkinstall -D --pkgname="ModSecurity" --default
 
     cd .. || return
     git clone --depth 1 https://github.com/SpiderLabs/ModSecurity-nginx.git
 
     # this step is required to install plugin for existing setup
-    if [ ! -d nginx-$nginx_version ]; then
-        wget http://nginx.org/download/nginx-$nginx_version.tar.gz
-        wget http://nginx.org/download/nginx-$nginx_version.tar.gz.asc
+    if [ ! -d nginx-"$nginx_version" ]; then
+        wget http://nginx.org/download/nginx-"$nginx_version".tar.gz
+        wget http://nginx.org/download/nginx-"$nginx_version".tar.gz.asc
         gpg --verify "nginx-$nginx_version.tar.gz.asc"
-        tar zxf nginx-$nginx_version.tar.gz
+        tar zxf nginx-"$nginx_version".tar.gz
     fi
 
-    cd nginx-$nginx_version
+    cd nginx-"$nginx_version"
     ./configure --with-compat --add-dynamic-module=../ModSecurity-nginx
     make modules
     cp objs/ngx_http_modsecurity_module.so /usr/share/nginx/modules/ngx_http_modsecurity_module.so
@@ -257,7 +257,6 @@ function install_nginx() {
                 --with-http_sub_module \
                 --with-http_stub_status_module \
                 --with-http_v2_module \
-                #--with-http_v3_module \
                 --with-http_secure_link_module \
                 --with-mail \
                 --with-mail_ssl_module \
@@ -268,8 +267,9 @@ function install_nginx() {
                 --with-debug \
                 --with-cc-opt='-g -O2 -fPIE -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2' \
                 --with-ld-opt='-Wl,-Bsymbolic-functions -fPIE -pie -Wl,-z,relro -Wl,-z,now'
+                 #--with-http_v3_module \
 
-    make -j$(nproc)
+    make -j"$(nproc)"
     checkinstall -D --pkgname="nginx-$nginx_version" --pkgversion="$nginx_version" --default
     sudo ln -s /usr/lib/nginx/modules /etc/nginx/modules
     sudo adduser --system --home /nonexistent --shell /bin/false --no-create-home --disabled-login --disabled-password --gecos "nginx user" --group nginx
@@ -281,7 +281,7 @@ function install_nginx() {
     sudo chown nginx:root /var/cache/nginx/*
 
     if [ ! -f /lib/systemd/system/nginx.service ]; then
-        sudo cat >> /lib/systemd/system/nginx.service << EOF
+        cat >> /lib/systemd/system/nginx.service << EOF
 [Unit]
 Description=nginx - high performance web server
 Documentation=https://nginx.org/en/docs/
@@ -311,7 +311,7 @@ EOF
 
 
     if [ ! -f /etc/logrotate.d/nginx ]; then
-        sudo cat >> /etc/logrotate.d/nginx << EOF
+        cat >> /etc/logrotate.d/nginx << EOF
 /var/log/nginx/*.log {
     daily
     missingok
@@ -323,14 +323,14 @@ EOF
     sharedscripts
     postrotate
     if [ -f /tmp/nginx.pid ]; then
-            kill -USR1 `cat /tmp/nginx.pid`
+            kill -USR1 $(cat /tmp/nginx.pid)
     fi
     endscript
 }
 EOF
 fi
 
-    sudo ln -s /etc/nginx/sites-available/$1 /etc/nginx/sites-enabled/
+    sudo ln -s /etc/nginx/sites-available/"$1" /etc/nginx/sites-enabled/
     #sudo wget https://support.cloudflare.com/hc/en-us/article_attachments/201243967/origin-pull-ca.pem -O
 
     if [ ! -f /etc/nginx/sites-enabled/capesandbox ]; then
@@ -412,8 +412,8 @@ function install_letsencrypt(){
     sudo add-apt-repository ppa:certbot/certbot -y
     sudo apt update
     sudo apt install python3-certbot-nginx -y
-    sudo echo "server_name $1 www.$1;" > /etc/nginx/sites-available/$1
-    sudo certbot --nginx -d $1 -d www.$1
+    sudo echo "server_name $1 www.$1;" > /etc/nginx/sites-available/"$1"
+    sudo certbot --nginx -d "$1" -d www."$1"
 }
 
 function install_fail2ban() {
@@ -465,8 +465,8 @@ function redsocks2() {
     sudo apt install -y git libevent-dev libreadline-dev zlib1g-dev libncurses5-dev
     sudo apt install -y libssl1.0-dev 2>/dev/null
     sudo apt install -y libssl-dev 2>/dev/null
-    git clone https://github.com/semigodking/redsocks redsocks2 && cd redsocks2
-    DISABLE_SHADOWSOCKS=true make -j$(nproc) #ENABLE_STATIC=true
+    git clone https://github.com/semigodking/redsocks redsocks2 && cd redsocks2 || return
+    DISABLE_SHADOWSOCKS=true make -j"$(nproc)" #ENABLE_STATIC=true
     sudo cp redsocks2 /usr/bin/
 }
 
@@ -594,14 +594,14 @@ function install_yara() {
 
     cd /tmp || return
     yara_info=$(curl -s https://api.github.com/repos/VirusTotal/yara/releases/latest)
-    yara_version=$(echo $yara_info |jq .tag_name|sed "s/\"//g")
-    yara_repo_url=$(echo $yara_info | jq ".zipball_url" | sed "s/\"//g")
-    if [ ! -f $yara_version ]; then
-        wget -q $yara_repo_url
-        unzip -q $yara_version
+    yara_version=$(echo "$yara_info" |jq .tag_name|sed "s/\"//g")
+    yara_repo_url=$(echo "$yara_info" | jq ".zipball_url" | sed "s/\"//g")
+    if [ ! -f "$yara_version" ]; then
+        wget -q "$yara_repo_url"
+        unzip -q "$yara_version"
         #wget "https://github.com/VirusTotal/yara/archive/v$yara_version.zip" && unzip "v$yara_version.zip"
     fi
-    directory=`ls | grep "VirusTotal-yara-*"`
+    directory=$(ls | grep "VirusTotal-yara-*")
     cd $directory || return
     ./bootstrap.sh
     ./configure --enable-cuckoo --enable-magic --enable-dotnet --enable-profiling
@@ -743,11 +743,11 @@ function dependencies() {
     # ToDo check if user exits
 
     if id "${USER}" &>/dev/null; then
-        echo 'user ${USER} already exist'
+        echo "user ${USER} already exist"
     else
-        useradd -s /bin/bash -d /home/${USER}/ -m ${USER}
+        useradd --system --group ${USER}
     fi
-    usermod -G ${USER} -a ${USER}
+    # ToDo add current user to ${USER} group
     groupadd pcap
     usermod -a -G pcap ${USER}
     chgrp pcap /usr/sbin/tcpdump
@@ -1241,12 +1241,12 @@ EOF
 function install_prometheus_grafana() {
 
     # install only on master only master
-    wget https://github.com/prometheus/prometheus/releases/download/v$prometheus_version/prometheus-$prometheus_version.linux-amd64.tar.gz && tar xf prometheus-$prometheus_version.linux-amd64.tar.gz
+    wget https://github.com/prometheus/prometheus/releases/download/v"$prometheus_version"/prometheus-"$prometheus_version".linux-amd64.tar.gz && tar xf prometheus-"$prometheus_version".linux-amd64.tar.gz
     cd prometheus-$prometheus_version.linux-amd6 && ./prometheus --config.file=prometheus.yml &
 
     sudo apt-get install -y adduser libfontconfig1
-    wget https://dl.grafana.com/oss/release/grafana_$grafana_version_amd64.deb
-    sudo dpkg -i grafana_$grafana_version_amd64.deb
+    wget https://dl.grafana.com/oss/release/grafana_"$grafana_version"_amd64.deb
+    sudo dpkg -i grafana_"$grafana_version"_amd64.deb
 
     systemctl enable grafana
     cat << EOL
@@ -1259,8 +1259,8 @@ EOL
 
 function install_node_exporter() {
     # deploy on all all monitoring servers
-    wget https://github.com/prometheus/node_exporter/releases/download/v$node_exporter_version/node_exporter-$node_exporter_version.linux-amd64.tar.gz && tar xf node_exporter-$node_exporter_version.linux-amd64.tar.gz
-    cd node_exporter-$node_exporter_version.linux-amd6 && ./node_exporter &
+    wget https://github.com/prometheus/node_exporter/releases/download/v"$node_exporter_version"/node_exporter-"$node_exporter_version".linux-amd64.tar.gz && tar xf node_exporter-"$node_exporter_version".linux-amd64.tar.gz
+    cd node_exporter-"$node_exporter_version".linux-amd6 && ./node_exporter &
 }
 
 function install_guacamole() {
@@ -1269,11 +1269,11 @@ function install_guacamole() {
     sudo apt install freerdp2-dev libssh2-1-dev libvncserver-dev libpulse-dev  libssl-dev libvorbis-dev libwebp-dev libpango1.0-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev
     # https://downloads.apache.org/guacamole/$guacamole_version/source/
     mkdir /tmp/guac-build && cd /tmp/guac-build
-    wget https://downloads.apache.org/guacamole/$guacamole_version/source/guacamole-server-$guacamole_version.tar.gz
-    wget https://downloads.apache.org/guacamole/$guacamole_version/source/guacamole-server-$guacamole_version.tar.gz.asc
+    wget https://downloads.apache.org/guacamole/"$guacamole_version"/source/guacamole-server-"$guacamole_version".tar.gz
+    wget https://downloads.apache.org/guacamole/"$guacamole_version"/source/guacamole-server-"$guacamole_version".tar.gz.asc
     ./configure --with-systemd-dir=/lib/systemd/system
     make -j"$(getconf _NPROCESSORS_ONLN)"
-    sudo checkinstall -D --pkgname=guacamole-server-$guacamole --pkgversion="$guacamole_version" --default
+    sudo checkinstall -D --pkgname=guacamole-server-"$guacamole" --pkgversion="$guacamole_version" --default
     sudo ldconfig
     sudo systemctl enable guacd
     sudo systemctl start guacd
