@@ -1342,7 +1342,7 @@ case "$COMMAND" in
 'postgresql')
     install_postgresql;;
 'sandbox')
-    install_CAPE
+    install_CAPE;;
 'dist')
     distributed;;
 'fail2ban')
