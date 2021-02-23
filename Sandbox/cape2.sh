@@ -687,7 +687,7 @@ function install_postgresql() {
     pip3 install psycopg2-binary
 }
 
-function install_osslsigncode()
+function install_osslsigncode(){
     sudo apt-get update && sudo apt-get install build-essential autoconf libtool libssl-dev python3-pkgconfig libcurl4-gnutls-dev
     cd /tmp || return
     if [ ! -f osslsigncode-2.1.0.tar.gz ]; then
