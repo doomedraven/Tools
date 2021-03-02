@@ -771,8 +771,8 @@ function replace_seabios_clues_public() {
 
 function install_jemalloc() {
 
-    aptitude install -f checkinstall curl build-essential jq autoconf -y
-    # https://zapier.com/engineering/celery-python-jemalloc/
+    aptitude install -f checkinstall curl build-essential jq autoconf libjemalloc-dev -y 
+    :'# https://zapier.com/engineering/celery-python-jemalloc/
     cd /tmp || return
     jelloc_info=$(curl -s https://api.github.com/repos/jemalloc/jemalloc/releases/latest)
     jelloc_version=$(echo "$jelloc_info" | jq .tag_name|sed "s/\"//g")
@@ -788,6 +788,7 @@ function install_jemalloc() {
     make -j"$(nproc)"
     checkinstall -D --pkgname="jemalloc-$jelloc_version" --pkgversion="$jelloc_version" --default
     ln -s /usr/local/lib/libjemalloc.so /usr/lib/x86_64-linux-gnu/libjemalloc.so
+    '
 }
 
 
