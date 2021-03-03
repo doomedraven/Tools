@@ -757,7 +757,7 @@ function dependencies() {
     if id "${USER}" &>/dev/null; then
         echo "user ${USER} already exist"
     else
-        useradd --system --group ${USER} -d /home/${USER}/ -m ${USER}
+        useradd --system -g ${USER} -d /home/${USER}/ -m ${USER}
     fi
     # ToDo add current user to ${USER} group
     groupadd pcap
