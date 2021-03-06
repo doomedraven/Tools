@@ -688,7 +688,7 @@ function install_postgresql() {
 }
 
 function install_osslsigncode(){
-    sudo apt-get update && sudo apt-get install build-essential autoconf libtool libssl-dev python3-pkgconfig libcurl4-gnutls-dev
+    sudo apt-get update && sudo apt-get install build-essential autoconf libtool libssl-dev python3-pkgconfig libcurl4-gnutls-dev -y
     cd /tmp || return
     if [ ! -f osslsigncode-2.1.0.tar.gz ]; then
         wget https://github.com/mtrojnar/osslsigncode/releases/download/2.1/osslsigncode-2.1.0.tar.gz
