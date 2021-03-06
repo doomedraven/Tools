@@ -532,17 +532,6 @@ function install_suricata() {
     apt install suricata -y
     touch /etc/suricata/threshold.config
 
-    : ` 
-    You can now start suricata by running as root something like "/usr/bin/suricata -c /etc/suricata//suricata.yaml -i eth0".
-
-    If a library like libhtp.so is not found, you can run suricata with:
-    LD_LIBRARY_PATH=/usr/lib /usr/bin/suricata -c /etc/suricata//suricata.yaml -i eth0
-
-    While rules are installed now, its highly recommended to use a rule manager for maintaining rules.
-    The two most common are Oinkmaster and Pulledpork. For a guide see:
-    https://redmine.openinfosecfoundation.org/projects/suricata/wiki/Rule_Management_with_Oinkmaster
-    `
-
     # Download etupdate to update Emerging Threats Open IDS rules:
     pip3 install suricata-update
     mkdir -p "/etc/suricata/rules"
