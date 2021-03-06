@@ -817,7 +817,7 @@ EOF
     ### PDNS
     sudo apt install git binutils-dev libldns-dev libpcap-dev libdate-simple-perl libdatetime-perl libdbd-mysql-perl -y
     cd /tmp || return
-    git clone git://github.com/gamelinux/passivedns.git
+    git clone https://github.com/gamelinux/passivedns.git
     cd passivedns/ || return
     autoreconf --install
     ./configure
