@@ -773,7 +773,7 @@ function replace_seabios_clues_public() {
 
 function install_jemalloc() {
     # https://zapier.com/engineering/celery-python-jemalloc/
-    if  [ $(dpkg -l "jemalloc*" | grep -q "ii  jemalloc") ]; then
+    if ! $(dpkg -l "libjemalloc*" | grep -q "ii  libjemalloc"); then
         aptitude install -f checkinstall curl build-essential jq autoconf libjemalloc-dev -y
     fi
 }
