@@ -125,21 +125,9 @@ function install_docker() {
 function install_jemalloc() {
 
     # https://zapier.com/engineering/celery-python-jemalloc/
-    cd /tmp || return
-    jelloc_info=$(curl -s https://api.github.com/repos/jemalloc/jemalloc/releases/latest)
-    jelloc_version=$(echo "$jelloc_info" |jq .tag_name|sed "s/\"//g")
-    jelloc_repo_url=$(echo "$jelloc_info" | jq ".zipball_url" | sed "s/\"//g")
-    if [ ! -f "$jelloc_version" ]; then
-        wget -q "$jelloc_repo_url"
-        unzip -q "$jelloc_version"
+    if  [ $(dpkg -l "jemalloc*" | grep -q "ii  jemalloc") ]; then
+        aptitude install -f checkinstall curl build-essential jq autoconf libjemalloc-dev -y
     fi
-
-    directory=$(ls | grep "jemalloc-jemalloc-*")
-    cd "$directory" || return
-    ./autogen.sh
-    make -j"$(nproc)"
-    checkinstall -D --pkgname="jemalloc-$jelloc_version" --pkgversion="$jelloc_version" --default
-    ln -s /usr/local/lib/libjemalloc.so /usr/lib/x86_64-linux-gnu/libjemalloc.so
 }
 
 function install_modsecurity() {
