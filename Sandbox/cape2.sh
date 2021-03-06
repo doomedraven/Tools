@@ -532,17 +532,6 @@ function install_suricata() {
     apt install suricata -y
     touch /etc/suricata/threshold.config
 
-    """
-    You can now start suricata by running as root something like '/usr/bin/suricata -c /etc/suricata//suricata.yaml -i eth0'.
-
-    If a library like libhtp.so is not found, you can run suricata with:
-    LD_LIBRARY_PATH=/usr/lib /usr/bin/suricata -c /etc/suricata//suricata.yaml -i eth0
-
-    While rules are installed now, its highly recommended to use a rule manager for maintaining rules.
-    The two most common are Oinkmaster and Pulledpork. For a guide see:
-    https://redmine.openinfosecfoundation.org/projects/suricata/wiki/Rule_Management_with_Oinkmaster
-    """
-
     # Download etupdate to update Emerging Threats Open IDS rules:
     pip3 install suricata-update
     mkdir -p "/etc/suricata/rules"
@@ -688,7 +677,7 @@ function install_postgresql() {
 }
 
 function install_osslsigncode(){
-    sudo apt-get update && sudo apt-get install build-essential autoconf libtool libssl-dev python3-pkgconfig libcurl4-gnutls-dev
+    sudo apt-get update && sudo apt-get install build-essential autoconf libtool libssl-dev python3-pkgconfig libcurl4-gnutls-dev -y
     cd /tmp || return
     if [ ! -f osslsigncode-2.1.0.tar.gz ]; then
         wget https://github.com/mtrojnar/osslsigncode/releases/download/2.1/osslsigncode-2.1.0.tar.gz
@@ -817,7 +806,7 @@ EOF
     ### PDNS
     sudo apt install git binutils-dev libldns-dev libpcap-dev libdate-simple-perl libdatetime-perl libdbd-mysql-perl -y
     cd /tmp || return
-    git clone git://github.com/gamelinux/passivedns.git
+    git clone https://github.com/gamelinux/passivedns.git
     cd passivedns/ || return
     autoreconf --install
     ./configure
