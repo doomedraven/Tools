@@ -1,7 +1,7 @@
 #!/bin/bash
 # By @doomedraven - https://twitter.com/D00m3dR4v3n
 
-# Copyright (C) 2011-2020 DoomedRaven.
+# Copyright (C) 2011-2021 DoomedRaven.
 # This file is part of Tools - https://github.com/doomedraven/Tools
 # See the file 'LICENSE.md' for copying permission.
 
@@ -65,6 +65,7 @@ cat << EndOfHelp
         Suricata - Install latest suricata with performance boost
         PostgreSQL - Install latest PostgresSQL
         Yara - Install latest yara
+        Volatility3 - Install Volatility3 and windows symbols
         Mongo - Install latest mongodb
         LetsEncrypt - Install dependencies and retrieves certificate
         Dist - will install CAPE distributed stuff
@@ -1237,6 +1238,15 @@ function install_node_exporter() {
     cd node_exporter-"$node_exporter_version".linux-amd6 && ./node_exporter &
 }
 
+function install_volatility3() {
+    sudo apt install unzip
+    sudo pip3 install git+https://github.com/volatilityfoundation/volatility3
+    vol_path=$(python3 -c "import volatility3.plugins;print(volatility3.__file__.replace('__init__.py', 'symbols/'))")
+    cd $vol_path || return
+    wget https://downloads.volatilityfoundation.org/volatility3/symbols/windows.zip -O windows.zip
+    unzip windows.zip
+}
+
 function install_guacamole() {
     # https://guacamole.apache.org/doc/gug/installing-guacamole.html
     sudo apt -y install libcairo2-dev libjpeg-turbo8-dev libpng-dev libossp-uuid-dev libfreerdp2-2 #libfreerdp-dev
@@ -1333,6 +1343,8 @@ case "$COMMAND" in
     install_suricata;;
 'yara')
     install_yara;;
+'volatility3')
+    install_volatility3;;
 'postgresql')
     install_postgresql;;
 'sandbox')
