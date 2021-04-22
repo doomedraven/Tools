@@ -260,14 +260,14 @@ function install_haxm_mac() {
 }
 
 function install_libguestfs() {
-
+    # https://libguestfs.org/guestfs-building.1.html
     cd /opt || return
     echo "[+] Check for previous version of LibGuestFS"
     sudo dpkg --purge --force-all "libguestfs-*" 2>/dev/null
 
     wget -O- https://packages.erlang-solutions.com/ubuntu/erlang_solutions.asc | sudo apt-key add -
     sudo add-apt-repository "deb https://packages.erlang-solutions.com/ubuntu $(lsb_release -sc) contrib"
-    sudo aptitude install -f parted libyara3 erlang-dev gperf flex bison libaugeas-dev libhivex-dev supermin ocaml-nox libhivex-ocaml genisoimage libhivex-ocaml-dev libmagic-dev libjansson-dev gnulib jq -y 2>/dev/null
+    sudo aptitude install -f parted libyara3 erlang-dev gperf flex bison libaugeas-dev libhivex-dev supermin ocaml-nox libhivex-ocaml genisoimage libhivex-ocaml-dev libmagic-dev libjansson-dev gnulib jq ocaml-findlib -y 2>/dev/null
     sudo apt update
     sudo aptitude install -f erlang -y
 
@@ -278,13 +278,13 @@ function install_libguestfs() {
         #_repo_url=$(echo $_info | jq ".zipball_url" | sed "s/\"//g")
         #wget -q $_repo_url
         #unzip $_version
-    #wget "https://github.com/VirusTotal/yara/archive/v$yara_version.zip" && unzip "v$yara_version.zip"
-    directory=$(ls | grep "VirusTotal-yara-*")
+        #wget "https://github.com/VirusTotal/yara/archive/v$yara_version.zip" && unzip "v$yara_version.zip"
         git clone --recursive https://github.com/libguestfs/libguestfs
     fi
     cd libguestfs || return
-    ./bootstrap
-    PYTHON=/usr/bin/python3 ./autogen.sh
+    git submodule update --init
+    autoreconf -i
+    ./configure CFLAGS=-fPIC
     make -j"$(nproc)"
     echo "[+] cd /opt/libguestfs/ && ./run --help"
     echo "[+] cd /opt/libguestfs/ && ./run ./sparsify/virt-sparsify"
