@@ -536,6 +536,7 @@ function install_suricata() {
 
     #change suricata yaml
     sed -i 's|#default-rule-path: /etc/suricata/rules|default-rule-path: /etc/suricata/rules|g' /etc/default/suricata
+    sed -i 's|default-rule-path: /var/lib/suricata/rules|default-rule-path: /etc/suricata/rules|g' /etc/suricata/suricata.yaml
     sed -i 's/#rule-files:/rule-files:/g' /etc/suricata/suricata.yaml
     sed -i 's/# - suricata.rules/ - suricata.rules/g' /etc/suricata/suricata.yaml
     sed -i 's/RUN=yes/RUN=no/g' /etc/default/suricata
