@@ -627,7 +627,7 @@ function install_virt_manager() {
     if [ ! -f gir1.2-libvirt-glib-1.0_1.0.0-1_amd64.deb ]; then
         wget http://launchpadlibrarian.net/297448356/gir1.2-libvirt-glib-1.0_1.0.0-1_amd64.deb
     fi
-    dpkg -i gir1.2-libvirt-glib-1.0_1.0.0-1_amd64.deb
+    dpkg --force-confold -i gir1.2-libvirt-glib-1.0_1.0.0-1_amd64.deb
 
     /sbin/ldconfig
 
