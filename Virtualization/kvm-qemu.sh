@@ -920,13 +920,24 @@ function seabios_func() {
         if make -j "$(nproc)"; then
             echo '[+] Replacing old bios.bin to new out/bios.bin'
             bios=0
+            SHA256_BIOS=$(shasum -a 256 out/bios.bin|awk '{print $1}')
+            if [ ! -f /usr/share/qemu/bios.bin_back ]; then
+                cp /usr/share/qemu/bios.bin /usr/share/qemu/bios.bin_back
+                cp /usr/share/qemu/bios-256k.bin /usr/share/qemu/bios-256k.bin_back
+            fi
             FILES=(
                 "/usr/share/qemu/bios.bin"
                 "/usr/share/qemu/bios-256k.bin"
             )
             for file in "${FILES[@]}"; do
                 cp -vf out/bios.bin "$file"
-                bios=1
+                SHA256_BIOS_TMP=$(shasum -a 256 $file|awk '{print $1}')
+                if [[ $SHA256_BIOS_TMP != $SHA256_BIOS ]]; then
+                    echo "[-] BIOS hashes doesn't match: $SHA256_BIOS - $SHA256_BIOS_TMP"
+                    bios=0
+                else
+                    bios=1
+                fi            
             done
             if [ $bios -eq 1 ]; then
                 echo '[+] Patched bios.bin placed correctly'
