@@ -63,6 +63,13 @@ libvirt_version=7.2.0
 OS=""
 username=""
 
+RED='\033[0;31m'
+echo -e "${RED}[!] ONLY for UBUNTU 20.04${RED}"
+echo -e "${RED}\t[!] NEVER install packages from APT that installed by this script${RED}"
+echo -e "${RED}\t[!] NEVER use 'make install' - it poison system and no easy way to upgrade/uninstall/cleanup, use checkinstall${RED}"
+echo -e "${RED}\t[!] NEVER run 'python setup.py install' DO USE 'pip intall .' the same as APT poisoning/upgrading${RED}\n"
+
+
 sudo apt update
 sudo apt install aptitude -y
 sudo aptitude install -f pcregrep aptitude
