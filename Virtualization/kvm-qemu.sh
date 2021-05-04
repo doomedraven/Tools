@@ -54,7 +54,7 @@ Huge thanks to:
 #      strs[5] = "VBoxVBoxVBox"; /* VirtualBox */
 
 #https://www.qemu.org/download/#source or https://download.qemu.org/
-qemu_version=6.0.0.
+qemu_version=6.0.0
 # libvirt - https://libvirt.org/sources/
 # changelog - https://libvirt.org/news.html
 libvirt_version=7.3.0
