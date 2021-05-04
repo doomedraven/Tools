@@ -1,4 +1,4 @@
-# !/bin/bash
+#!/bin/bash
 # replace "yourcomapy.com." with your real root domain
 # replace "VPN_IP" with real VPN public ip
 # replace dns1 and dns2 with your real dns
@@ -16,10 +16,10 @@ brew install openconnect git unbound
 pip3 install git+https://github.com/dlenski/vpn-slice.git
 
 
-# how to configure local dns server
-# https://calomel.org/unbound_dns.html 
+# how to configure local dns server
+# https://calomel.org/unbound_dns.html 
 # https://sizeof.cat/post/unbound-on-macos/
-# https://nlnetlabs.nl/documentation/unbound/unbound.conf/
+# https://nlnetlabs.nl/documentation/unbound/unbound.conf/
 #(curl --silent https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/fakenews-gambling-porn-social/hosts | grep '^0\.0\.0\.0' | sort) | awk '{print "local-zone: \""$2"\" refuse"}' > /usr/local/etc/unbound/zone-block-general.conf
 sudo dscl . -create /Groups/_unbound
 sudo dscl . -create /Groups/_unbound PrimaryGroupID 444
@@ -37,19 +37,19 @@ sudo /usr/local/opt/unbound/sbin/unbound-control-setup -d /usr/local/etc/unbound
 sudo cp /usr/local/etc/unbound/unbound.conf /usr/local/etc/unbound/unbound.conf_original
 sudo curl --silent -o /usr/local/etc/unbound/root.hints https://www.internic.net/domain/named.cache
 
-sudo cat >> /usr/local/etc/unbound/unbound.conf << EOL
+cat >> /usr/local/etc/unbound/unbound.conf << EOL
 server:
     # log verbosity
     verbosity: 3
     # domain-insecure: *
     # logfile: "/tmp/unbound.log"
-    # log-queries: yes
+    # log-queries: yes
     # log-time-ascii: yes
     interface: 127.0.0.1
     access-control: 127.0.0.1/8 allow
     chroot: ""
     username: "_unbound"
-    # auto-trust-anchor-file: "/usr/local/etc/unbound/root.key"
+    # auto-trust-anchor-file: "/usr/local/etc/unbound/root.key"
     # answer DNS queries on this port
     port: 53
     # enable IPV4

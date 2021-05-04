@@ -2,18 +2,18 @@
 
 #show how to upgrade old mongo to newer on Debian
 
-def update_install(){
+function update_install {
     sudo apt-get update
     sudo apt-get install -y mongodb-org
 }
 
-def wipe_mongo(){
+function wipe_mongo(){
    dpkg -l|grep mongo| cut -f 3 -d " "|xargs dpkg --remove
 }
 
 # mongo 3.4 debian 9 - https://docs.mongodb.com/v3.4/tutorial/install-mongodb-on-debian/
-# https://blog.m157q.tw/posts/2018/07/24/upgrade-mongodb-from-3-2-to-3-4-on-debian-9/
-# http://repo.mongodb.org/apt/debian/dists/jessie/mongodb-org/3.4/main/binary-amd64/
+# https://blog.m157q.tw/posts/2018/07/24/upgrade-mongodb-from-3-2-to-3-4-on-debian-9/
+# http://repo.mongodb.org/apt/debian/dists/jessie/mongodb-org/3.4/main/binary-amd64/
 wget http://security.debian.org/debian-security/pool/updates/main/o/openssl/libssl1.0.0_1.0.1t-1+deb8u11_amd64.deb && dpkg -i libssl1.0.0_1.0.1t-1+deb8u11_amd64.deb
 wget http://repo.mongodb.org/apt/debian/dists/jessie/mongodb-org/3.4/main/binary-amd64/mongodb-org-server_3.4.18_amd64.deb && dpkg -i mongodb-org-server_3.4.18_amd64.deb
 wget http://repo.mongodb.org/apt/debian/dists/jessie/mongodb-org/3.4/main/binary-amd64/mongodb-org-shell_3.4.20_amd64.deb && dpkg -i mongodb-org-shell_3.4.20_amd64.deb
