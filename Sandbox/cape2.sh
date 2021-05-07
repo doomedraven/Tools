@@ -947,7 +947,7 @@ function install_CAPE() {
     # Adapting owner permissions to the ${USER} path folder
     chown ${USER}:${USER} -R "/opt/CAPEv2/*"
 
-    pip3 install -r /opt/CAPEv2/requirements.txt
+    CRYPTOGRAPHY_DONT_BUILD_RUST=1 pip3 install -r /opt/CAPEv2/requirements.txt
 
     sed -i "/connection =/cconnection = postgresql://${USER}:${PASSWD}@localhost:5432/${USER}" /opt/CAPEv2/conf/cuckoo.conf
     sed -i "/tor/{n;s/enabled = no/enabled = yes/g}" /opt/CAPEv2/conf/routing.conf
@@ -956,7 +956,7 @@ function install_CAPE() {
     sed -i "/interface =/cinterface = ${NETWORK_IFACE}" /opt/CAPEv2/conf/auxiliary.conf
 
     cd CAPEv2 || return
-    python3 utils/community.py -waf -cr
+   python3 utils/community.py -waf -cr
 }
 
 function install_systemd() {
