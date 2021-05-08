@@ -7,7 +7,7 @@
 # https://www.doomedraven.com/2020/04/how-to-create-virtual-machine-with-virt.html
 # Use Ubuntu 20.04 LTS
 
-#Update date: 30.04.2021
+#Update date: 08.05.2021
 
 : '
 Huge thanks to:
@@ -61,15 +61,7 @@ libvirt_version=7.3.0
 # virt-manager - https://github.com/virt-manager/virt-manager/releases
 # autofilled
 OS=""
-username=""
-
-RED='\033[0;31m'
-NC='\033[0m'
-echo -e "${RED}[!] ONLY for UBUNTU 20.04${NC}"
-echo -e "${RED}\t[!] NEVER install packages from APT that installed by this script${NC}"
-echo -e "${RED}\t[!] NEVER use 'make install' - it poison system and no easy way to upgrade/uninstall/cleanup, use checkinstall${NC}"
-echo -e "${RED}\t[!] NEVER run 'python setup.py install' DO USE 'pip intall .' the same as APT poisoning/upgrading${NC}\n"
-
+username=$SUDO_USER
 
 sudo apt update
 sudo apt install aptitude -y
@@ -128,32 +120,12 @@ QTARGETS="--target-list=i386-softmmu,x86_64-softmmu,i386-linux-user,x86_64-linux
 #* If your CPU is Intel, you need activate in __BIOS__ VT-x
 #    * (last letter can change, you can activate [TxT ](https://software.intel.com/en-us/blogs/2012/09/25/how-to-enable-an-intel-trusted-execution-technology-capable-server) too, and any other feature, but VT-* is very important)
 
-function changelog() {
-cat << EndOfCL
-    # 17.06.2020 - Ubuntu 20.04 some package remove thanks @t14g0p
-    # 28.05.2020 - Libvirt 6.4, putlic version fixes extended
-    # 25.04.2020 - Libvirt 6.2, QEMU 5, Ubuntu 20.04
-    # 14.02.2020 - Libvirt 6, fix libvirt installation
-    # 13.12.2019 - Libvirt 5.10, QEMU 4.2
-    # 12.10.2019 - Libvirt 5.8
-    # 06.08.2019 - Libvirt 5.6
-    # 06.07.2019 - Libvirt 5.5, more checks, compatibility with Ubuntu 19.04, but I suggest to stay with 18.04
-    # 24.04.2019 - QEMU 4
-    # 28.03.2019 - Huge cleanup, fixes, QEMU 4-RC2 testing in dev
-    # 24.02.2019 - Add Mosh + support for Linux TCP BBR - https://www.cyberciti.biz/cloud-computing/increase-your-linux-server-internet-speed-with-tcp-bbr-congestion-control/
-    # 11.02.2019 - Depricated linked clones and added WebVirtMgr
-    # 30.01.2019 - Libvirt 5.0.0
-    # 27.12.2018 - libguestfs 1.38
-    # 10.11.2018 - Virt-manager 2, libivrt-4.10, fixes
-    # 11.09.2018 - code improvement
-    # 09.09.2018 - ACPI fixes
-    # 05.09.2018 - libivrt 4.7 and virtlogd
-    # 19.08.2018 - Intel HAXM notes
-    # 14.08.2018 - QEMU 3 support tested on ubuntu 18.04
-    # 03.08.2018 - More anti-anti
-    # 28.02.2018 - Support for qemu 2.12
-EndOfCL
-}
+NC='\033[0m'
+RED='\033[0;31m'
+echo -e "${RED}[!] ONLY for UBUNTU 20.04${NC}"
+echo -e "${RED}\t[!] NEVER install packages from APT that installed by this script${NC}"
+echo -e "${RED}\t[!] NEVER use 'make install' - it poison system and no easy way to upgrade/uninstall/cleanup, use checkinstall${NC}"
+echo -e "${RED}\t[!] NEVER run 'python setup.py install' DO USE 'pip intall .' the same as APT poisoning/upgrading${NC}\n"
 
 function usage() {
 cat << EndOfHelp
@@ -443,7 +415,8 @@ EOH
     echo "[+] Checking/deleting old versions of Libvirt"
     apt purge libvirt0 libvirt-bin libvirt-$libvirt_version 2>/dev/null
     dpkg -l|grep "libvirt-[0-9]\{1,2\}\.[0-9]\{1,2\}\.[0-9]\{1,2\}"|cut -d " " -f 3|sudo xargs dpkg --purge --force-all 2>/dev/null
-
+    sudo apt install mlocate libxml2-utils gnutls-bin  gnutls-dev libxml2-dev bash-completion libreadline-dev numactl libnuma-dev -y
+    pip3 install python3-docutils
     # Remove old links
     updatedb
     temp_libvirt_so_path=$(locate libvirt-qemu.so | head -n1 | awk '{print $1;}')
@@ -470,20 +443,27 @@ EOH
     cd libvirt-$libvirt_version || return
     if [ "$OS" = "Linux" ]; then
         aptitude install -f iptables python3-dev unzip numad libglib2.0-dev libsdl1.2-dev lvm2 python3-pip ebtables libosinfo-1.0-dev libnl-3-dev libnl-route-3-dev libyajl-dev xsltproc libdevmapper-dev libpciaccess-dev dnsmasq dmidecode librbd-dev libtirpc-dev -y 2>/dev/null
-        aptitude install -f apparmor-profiles apparmor-profiles-extra apparmor-utils libapparmor-dev python3-apparmor libapparmor-perl libapparmor-dev apparmor-utils -y
+        aptitude install -f apparmor-profiles apparmor-profiles-extra apparmor-utils libapparmor-dev python3-apparmor libapparmor-perl libapparmor-dev apparmor-utils mlocate -y
         pip3 install ipaddr ninja "meson==0.57.2" flake8 -U
         # --prefix=/usr --localstatedir=/var --sysconfdir=/etc
         #git init
         #git remote add doomedraven https://github.com/libvirt/libvirt
         # To see whole config sudo meson configure
-        sudo meson build -D system=true -D driver_remote=enabled -D driver_qemu=enabled -D driver_libvirtd=enabled -D prefix=/usr -D qemu_group=libvirt -D qemu_user=root -D secdriver_apparmor=enabled -D apparmor_profiles=true
+        # true now is enabled
+        sudo meson build -D system=true -D driver_remote=enabled -D driver_qemu=enabled -D driver_libvirtd=enabled -D qemu_group=libvirt -D qemu_user=root -D secdriver_apparmor=enabled -D apparmor_profiles=true -D bash_completion=auto
         sudo ninja -C build
         sudo ninja -C build install
-        #mkdir build && cd build
-        #../autogen.sh --system --with-qemu=yes --with-dtrace --with-numad --disable-nls --with-openvz=no --with-yajl=yes --with-secdriver-apparmor=yes --with-apparmor-profiles
-        #make -j"$(nproc)"
+        if  [ $? -ne 0 ]; then
+            echo "${RED}Failed. Read the instalation log for details${NC}"
+            exit 1
+        fi
 
-        #checkinstall -D --pkgname=libvirt-$libvirt_version --default
+        : '
+        mkdir build && cd build
+        ../autogen.sh --system --with-qemu=yes --with-dtrace --with-numad --disable-nls --with-openvz=no --with-yajl=yes --with-secdriver-apparmor=yes --with-apparmor-profiles
+        make -j"$(nproc)"
+        checkinstall -D --pkgname=libvirt-$libvirt_version --default
+        '
         cd ..
 
         updatedb
@@ -495,7 +475,7 @@ EOH
 
         if [[ -n "$libvirt_so_path" ]]; then
             # #ln -s /usr/lib64/libvirt-qemu.so /lib/x86_64-linux-gnu/libvirt-qemu.so.0
-            for so_path in $(ls "${libvirt_so_path}"libvirt*.so.0); do ln -s "$so_path" /lib/$(uname -m)-linux-gnu/$(basename "$so_path"); done
+            for so_path in $(ls "${libvirt_so_path}"libvirt*.so.0); do ln -sf "$so_path" /lib/$(uname -m)-linux-gnu/$(basename "$so_path"); done
         fi
 
     #elif [ "$OS" = "Darwin" ]; then
@@ -599,7 +579,8 @@ function install_virt_manager() {
     glib-networking-common glib-networking-services gsettings-desktop-schemas gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
     gstreamer1.0-x adwaita-icon-theme at-spi2-core augeas-lenses cpu-checker dconf-gsettings-backend dconf-service \
     fontconfig fontconfig-config fonts-dejavu-core genisoimage gir1.2-appindicator3-0.1 gir1.2-secret-1 \
-    gobject-introspection intltool pkg-config libxml2-dev libxslt-dev python3-dev gir1.2-gtk-vnc-2.0 gir1.2-spiceclientgtk-3.0 libgtk-3-dev -y
+    gobject-introspection intltool pkg-config libxml2-dev libxslt-dev python3-dev gir1.2-gtk-vnc-2.0 gir1.2-spiceclientgtk-3.0 libgtk-3-dev \
+    mlocate -y
     # should be installed first
     # moved out as some 20.04 doesn't have this libs %)
     aptitude install -f -y python3-ntlm-auth libpython3-stdlib libbrlapi-dev libgirepository1.0-dev python3-testresources
@@ -630,7 +611,8 @@ function install_virt_manager() {
     make -j"$(nproc)"
     #ToDo add blacklist
     checkinstall --pkgname=libvirt-glib-1.0-0 --default
-
+    # v4 is meson based
+    # sudo meson build -D system=true
     cd /tmp || return
     if [ ! -f gir1.2-libvirt-glib-1.0_1.0.0-1_amd64.deb ]; then
         wget http://launchpadlibrarian.net/297448356/gir1.2-libvirt-glib-1.0_1.0.0-1_amd64.deb
@@ -777,8 +759,8 @@ function replace_seabios_clues_public() {
     done
 }
 
-
 function install_jemalloc() {
+
     # https://zapier.com/engineering/celery-python-jemalloc/
     if ! $(dpkg -l "libjemalloc*" | grep -q "ii  libjemalloc"); then
         aptitude install -f checkinstall curl build-essential jq autoconf libjemalloc-dev -y
@@ -945,7 +927,7 @@ function seabios_func() {
                     bios=0
                 else
                     bios=1
-                fi            
+                fi
             done
             if [ $bios -eq 1 ]; then
                 echo '[+] Patched bios.bin placed correctly'
@@ -1249,8 +1231,6 @@ case "$COMMAND" in
     fi
     cd - || exit 0
     ;;
-'changelog')
-    changelog;;
 'webvirtmgr')
     install_WebVirtCloud;;
 'grub')
