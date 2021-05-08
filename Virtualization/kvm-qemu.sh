@@ -479,6 +479,7 @@ EOH
         if [[ -n "$libvirt_so_path" ]]; then
             # #ln -s /usr/lib64/libvirt-qemu.so /lib/x86_64-linux-gnu/libvirt-qemu.so.0
             for so_path in $(ls "${libvirt_so_path}"libvirt*.so.0); do ln -sf "$so_path" /lib/$(uname -m)-linux-gnu/$(basename "$so_path"); done
+            ldconfig
         else
             echo "${RED}[!] Problem to create symlink, unknown libvirt_so_path path${NC}"
             exit 1
