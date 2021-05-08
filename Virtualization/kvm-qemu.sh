@@ -469,6 +469,10 @@ EOH
         temp_libvirt_so_path=$(locate libvirt-qemu.so | head -n1 | awk '{print $1;}')
         temp_export_path=$(locate libvirt.pc | head -n1 | awk '{print $1;}')
         libvirt_so_path="${temp_libvirt_so_path%/*}/"
+        if [[ $libvirt_so_path == "/usr/lib/x86_64-linux-gnu/" ]]; then
+            temp_libvirt_so_path=$(locate libvirt-qemu.so | tail -1 | awk '{print $1;}')
+            libvirt_so_path="${temp_libvirt_so_path%/*}/"
+        fi
         export_path="${temp_export_path%/*}/"
         export PKG_CONFIG_PATH=$export_path
 
