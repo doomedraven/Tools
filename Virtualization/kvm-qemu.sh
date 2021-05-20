@@ -62,6 +62,7 @@ libvirt_version=7.3.0
 # autofilled
 OS=""
 username=$SUDO_USER
+MAINTAINER=""
 
 sudo apt update
 sudo apt install aptitude -y
@@ -845,10 +846,12 @@ function qemu_func() {
                 if [ -f /usr/share/qemu/qemu_logo_no_text.svg ]; then
                     rm /usr/share/qemu/qemu_logo_no_text.svg
                 fi
-                make -j"$(nproc)"
+                mkdir -p /tmp/qemu-"$qemu_version"_builded/DEBIAN
+                echo -e "Package: qemu\nVersion: $qemu_version\nArchitecture: $ARCH\nMaintainer: $MAINTAINER\nDescription: Custom antivm qemu" > /tmp/qemu-"$qemu_version"_builded/DEBIAN/control
+                make -j"$(nproc)" install DESTDIR=/tmp/qemu-"$qemu_version"_builded
                 if [ "$OS" = "Linux" ]; then
-                    checkinstall -D --pkgname=qemu-$qemu_version --nodoc --showinstall=no --default --install=no
-                    apt -y -o Dpkg::Options::="--force-overwrite" install ./qemu-"$qemu_version"_"$qemu_version"-1_amd64.deb
+                    dpkg-deb --build --root-owner-group /tmp/qemu-"$qemu_version"_builded
+                    apt -y -o Dpkg::Options::="--force-overwrite" install /tmp/qemu-"$qemu_version"_builded.deb
                 elif [ "$OS" = "Darwin" ]; then
                     make -j"$(nproc)" install
                 fi
@@ -1154,6 +1157,8 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 OS="$(uname -s)"
+MAINTAINER="$(whoami)"_"$(hostname)"
+ARCH="$(arch)"
 #add-apt-repository universe
 #apt update && apt upgrade
 #make
