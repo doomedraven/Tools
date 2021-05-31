@@ -198,7 +198,7 @@ class ZBOTScan(interfaces.plugins.PluginInterface):
             requirements.IntRequirement(
                 name="max_size", default=0x40000000, description="Set the maximum size (default is 1GB)", optional=True
             ),
-            requirements.PluginRequirement(name="pslist", plugin=pslist.PsList, version=(2, 0, 0)),
+            requirements.PluginRequirement(name="pslist", plugin=pslist.PsList, version=(2, 0, 1)),
             requirements.IntRequirement(
                 name="pid", description="Process ID to include (all other processes are excluded)", optional=True
             ),
@@ -278,15 +278,18 @@ class ZBOTScan(interfaces.plugins.PluginInterface):
 
         return False
 
-    def check_zbot(self, pid, p_round):
+    def check_zbot(self):
         """ Detect the zbot version """
 
         rules = yara.compile(sources=self.signatures)
 
-        if not pid:
-            pid = self.config.get("pid", None)
+        rounds = self.config.get("sandbox_round", 1)
+        if self.config.get('sandbox_pids', None):
+            pids = self.config["sandbox_pids"]
+        else:
+            pids = self.config.get('pid', None)
 
-        filter_func = pslist.PsList.create_pid_filter([pid])
+        filter_func = pslist.PsList.create_pid_filter(pids, True if rounds == 2 else False)
         list_tasks = pslist.PsList.list_processes(
             context=self.context,
             layer_name=self.config["primary"],
@@ -340,10 +343,10 @@ class ZBOTScan(interfaces.plugins.PluginInterface):
     def run(self):
         return renderers.TreeGrid([("PID", int), ("Config", str)], self._generator())
 
-    def _generator(self, pids=[], round=1):
+    def _generator(self):
         """ Check the zbot version and analyze it """
 
-        task = self.check_zbot(pids, round)
+        task = self.check_zbot()
         malware = None
 
         if self.zbot == 'CITADEL':
