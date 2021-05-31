@@ -287,7 +287,7 @@ class ZBOTScan(interfaces.plugins.PluginInterface):
         if self.config.get('sandbox_pids', None):
             pids = self.config["sandbox_pids"]
         else:
-            pids = self.config.get('pid', None)
+            pids = [self.config.get('pid', None)]
 
         filter_func = pslist.PsList.create_pid_filter(pids, True if rounds == 2 else False)
         list_tasks = pslist.PsList.list_processes(
