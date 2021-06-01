@@ -125,7 +125,7 @@ NC='\033[0m'
 RED='\033[0;31m'
 echo -e "${RED}[!] ONLY for UBUNTU 20.04${NC}"
 echo -e "${RED}\t[!] NEVER install packages from APT that installed by this script${NC}"
-echo -e "${RED}\t[!] NEVER use 'make install' - it poison system and no easy way to upgrade/uninstall/cleanup, use checkinstall${NC}"
+echo -e "${RED}\t[!] NEVER use 'make install' - it poison system and no easy way to upgrade/uninstall/cleanup, use checkinstall/dpkg-deb${NC}"
 echo -e "${RED}\t[!] NEVER run 'python setup.py install' DO USE 'pip intall .' the same as APT poisoning/upgrading${NC}\n"
 
 function usage() {
