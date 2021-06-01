@@ -556,6 +556,7 @@ EOH
 }
 
 function install_virt_manager() {
+    systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target
     # from build-dep
     aptitude install -f libgirepository1.0-dev gtk-doc-tools python3 python3-pip gir1.2-govirt-1.0 libgovirt-dev \
     libgovirt-common libgovirt2 gir1.2-rest-0.7 unzip intltool augeas-doc ifupdown wodim cdrkit-doc indicator-application \
