@@ -1159,7 +1159,7 @@ fi
 
 OS="$(uname -s)"
 MAINTAINER="$(whoami)"_"$(hostname)"
-ARCH="$(arch)"
+ARCH="$(dpkg --print-architecture)"
 if [ "$ARCH" = "x86_64" ]; then
     ARCH="amd64"
 else
