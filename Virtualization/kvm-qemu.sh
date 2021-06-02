@@ -975,6 +975,11 @@ cat << EndOfHelp
 
 ### Errors and Solutions
     * Error:
+        * error: internal error: cannot load AppArmor profile
+    * Solution:
+        * Any apparmor error try to run:  `/usr/libexec/virt-aa-helper` or `journalctl -u libvirtd | cat`
+        * most of the issues with AppArmor is related to libvirt problems
+    * Error:
         * If you getting an apparmor error
     * Solution
         * sed -i 's/#security_driver = "apparmor"/security_driver = ""/g' /etc/libvirt/qemu.conf
