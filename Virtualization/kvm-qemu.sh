@@ -1160,6 +1160,10 @@ fi
 OS="$(uname -s)"
 MAINTAINER="$(whoami)"_"$(hostname)"
 ARCH="$(arch)"
+if [ "$ARCH" = "x86_64" ]; then
+    ARCH="amd64"
+else
+    ARCH="i386"
 #add-apt-repository universe
 #apt update && apt upgrade
 #make
