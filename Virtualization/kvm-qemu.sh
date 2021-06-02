@@ -410,6 +410,13 @@ Pin-Priority: -1
 Package: libvirt0
 Pin: release *
 Pin-Priority: -1
+
+Package: qemu
+Pin: release *
+Pin-Priority: -1
+Package: qemu
+Pin: release *
+Pin-Priority: -1
 EOH
     fi
 
