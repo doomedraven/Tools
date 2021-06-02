@@ -518,6 +518,7 @@ EOH
     FILES=(
         /etc/apparmor.d/usr.sbin.libvirtd
         /usr/sbin/libvirtd
+        /usr/libexec/virt-aa-helper
     )
     for file in "${FILES[@]}"; do
         if [ -f "$file" ]; then
