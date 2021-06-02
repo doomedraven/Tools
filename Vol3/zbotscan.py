@@ -283,13 +283,13 @@ class ZBOTScan(interfaces.plugins.PluginInterface):
 
         rules = yara.compile(sources=self.signatures)
 
-        rounds = self.config.get("sandbox_round", 1)
-        if self.config.get('sandbox_pids', None):
-            pids = self.config["sandbox_pids"]
+        p_round = self.context.config.get("sandbox_round", 1)
+        if self.context.config.get('sandbox_pids', None):
+            pids = self.context.config.get("sandbox_pids")
         else:
             pids = [self.config.get('pid', None)]
 
-        filter_func = pslist.PsList.create_pid_filter(pids, True if rounds == 2 else False)
+        filter_func = pslist.PsList.create_pid_filter(pids, True if p_round == 2 else False)
         list_tasks = pslist.PsList.list_processes(
             context=self.context,
             layer_name=self.config["primary"],
