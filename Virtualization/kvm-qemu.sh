@@ -975,11 +975,23 @@ cat << EndOfHelp
     * https://wiki.libvirt.org/page/Failed_to_connect_to_the_hypervisor
 
 ### Errors and Solutions
+
+    * Error:
+        * /usr/libexec/virt-aa-helper: error while loading shared libraries: libvirt.so.0: cannot open shared object file: No such file or directory
+    * Solution:
+        strace -Tfe trace=openat /usr/libexec/virt-aa-helper
+
+    * Error
+        /usr/libexec/virt-aa-helper: error while loading shared libraries: libvirt.so.0: cannot open shared object file: Permission denied
+    * Solution:
+        aa-complain /usr/libexec/virt-aa-helper
+
     * Error:
         * error: internal error: cannot load AppArmor profile
     * Solution:
         * Any apparmor error try to run:  `/usr/libexec/virt-aa-helper` or `journalctl -u libvirtd | cat`
         * most of the issues with AppArmor is related to libvirt problems
+
     * Error:
         * If you getting an apparmor error
     * Solution
