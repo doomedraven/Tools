@@ -462,33 +462,6 @@ function distributed() {
     sudo apt install uwsgi -y 2>/dev/null
     sudo mkdir -p /data/{config,}db
     sudo chown mongodb:mongodb /data/ -R
-    cat >> /etc/uwsgi/apps-available/sandbox_api.ini << EOL
-[uwsgi]
-    plugins = python3
-    callable = application
-    ;change this patch if is different
-    chdir = /opt/CAPEv2/utils
-    master = true
-    mount = /=api.py
-    processes = 5
-    manage-script-name = true
-    socket = 0.0.0.0:8090
-    http-timeout = 200
-    pidfile = /tmp/api.pid
-    ; if you will use with nginx, comment next line
-    protocol=http
-    enable-threads = true
-    lazy-apps = true
-    timeout = 600
-    chmod-socket = 664
-    chown-socket = cape:cape
-    gui = cape
-    uid = cape
-    stats = 127.0.0.1:9191
-EOL
-
-    ln -s /etc/uwsgi/apps-available/sandbox_api.ini /etc/uwsgi/apps-enabled
-    service uwsgi restart
 
     if [ ! -f /lib/systemd/system/mongos.service ]; then
         cat >> /lib/systemd/system/mongos.service << EOL
