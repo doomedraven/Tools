@@ -1220,6 +1220,7 @@ function install_volatility3() {
     wget https://downloads.volatilityfoundation.org/volatility3/symbols/windows.zip -O windows.zip
     unzip windows.zip
     rm windows.zip
+    chown "${USER}:${USER}" $vol_path -R
 }
 
 function install_guacamole() {
