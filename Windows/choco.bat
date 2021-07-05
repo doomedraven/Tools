@@ -5,7 +5,7 @@ rem .NET 4.5 https://www.microsoft.com/en-us/download/details.aspx?id=30653
 rem WMF 5.1 https://www.microsoft.com/en-us/download/details.aspx?id=54616
 
 
-@"%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -InputFormat None -ExecutionPolicy Bypass -Command " [System.Net.ServicePointManager]::SecurityProtocol = 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))" && SET "PATH=%PATH%;%ALLUSERSPROFILE%\chocolatey\bin"
+powershell -Command "Set-ExecutionPolicy Bypass -Scope Process -Force; iwr https://community.chocolatey.org/install.ps1 -UseBasicParsing | iex"
 choco upgrade chocolatey
 choco install -y dotnetfx dotnet4.7.2 vcredist-all wixtoolset msxml4.sp3 msxml6.sp1
 
