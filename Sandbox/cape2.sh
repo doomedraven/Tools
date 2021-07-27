@@ -618,6 +618,7 @@ Group=mongodb
 StandardOutput=syslog
 StandardError=syslog
 SyslogIdentifier=mongodb
+LimitNOFILE=65536
 [Install]
 WantedBy=multi-user.target
 EOF
