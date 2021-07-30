@@ -652,6 +652,7 @@ function install_virt_manager() {
     else
         echo "export LIBVIRT_DEFAULT_URI=qemu:///system" >> "$HOME/.bashrc"
     fi
+    sudo glib-compile-schemas --strict /usr/share/glib-2.0/schemas/
 }
 
 function install_kvm_linux() {
@@ -975,6 +976,11 @@ cat << EndOfHelp
     * https://wiki.libvirt.org/page/Failed_to_connect_to_the_hypervisor
 
 ### Errors and Solutions
+
+    * Error:
+        * Settings schema 'org.virt-manager.virt-manager' is not installed
+    * Solution:
+        * sudo glib-compile-schemas --strict /usr/share/glib-2.0/schemas/
 
     * Error:
         * /usr/libexec/virt-aa-helper: error while loading shared libraries: libvirt.so.0: cannot open shared object file: No such file or directory
