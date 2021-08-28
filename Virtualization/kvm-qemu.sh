@@ -7,7 +7,7 @@
 # https://www.doomedraven.com/2020/04/how-to-create-virtual-machine-with-virt.html
 # Use Ubuntu 20.04 LTS
 
-#Update date: 08.05.2021
+#Update date: 28.08.2021
 
 : '
 Huge thanks to:
@@ -57,19 +57,14 @@ Huge thanks to:
 qemu_version=6.1.0
 # libvirt - https://libvirt.org/sources/
 # changelog - https://libvirt.org/news.html
-libvirt_version=7.4.0
+libvirt_version=7.3.0
 # virt-manager - https://github.com/virt-manager/virt-manager/releases
 # autofilled
 OS=""
 username=$SUDO_USER
 MAINTAINER=""
 
-sudo apt update
-sudo apt install aptitude -y
-sudo aptitude install -f pcregrep aptitude
-cpuspeed=$(pcregrep -Mio '(?s)processor\s+\: 0\s*\n.*?model name\s+\:[^\r\n]*?\K\s+@\s+\d+\.\d+GHz' < /proc/cpuinfo)
-cpuspeedsz=${#cpuspeed}
-
+systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target
 
 #replace all occurances of CPU's in qemu with our fake one
 cpuid="Intel(R) Core(TM) i3-4130 CPU"
@@ -107,11 +102,6 @@ src_bios_table_date2="11\/03\/2018"
 
 #01\/01\/2011
 src_fw_smbios_date="11\/03\/2018"
-
-if (( "$cpuspeedsz" > 0 )); then
-    cpuid+="$cpuspeed"
-fi
-echo "$cpuid"
 
 # if you want all arches support in QEMU, just set QTARGETS to empty
 QTARGETS="--target-list=i386-softmmu,x86_64-softmmu,i386-linux-user,x86_64-linux-user"
@@ -258,7 +248,6 @@ function install_libguestfs() {
         #_repo_url=$(echo $_info | jq ".zipball_url" | sed "s/\"//g")
         #wget -q $_repo_url
         #unzip $_version
-        #wget "https://github.com/VirusTotal/yara/archive/v$yara_version.zip" && unzip "v$yara_version.zip"
         git clone --recursive https://github.com/libguestfs/libguestfs
     fi
     cd libguestfs || return
@@ -294,18 +283,20 @@ function install_libvmi() {
     cd /tmp || return
 
     if [ ! -d "libvmi" ]; then
-        git clone https://github.com/libvmi/libvmi.git
+        # git clone https://github.com/libvmi/libvmi.git
+        wget https://github.com/libvmi/libvmi/archive/refs/tags/v0.14.0.zip -O libvmi-v0.14.0.zip
+        unzip libvmi-v0.14.0.zip
         echo "[+] Cloned LibVMI repo"
     fi
     cd "libvmi" || return
 
     # install deps
-    aptitude install -f -y cmake flex bison libglib2.0-dev libjson-c-dev libyajl-dev
+    aptitude install -f -y cmake flex bison libglib2.0-dev libjson-c-dev libyajl-dev doxygen
     # other deps
     aptitude install -f -y pkg-config
     mkdir build
     cd build || return
-    cmake -DENABLE_XEN=ON -DENABLE_KVM=ON -DENABLE_XENSTORE=OFF -DENABLE_BAREFLANK=OFF ..
+    cmake -DENABLE_XEN=OFF -DENABLE_KVM=ON -DENABLE_XENSTORE=OFF -DENABLE_BAREFLANK=OFF ..
     make -j"$(nproc)"
     checkinstall -D --pkgname=libvmi --default
     /sbin/ldconfig
@@ -410,7 +401,6 @@ Pin-Priority: -1
 Package: libvirt0
 Pin: release *
 Pin-Priority: -1
-
 Package: qemu
 Pin: release *
 Pin-Priority: -1
@@ -474,6 +464,8 @@ EOH
         cd ..
 
         updatedb
+        # ToDo fix bad destiny on some systems, example, first arg should be destiny to link not source
+        # /usr/lib/x86_64-linux-gnu/libvirt-qemu.so.0 -> /usr/lib64/libvirt-qemu.so
         temp_libvirt_so_path=$(locate libvirt-qemu.so | head -n1 | awk '{print $1;}')
         temp_export_path=$(locate libvirt.pc | head -n1 | awk '{print $1;}')
         libvirt_so_path="${temp_libvirt_so_path%/*}/"
@@ -564,11 +556,11 @@ EOH
 }
 
 function install_virt_manager() {
-    systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target
+    #  pm-utils
     # from build-dep
     aptitude install -f libgirepository1.0-dev gtk-doc-tools python3 python3-pip gir1.2-govirt-1.0 libgovirt-dev \
     libgovirt-common libgovirt2 gir1.2-rest-0.7 unzip intltool augeas-doc ifupdown wodim cdrkit-doc indicator-application \
-    augeas-tools radvd auditd systemtap nfs-common zfsutils pm-utils python-openssl-doc samba \
+    augeas-tools radvd auditd systemtap nfs-common zfsutils python-openssl-doc samba \
     debootstrap sharutils-doc ssh-askpass gnome-keyring\
     sharutils spice-client-glib-usb-acl-helper ubuntu-mono x11-common python-enum34 python3-gi \
     python3-gi-cairo python3-pkg-resources \
@@ -816,7 +808,7 @@ function qemu_func() {
         aptitude install -f software-properties-common
         add-apt-repository universe
         apt update 2>/dev/null
-        aptitude install -f python3-pip checkinstall openbios-sparc openbios-ppc libssh2-1-dev vde2 liblzo2-dev libghc-gtk3-dev libsnappy-dev libbz2-dev libxml2-dev google-perftools libgoogle-perftools-dev libvde-dev python3-sphinx-rtd-theme -y
+        aptitude install -f python3-pip checkinstall openbios-sparc openbios-ppc libssh2-1-dev vde2 liblzo2-dev libghc-gtk3-dev libsnappy-dev libbz2-dev libxml2-dev google-perftools libgoogle-perftools-dev libvde-dev python3-sphinx-rtd-theme  -y
         aptitude install -f debhelper libusb-1.0-0-dev libxen-dev uuid-dev xfslibs-dev libjpeg-dev libusbredirparser-dev device-tree-compiler texinfo libbluetooth-dev libbrlapi-dev libcap-ng-dev libcurl4-gnutls-dev libfdt-dev gnutls-dev libiscsi-dev libncurses5-dev libnuma-dev libcacard-dev librados-dev librbd-dev libsasl2-dev libseccomp-dev libspice-server-dev \
         libaio-dev libcap-dev libattr1-dev libpixman-1-dev libgtk2.0-bin  libxml2-utils systemtap-sdt-dev uml-utilities -y
         # qemu docs required
@@ -931,10 +923,12 @@ function seabios_func() {
             echo '[+] Replacing old bios.bin to new out/bios.bin'
             bios=0
             SHA256_BIOS=$(shasum -a 256 out/bios.bin|awk '{print $1}')
+            :'
             if [ ! -f /usr/share/qemu/bios.bin_back ]; then
                 cp /usr/share/qemu/bios.bin /usr/share/qemu/bios.bin_back
                 cp /usr/share/qemu/bios-256k.bin /usr/share/qemu/bios-256k.bin_back
             fi
+            '
             FILES=(
                 "/usr/share/qemu/bios.bin"
                 "/usr/share/qemu/bios-256k.bin"
@@ -978,9 +972,15 @@ cat << EndOfHelp
 ### Errors and Solutions
 
     * Error:
-        * Settings schema 'org.virt-manager.virt-manager' is not installed
+        * GLib-GIO-ERROR **: 09:05:35.162: Settings schema 'org.virt-manager.virt-manager' is not installed
     * Solution:
         * sudo glib-compile-schemas --strict /usr/share/glib-2.0/schemas/
+
+    * Error:
+        * error: internal error: cannot load AppArmor profile
+    * Solution:
+        * Any apparmor error try to run:  /usr/libexec/virt-aa-helper or journalctl -u libvirtd | cat
+        * most of the issues with AppArmor is related to libvirt problems
 
     * Error:
         * /usr/libexec/virt-aa-helper: error while loading shared libraries: libvirt.so.0: cannot open shared object file: No such file or directory
@@ -991,12 +991,6 @@ cat << EndOfHelp
         /usr/libexec/virt-aa-helper: error while loading shared libraries: libvirt.so.0: cannot open shared object file: Permission denied
     * Solution:
         aa-complain /usr/libexec/virt-aa-helper
-
-    * Error:
-        * error: internal error: cannot load AppArmor profile
-    * Solution:
-        * Any apparmor error try to run:  `/usr/libexec/virt-aa-helper` or `journalctl -u libvirtd | cat`
-        * most of the issues with AppArmor is related to libvirt problems
 
     * Error:
         * If you getting an apparmor error
@@ -1091,7 +1085,7 @@ cat << EndOfHelp
 
     8. Namespace Gtk not available: Could not open display: localhost:10.0
     8 ValueError: Namespace GtkSource not available
-    $ aptitude install -f libgtk-3-dev libgtksourceview-3.0-dev
+    $ aptitude install -f gir1.2-gtksource-4 libgtksourceview-4-0 libgtksourceview-4-common
     * Error will specify version, example gi.require_version("GtkSource", "4"), if that version is not available for your distro
     * you will need downgrade your virt-manager with $ sudo rm -r /usr/share/virt-manager and install older version
 
