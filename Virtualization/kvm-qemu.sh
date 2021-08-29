@@ -57,7 +57,7 @@ Huge thanks to:
 qemu_version=6.1.0
 # libvirt - https://libvirt.org/sources/
 # changelog - https://libvirt.org/news.html
-libvirt_version=7.3.0
+libvirt_version=7.6.0
 # virt-manager - https://github.com/virt-manager/virt-manager/releases
 # autofilled
 OS=""
@@ -447,7 +447,7 @@ EOH
         #git remote add doomedraven https://github.com/libvirt/libvirt
         # To see whole config sudo meson configure
         # true now is enabled
-        sudo meson build -D system=true -D driver_remote=enabled -D driver_qemu=enabled -D driver_libvirtd=enabled -D qemu_group=libvirt -D qemu_user=root -D secdriver_apparmor=enabled -D apparmor_profiles=true -D bash_completion=auto
+        sudo meson build -D system=true -D driver_remote=enabled -D driver_qemu=enabled -D driver_libvirtd=enabled -D qemu_group=libvirt -D qemu_user=root -D secdriver_apparmor=enabled -D apparmor_profiles=enabled -D bash_completion=auto
         sudo ninja -C build
         sudo ninja -C build install
         if  [ $? -ne 0 ]; then
