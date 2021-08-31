@@ -237,9 +237,9 @@ function install_libguestfs() {
 
     wget -O- https://packages.erlang-solutions.com/ubuntu/erlang_solutions.asc | sudo apt-key add -
     sudo add-apt-repository "deb https://packages.erlang-solutions.com/ubuntu $(lsb_release -sc) contrib"
-    sudo aptitude install -f parted libyara3 erlang-dev gperf flex bison libaugeas-dev libhivex-dev supermin ocaml-nox libhivex-ocaml genisoimage libhivex-ocaml-dev libmagic-dev libjansson-dev gnulib jq ocaml-findlib -y 2>/dev/null
+    sudo apt install -f parted libyara3 erlang-dev gperf flex bison libaugeas-dev libhivex-dev supermin ocaml-nox libhivex-ocaml genisoimage libhivex-ocaml-dev libmagic-dev libjansson-dev gnulib jq ocaml-findlib -y 2>/dev/null
     sudo apt update
-    sudo aptitude install -f erlang -y
+    sudo apt install -f erlang -y
 
     if [ ! -d libguestfs ]; then
         #ToDo move to latest release not latest code
@@ -291,9 +291,9 @@ function install_libvmi() {
     cd "libvmi" || return
 
     # install deps
-    aptitude install -f -y cmake flex bison libglib2.0-dev libjson-c-dev libyajl-dev doxygen
+    apt install -f -y cmake flex bison libglib2.0-dev libjson-c-dev libyajl-dev doxygen
     # other deps
-    aptitude install -f -y pkg-config
+    apt install -f -y pkg-config
     mkdir build
     cd build || return
     cmake -DENABLE_XEN=OFF -DENABLE_KVM=ON -DENABLE_XENSTORE=OFF -DENABLE_BAREFLANK=OFF ..
@@ -315,7 +315,7 @@ function install_libvmi() {
     cd "libvmi-python" || return
 
     # install deps
-    aptitude install -f -y python3-pkgconfig python3-cffi python3-future
+    apt install -f -y python3-pkgconfig python3-cffi python3-future
     #pip3 install .
     python3 setup.py build
     pip3 install .
@@ -350,7 +350,7 @@ function install_libvmi() {
 #
 function install_pyvmidbg() {
     # deps
-    aptitude install -f python3-docopt python3-lxml cabextract
+    apt install -f python3-docopt python3-lxml cabextract
 
     # libvmi config entry
     # /etc/libvmi.conf:
@@ -439,8 +439,8 @@ EOH
     tar xf libvirt-$libvirt_version.tar.xz
     cd libvirt-$libvirt_version || return
     if [ "$OS" = "Linux" ]; then
-        aptitude install -f iptables python3-dev unzip numad libglib2.0-dev libsdl1.2-dev lvm2 python3-pip ebtables libosinfo-1.0-dev libnl-3-dev libnl-route-3-dev libyajl-dev xsltproc libdevmapper-dev libpciaccess-dev dnsmasq dmidecode librbd-dev libtirpc-dev -y 2>/dev/null
-        aptitude install -f apparmor-profiles apparmor-profiles-extra apparmor-utils libapparmor-dev python3-apparmor libapparmor-perl libapparmor-dev apparmor-utils mlocate -y
+        apt install -f iptables python3-dev unzip numad libglib2.0-dev libsdl1.2-dev lvm2 python3-pip ebtables libosinfo-1.0-dev libnl-3-dev libnl-route-3-dev libyajl-dev xsltproc libdevmapper-dev libpciaccess-dev dnsmasq dmidecode librbd-dev libtirpc-dev -y 2>/dev/null
+        apt install -f apparmor-profiles apparmor-profiles-extra apparmor-utils libapparmor-dev python3-apparmor libapparmor-perl libapparmor-dev apparmor-utils mlocate -y
         pip3 install ipaddr ninja "meson==0.57.2" flake8 -U
         # --prefix=/usr --localstatedir=/var --sysconfdir=/etc
         #git init
@@ -558,7 +558,7 @@ EOH
 function install_virt_manager() {
     #  pm-utils
     # from build-dep
-    aptitude install -f libgirepository1.0-dev gtk-doc-tools python3 python3-pip gir1.2-govirt-1.0 libgovirt-dev \
+    apt install -f libgirepository1.0-dev gtk-doc-tools python3 python3-pip gir1.2-govirt-1.0 libgovirt-dev \
     libgovirt-common libgovirt2 gir1.2-rest-0.7 unzip intltool augeas-doc ifupdown wodim cdrkit-doc indicator-application \
     augeas-tools radvd auditd systemtap nfs-common zfsutils python-openssl-doc samba \
     debootstrap sharutils-doc ssh-askpass gnome-keyring\
@@ -592,7 +592,7 @@ function install_virt_manager() {
     mlocate gir1.2-gtksource-4 libgtksourceview-4-0 libgtksourceview-4-common -y
     # should be installed first
     # moved out as some 20.04 doesn't have this libs %)
-    aptitude install -f -y python3-ntlm-auth libpython3-stdlib libbrlapi-dev libgirepository1.0-dev python3-testresources
+    apt install -f -y python3-ntlm-auth libpython3-stdlib libbrlapi-dev libgirepository1.0-dev python3-testresources
     apt-get -y -o Dpkg::Options::="--force-overwrite" install ovmf
     pip3 install tqdm requests six urllib3 ipaddr ipaddress idna dbus-python certifi lxml cryptography pyOpenSSL chardet asn1crypto pycairo PySocks PyGObject -U
 
@@ -650,11 +650,11 @@ function install_virt_manager() {
 function install_kvm_linux() {
     sed -i 's/# deb-src/deb-src/g' /etc/apt/sources.list
     apt update 2>/dev/null
-    aptitude install -f build-essential locate python3-pip gcc pkg-config cpu-checker intltool libtirpc-dev -y 2>/dev/null
-    aptitude install -f gtk-update-icon-cache -y 2>/dev/null
+    apt install -f build-essential locate python3-pip gcc pkg-config cpu-checker intltool libtirpc-dev -y 2>/dev/null
+    apt install -f gtk-update-icon-cache -y 2>/dev/null
 
     # WSL support
-    aptitude install -f gcc make gnutls-bin -y
+    apt install -f gcc make gnutls-bin -y
     # remove old
     apt purge libvirt0 libvirt-bin -y
     install_libvirt
@@ -773,7 +773,7 @@ function install_jemalloc() {
 
     # https://zapier.com/engineering/celery-python-jemalloc/
     if ! $(dpkg -l "libjemalloc*" | grep -q "ii  libjemalloc"); then
-        aptitude install -f checkinstall curl build-essential jq autoconf libjemalloc-dev -y
+        apt install -f checkinstall curl build-essential jq autoconf libjemalloc-dev -y
     fi
 }
 
@@ -805,11 +805,11 @@ function qemu_func() {
     fi
 
     if [ "$OS" = "Linux" ]; then
-        aptitude install -f software-properties-common
+        apt install -f software-properties-common
         add-apt-repository universe
         apt update 2>/dev/null
-        aptitude install -f python3-pip checkinstall openbios-sparc openbios-ppc libssh2-1-dev vde2 liblzo2-dev libghc-gtk3-dev libsnappy-dev libbz2-dev libxml2-dev google-perftools libgoogle-perftools-dev libvde-dev python3-sphinx-rtd-theme  -y
-        aptitude install -f debhelper libusb-1.0-0-dev libxen-dev uuid-dev xfslibs-dev libjpeg-dev libusbredirparser-dev device-tree-compiler texinfo libbluetooth-dev libbrlapi-dev libcap-ng-dev libcurl4-gnutls-dev libfdt-dev gnutls-dev libiscsi-dev libncurses5-dev libnuma-dev libcacard-dev librados-dev librbd-dev libsasl2-dev libseccomp-dev libspice-server-dev \
+        apt install -f python3-pip checkinstall openbios-sparc openbios-ppc libssh2-1-dev vde2 liblzo2-dev libghc-gtk3-dev libsnappy-dev libbz2-dev libxml2-dev google-perftools libgoogle-perftools-dev libvde-dev python3-sphinx-rtd-theme  -y
+        apt install -f debhelper libusb-1.0-0-dev libxen-dev uuid-dev xfslibs-dev libjpeg-dev libusbredirparser-dev device-tree-compiler texinfo libbluetooth-dev libbrlapi-dev libcap-ng-dev libcurl4-gnutls-dev libfdt-dev gnutls-dev libiscsi-dev libncurses5-dev libnuma-dev libcacard-dev librados-dev librbd-dev libsasl2-dev libseccomp-dev libspice-server-dev \
         libaio-dev libcap-dev libattr1-dev libpixman-1-dev libgtk2.0-bin  libxml2-utils systemtap-sdt-dev uml-utilities -y
         # qemu docs required
         PERL_MM_USE_DEFAULT=1 perl -MCPAN -e install "Perl/perl-podlators"
@@ -900,7 +900,7 @@ function qemu_func() {
 function seabios_func() {
     cd /tmp || return
     echo '[+] Installing SeaBios dependencies'
-    aptitude install -f git acpica-tools -y
+    apt install -f git acpica-tools -y
     if [ -d seabios ]; then
         rm -r seabios
     fi
@@ -1056,7 +1056,7 @@ cat << EndOfHelp
         yara: error while loading shared libraries: libyara.so.3: cannot open shared object file: No such file or directory
 
     Solution 1:
-        aptitude install -f libyara3
+        apt install -f libyara3
     Solution 2:
         sudo echo "/usr/local/lib" >> /etc/ld.so.conf
         sudo ldconfig
@@ -1069,7 +1069,7 @@ cat << EndOfHelp
     $ pip3 install libxml2-python3
 
     3. ImportError: No module named requests
-    $ aptitude install -f python-requests
+    $ apt install -f python-requests
 
     4. Error launching details: Namespace GtkVnc not available
     $ ./kvm-qemu.sh libvirt
@@ -1078,22 +1078,22 @@ cat << EndOfHelp
     $ ./kvm-qemu.sh libvirt
 
     6. ValueError: Namespace Libosinfo not available
-    $ aptitude install -f libosinfo-1.0
+    $ apt install -f libosinfo-1.0
 
     7. ImportError: No module named ipaddr
-    $ aptitude install -f python-ipaddr
+    $ apt install -f python-ipaddr
 
     8. Namespace Gtk not available: Could not open display: localhost:10.0
     8 ValueError: Namespace GtkSource not available
-    $ aptitude install -f gir1.2-gtksource-4 libgtksourceview-4-0 libgtksourceview-4-common
+    $ apt install -f gir1.2-gtksource-4 libgtksourceview-4-0 libgtksourceview-4-common
     * Error will specify version, example gi.require_version("GtkSource", "4"), if that version is not available for your distro
     * you will need downgrade your virt-manager with $ sudo rm -r /usr/share/virt-manager and install older version
 
     9. ImportError: cannot import name Vte
-    $ aptitude install -f gir1.2-vte-2.90
+    $ apt install -f gir1.2-vte-2.90
 
     10. TypeError: Couldn't find foreign struct converter for 'cairo.Context'
-    $ aptitude install -f python3-gi-cairo
+    $ apt install -f python3-gi-cairo
 
 
 EndOfHelp
@@ -1193,7 +1193,7 @@ case "$COMMAND" in
 'issues')
     issues;;
 'all')
-    aptitude install -f language-pack-UTF-8
+    apt install -f language-pack-UTF-8
     qemu_func
     seabios_func
     if [ "$OS" = "Linux" ]; then
@@ -1277,7 +1277,7 @@ case "$COMMAND" in
     install_jemalloc;;
 'mosh')
     if [ "$OS" = "Linux" ]; then
-        sudo aptitude install -f mosh -y
+        sudo apt install -f mosh -y
     elif [ "$OS" = "Darwin" ]; then
         _check_brew
         brew install mosh
