@@ -725,7 +725,7 @@ function dependencies() {
     echo "deb http://deb.torproject.org/torproject.org $(lsb_release -cs) main" >> /etc/apt/sources.list
     echo "deb-src http://deb.torproject.org/torproject.org $(lsb_release -cs) main" >> /etc/apt/sources.list
     sudo apt install gnupg2 -y
-    gpg --keyserver keys.gnupg.net --recv A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89
+    gpg --keyserver keyserver.ubuntu.com --recv A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89
     #gpg2 --recv A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89
     #gpg2 --export A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89 | apt-key add -
     wget -qO - https://deb.torproject.org/torproject.org/A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89.asc | sudo apt-key add -
@@ -766,7 +766,8 @@ EOF
         echo "net.bridge.bridge-nf-call-iptables = 0";
         echo "net.bridge.bridge-nf-call-arptables = 0";
     } >> /etc/sysctl.conf
-
+    
+    sudo modprobe br_netfilter
     sudo sysctl -p
 
     ### PDNS
