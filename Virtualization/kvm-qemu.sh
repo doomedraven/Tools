@@ -64,6 +64,8 @@ OS=""
 username=$SUDO_USER
 MAINTAINER=""
 
+sudo apt install aptitude -y 2>/dev/null
+
 systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target
 
 #replace all occurances of CPU's in qemu with our fake one
