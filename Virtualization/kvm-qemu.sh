@@ -90,7 +90,7 @@ bochs_cpu_replacement="INTELCPU"
 
 #QEMU\/Bochs
 qemu_bochs_cpu='INTEL\/INTEL'
-qemu_bochs_cpu='AMD\/AMD'
+#qemu_bochs_cpu='AMD\/AMD'
 
 #qemu
 qemu_space_replacement="intel "
