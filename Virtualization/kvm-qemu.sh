@@ -979,7 +979,12 @@ cat << EndOfHelp
     * https://wiki.libvirt.org/page/Failed_to_connect_to_the_hypervisor
 
 ### Errors and Solutions
-
+    * Error:
+        * VM can't use more than 2-3Gb of ram for x64 VM
+    * Solution:
+        * Ensure that you not using default QEMU bios.bin, use next command to check, it shouldn't find coincidences
+            * grep "prebuild.qemu.org" /usr/share/qemu/bios.bin
+            
     * Error:
         * GLib-GIO-ERROR **: 09:05:35.162: Settings schema 'org.virt-manager.virt-manager' is not installed
     * Solution:
