@@ -947,7 +947,7 @@ function install_seabios() {
                 fi
             done
 
-            if ! grep -q -E 'prebuild.qemu.org' /usr/share/qemu/bios.bin; then
+            if grep -q -E 'prebuild.qemu.org' /usr/share/qemu/bios.bin; then
                 echo 'YOUR BIOS /usr/share/qemu/bios.bin is default, you might have max RAM limit inside of the VM, replace with latest compiled'
                 bios=0
             fi
