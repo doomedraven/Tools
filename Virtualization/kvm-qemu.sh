@@ -7,7 +7,7 @@
 # https://www.doomedraven.com/2020/04/how-to-create-virtual-machine-with-virt.html
 # Use Ubuntu 20.04 LTS
 
-#Update date: 28.08.2021
+#Update date: 05.09.2021
 
 : '
 Huge thanks to:
@@ -57,14 +57,12 @@ Huge thanks to:
 qemu_version=6.1.0
 # libvirt - https://libvirt.org/sources/
 # changelog - https://libvirt.org/news.html
-libvirt_version=7.6.0
+libvirt_version=7.7.0
 # virt-manager - https://github.com/virt-manager/virt-manager/releases
 # autofilled
 OS=""
 username=$SUDO_USER
 MAINTAINER=""
-
-sudo apt install aptitude -y 2>/dev/null
 
 systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target
 
@@ -112,6 +110,8 @@ QTARGETS="--target-list=i386-softmmu,x86_64-softmmu,i386-linux-user,x86_64-linux
 # egrep '(vmx|svm)' --color=always /proc/cpuinfo
 #* If your CPU is Intel, you need activate in __BIOS__ VT-x
 #    * (last letter can change, you can activate [TxT ](https://software.intel.com/en-us/blogs/2012/09/25/how-to-enable-an-intel-trusted-execution-technology-capable-server) too, and any other feature, but VT-* is very important)
+
+sudo apt install aptitude -y 2>/dev/null
 
 NC='\033[0m'
 RED='\033[0;31m'
@@ -311,7 +311,8 @@ function install_libvmi() {
         # https://github.com/libvmi/python/tree/76d9ea85eefa0d77f6ad4d6089e757e844763917
         # git checkout add_vmi_request_page_fault
         # git pull
-        git clone https://github.com/libvmi/python.git libvmi-python
+        #git clone https://github.com/libvmi/python.git libvmi-python
+        pip3 install libvmi
         echo "[+] Cloned LibVMI Python repo"
     fi
     cd "libvmi-python" || return
@@ -450,6 +451,7 @@ EOH
         # To see whole config sudo meson configure
         # true now is enabled
         sudo meson build -D system=true -D driver_remote=enabled -D driver_qemu=enabled -D driver_libvirtd=enabled -D qemu_group=libvirt -D qemu_user=root -D secdriver_apparmor=enabled -D apparmor_profiles=enabled -D bash_completion=auto
+
         sudo ninja -C build
         sudo ninja -C build install
         if  [ $? -ne 0 ]; then
@@ -779,7 +781,7 @@ function install_jemalloc() {
     fi
 }
 
-function qemu_func() {
+function install_qemu() {
     cd /tmp || return
     install_jemalloc
     cd /tmp || return
@@ -898,7 +900,7 @@ function qemu_func() {
 
 }
 
-function seabios_func() {
+function install_seabios() {
     cd /tmp || return
     echo '[+] Installing SeaBios dependencies'
     aptitude install -f git acpica-tools -y
@@ -924,12 +926,12 @@ function seabios_func() {
             echo '[+] Replacing old bios.bin to new out/bios.bin'
             bios=0
             SHA256_BIOS=$(shasum -a 256 out/bios.bin|awk '{print $1}')
-            :'
-            if [ ! -f /usr/share/qemu/bios.bin_back ]; then
-                cp /usr/share/qemu/bios.bin /usr/share/qemu/bios.bin_back
-                cp /usr/share/qemu/bios-256k.bin /usr/share/qemu/bios-256k.bin_back
-            fi
-            '
+
+            #if [ ! -f /usr/share/qemu/bios.bin_back ]; then
+            #    cp /usr/share/qemu/bios.bin /usr/share/qemu/bios.bin_back
+            #    cp /usr/share/qemu/bios-256k.bin /usr/share/qemu/bios-256k.bin_back
+            #fi
+
             FILES=(
                 "/usr/share/qemu/bios.bin"
                 "/usr/share/qemu/bios-256k.bin"
@@ -944,6 +946,12 @@ function seabios_func() {
                     bios=1
                 fi
             done
+
+            if ! grep -q -E 'prebuild.qemu.org' /usr/share/qemu/bios.bin; then
+                echo 'YOUR BIOS /usr/share/qemu/bios.bin is default, you might have max RAM limit inside of the VM, replace with latest compiled'
+                bios=0
+            fi
+
             if [ $bios -eq 1 ]; then
                 echo '[+] Patched bios.bin placed correctly'
             else
@@ -1195,8 +1203,8 @@ case "$COMMAND" in
     issues;;
 'all')
     aptitude install -f language-pack-UTF-8
-    qemu_func
-    seabios_func
+    install_qemu
+    install_seabios
     if [ "$OS" = "Linux" ]; then
         install_kvm_linux
         install_virt_manager
@@ -1213,9 +1221,9 @@ case "$COMMAND" in
     fi
     ;;
 'qemu')
-    qemu_func;;
+    install_qemu;;
 'seabios')
-    seabios_func;;
+    install_seabios;;
 'kvm')
     install_kvm_linux;;
 'haxm')
