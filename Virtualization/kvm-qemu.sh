@@ -7,7 +7,7 @@
 # https://www.doomedraven.com/2020/04/how-to-create-virtual-machine-with-virt.html
 # Use Ubuntu 20.04 LTS
 
-#Update date: 05.09.2021
+#Update date: 12.09.2021
 
 : '
 Huge thanks to:
@@ -129,6 +129,7 @@ cat << EndOfHelp
             DEFAULT support are x86 and x64, set ENV var QEMU_TARGERS=all to install for all arches
         SeaBios - Install SeaBios and repalce QEMU bios file
         Libvirt <username_optional> - install libvirt, username is optional
+        Apparmor - Install apparmor parsers
         KVM - this will install intel-HAXM if you on Mac
         HAXM - Mac Hardware Accelerated Execution Manager
         GRUB - add IOMMU to grub command line
@@ -212,6 +213,40 @@ function _check_brew() {
     if [ ! -f /usr/local/bin/brew ]; then
         /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
     fi
+}
+
+function install_apparmor() {
+    # Kudos to @ditekshen for the apparmor solution with latest libvirt
+    # https://gitlab.com/apparmor/apparmor/-/releases
+    APPARMOR_VERSION="2.13.6"
+    wget "https://launchpad.net/apparmor/2.13/$APPARMOR_VERSION/+download/apparmor-$APPARMOR_VERSION.tar.gz"
+    tar xf "apparmor-$APPARMOR_VERSION.tar.gz"
+    sudo apt-get install swig
+    export PYTHON=/usr/bin/python3
+    export PYTHON_VERSION=3
+    export PYTHON_VERSIONS=python3
+    cd "apparmor-$APPARMOR_VERSION/libraries/libapparmor/"
+    ./autogen.sh
+    ./configure --prefix=/usr --with-perl --with-python
+
+    # make -j"$(nproc)"
+    # checkinstall -D --pkgname="libapparmor-$APPARMOR_VERSION" --default
+    # cd ../../binutils/
+    # #make -j"$(nproc)"
+    # #checkinstall -D --pkgname=binutils --default
+    cd ../parser/
+    USE_SYSTEM=1 make -j"$(nproc)"
+    USE_SYSTEM=1 checkinstall -D --pkgname=apparmor-parser --default --install=no
+
+    apt-get -y -o Dpkg::Options::="--force-overwrite" install ./apparmor-parser_*_amd64.deb
+    # cd ../utils/
+    # make -j"$(nproc)"
+    # checkinstall -D --pkgname=apparmor-utils --default
+    # cd ../profiles/
+    # make -j"$(nproc)"
+    # checkinstall -D --pkgname=apparmor-profiles --default
+    sudo ldconfig
+
 }
 
 function install_haxm_mac() {
@@ -979,12 +1014,12 @@ cat << EndOfHelp
     * https://wiki.libvirt.org/page/Failed_to_connect_to_the_hypervisor
 
 ### Errors and Solutions
+
     * Error:
         * VM can't use more than 2-3Gb of ram for x64 VM
     * Solution:
         * Ensure that you not using default QEMU bios.bin, use next command to check, it shouldn't find coincidences
             * grep "prebuild.qemu.org" /usr/share/qemu/bios.bin
-            
     * Error:
         * GLib-GIO-ERROR **: 09:05:35.162: Settings schema 'org.virt-manager.virt-manager' is not installed
     * Solution:
@@ -1225,6 +1260,8 @@ case "$COMMAND" in
         install_haxm_mac
     fi
     ;;
+'apparmor')
+    install_apparmor;;
 'qemu')
     install_qemu;;
 'seabios')
