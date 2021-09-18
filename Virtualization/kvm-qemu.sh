@@ -221,7 +221,7 @@ function install_apparmor() {
     APPARMOR_VERSION="2.13.6"
     wget "https://launchpad.net/apparmor/2.13/$APPARMOR_VERSION/+download/apparmor-$APPARMOR_VERSION.tar.gz"
     tar xf "apparmor-$APPARMOR_VERSION.tar.gz"
-    sudo apt-get install swig
+    sudo apt-get -y install swig
     export PYTHON=/usr/bin/python3
     export PYTHON_VERSION=3
     export PYTHON_VERSIONS=python3
@@ -234,7 +234,7 @@ function install_apparmor() {
     # cd ../../binutils/
     # #make -j"$(nproc)"
     # #checkinstall -D --pkgname=binutils --default
-    cd ../parser/
+    cd ../../parser/
     USE_SYSTEM=1 make -j"$(nproc)"
     USE_SYSTEM=1 checkinstall -D --pkgname=apparmor-parser --default --install=no
 
