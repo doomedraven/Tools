@@ -7,7 +7,7 @@
 # https://www.doomedraven.com/2020/04/how-to-create-virtual-machine-with-virt.html
 # Use Ubuntu 20.04 LTS
 
-#Update date: 12.09.2021
+#Update date: 19.09.2021
 
 : '
 Huge thanks to:
@@ -225,16 +225,17 @@ function install_apparmor() {
     export PYTHON=/usr/bin/python3
     export PYTHON_VERSION=3
     export PYTHON_VERSIONS=python3
-    cd "apparmor-$APPARMOR_VERSION/libraries/libapparmor/"
-    ./autogen.sh
-    ./configure --prefix=/usr --with-perl --with-python
+    #cd "apparmor-$APPARMOR_VERSION/libraries/libapparmor/"
+    #./autogen.sh
+    #./configure --prefix=/usr --with-perl --with-python
 
     # make -j"$(nproc)"
     # checkinstall -D --pkgname="libapparmor-$APPARMOR_VERSION" --default
     # cd ../../binutils/
     # #make -j"$(nproc)"
     # #checkinstall -D --pkgname=binutils --default
-    cd ../../parser/
+    # cd ../../parser/
+    cd "apparmor-$APPARMOR_VERSION/parser/"
     USE_SYSTEM=1 make -j"$(nproc)"
     USE_SYSTEM=1 checkinstall -D --pkgname=apparmor-parser --default --install=no
 
@@ -585,6 +586,9 @@ EOH
         if [[ -n "$username" ]]; then
             usermod -G $groupname -a "$username"
         fi
+
+        # see https://github.com/doomedraven/Tools/issues/100
+        install_apparmor
 
         #check links
         # sudo ln -s /usr/lib64/libvirt-qemu.so /lib/x86_64-linux-gnu/libvirt-qemu.so.0
