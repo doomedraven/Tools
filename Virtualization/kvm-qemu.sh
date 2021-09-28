@@ -588,7 +588,7 @@ EOH
         fi
 
         # see https://github.com/doomedraven/Tools/issues/100
-        install_apparmor
+        # install_apparmor
 
         #check links
         # sudo ln -s /usr/lib64/libvirt-qemu.so /lib/x86_64-linux-gnu/libvirt-qemu.so.0
