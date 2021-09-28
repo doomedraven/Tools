@@ -7,7 +7,7 @@
 # https://www.doomedraven.com/2020/04/how-to-create-virtual-machine-with-virt.html
 # Use Ubuntu 20.04 LTS
 
-#Update date: 19.09.2021
+#Update date: 28.09.2021
 
 : '
 Huge thanks to:
@@ -117,7 +117,7 @@ NC='\033[0m'
 RED='\033[0;31m'
 echo -e "${RED}[!] ONLY for UBUNTU 20.04${NC}"
 echo -e "${RED}\t[!] NEVER install packages from APT that installed by this script${NC}"
-echo -e "${RED}\t[!] NEVER use 'make install' - it poison system and no easy way to upgrade/uninstall/cleanup, use checkinstall/dpkg-deb${NC}"
+echo -e "${RED}\t[!] NEVER use 'make install' - it poison system and no easy way to upgrade/uninstall/cleanup, use dpkg-deb${NC}"
 echo -e "${RED}\t[!] NEVER run 'python setup.py install' DO USE 'pip intall .' the same as APT poisoning/upgrading${NC}\n"
 
 function usage() {
@@ -225,27 +225,13 @@ function install_apparmor() {
     export PYTHON=/usr/bin/python3
     export PYTHON_VERSION=3
     export PYTHON_VERSIONS=python3
-    #cd "apparmor-$APPARMOR_VERSION/libraries/libapparmor/"
-    #./autogen.sh
-    #./configure --prefix=/usr --with-perl --with-python
 
-    # make -j"$(nproc)"
-    # checkinstall -D --pkgname="libapparmor-$APPARMOR_VERSION" --default
-    # cd ../../binutils/
-    # #make -j"$(nproc)"
-    # #checkinstall -D --pkgname=binutils --default
-    # cd ../../parser/
+    mkdir -p /tmp/apparmor-"$APPARMOR_VERSION"_builded/DEBIAN
+    echo -e "Package: apparmor-parser\nVersion: $APPARMOR_VERSION\nArchitecture: $ARCH\nMaintainer: $MAINTAINER\nDescription: Custom antivm qemu" > /tmp/apparmor-"$APPARMOR_VERSION"_builded/DEBIAN/control
     cd "apparmor-$APPARMOR_VERSION/parser/"
-    USE_SYSTEM=1 make -j"$(nproc)"
-    USE_SYSTEM=1 checkinstall -D --pkgname=apparmor-parser --default --install=no
-
-    apt-get -y -o Dpkg::Options::="--force-overwrite" install ./apparmor-parser_*_amd64.deb
-    # cd ../utils/
-    # make -j"$(nproc)"
-    # checkinstall -D --pkgname=apparmor-utils --default
-    # cd ../profiles/
-    # make -j"$(nproc)"
-    # checkinstall -D --pkgname=apparmor-profiles --default
+    USE_SYSTEM=1 make -j"$(nproc)" install DESTDIR=/tmp/apparmor-"$APPARMOR_VERSION"_builded
+    USE_SYSTEM=1 dpkg-deb --build --root-owner-group /tmp/apparmor-"$APPARMOR_VERSION"_builded
+    apt -y -o Dpkg::Options::="--force-overwrite" install /tmp/apparmor-"$APPARMOR_VERSION"_builded.deb
     sudo ldconfig
 
 }
@@ -326,7 +312,9 @@ function install_libvmi() {
         unzip libvmi-v0.14.0.zip
         echo "[+] Cloned LibVMI repo"
     fi
-    cd "libvmi" || return
+    mkdir -p /tmp/libvmi_builded/DEBIAN
+    echo -e "Package: libvmi\nVersion: 1.0-0\nArchitecture: $ARCH\nMaintainer: $MAINTAINER\nDescription: libvmi" > /tmp/libvmi_builded/DEBIAN/control
+    cd "libvmi-v0.14.0" || return
 
     # install deps
     aptitude install -f -y cmake flex bison libglib2.0-dev libjson-c-dev libyajl-dev doxygen
@@ -335,8 +323,11 @@ function install_libvmi() {
     mkdir build
     cd build || return
     cmake -DENABLE_XEN=OFF -DENABLE_KVM=ON -DENABLE_XENSTORE=OFF -DENABLE_BAREFLANK=OFF ..
-    make -j"$(nproc)"
-    checkinstall -D --pkgname=libvmi --default
+
+    make -j"$(nproc)" install DESTDIR=/tmp/libvmi_builded
+    dpkg-deb --build --root-owner-group /tmp/libvmi_builded
+    apt -y -o Dpkg::Options::="--force-overwrite" install /tmp/libvmi_builded.deb
+
     /sbin/ldconfig
 
     # LibVMI Python
@@ -495,12 +486,6 @@ EOH
             exit 1
         fi
 
-        : '
-        mkdir build && cd build
-        ../autogen.sh --system --with-qemu=yes --with-dtrace --with-numad --disable-nls --with-openvz=no --with-yajl=yes --with-secdriver-apparmor=yes --with-apparmor-profiles
-        make -j"$(nproc)"
-        checkinstall -D --pkgname=libvirt-$libvirt_version --default
-        '
         cd ..
 
         updatedb
@@ -588,7 +573,7 @@ EOH
         fi
 
         # see https://github.com/doomedraven/Tools/issues/100
-        # install_apparmor
+        install_apparmor
 
         #check links
         # sudo ln -s /usr/lib64/libvirt-qemu.so /lib/x86_64-linux-gnu/libvirt-qemu.so.0
@@ -660,9 +645,16 @@ function install_virt_manager() {
     aclocal && libtoolize --force
     automake --add-missing
     ./configure
-    make -j"$(nproc)"
-    #ToDo add blacklist
-    checkinstall --pkgname=libvirt-glib-1.0-0 --default
+
+    mkdir -p /tmp/libvirt-glib_builded/DEBIAN
+    echo -e "Package: libvirt-glib\nVersion: 1.0-0\nArchitecture: $ARCH\nMaintainer: $MAINTAINER\nDescription: libvirt-glib-1.0-0" > /tmp/libvirt-glib_builded/DEBIAN/control
+    make -j"$(nproc)" install DESTDIR=/tmp/libvirt-glib_builded
+    dpkg-deb --build --root-owner-group /tmp/libvirt-glib_builded
+    apt -y -o Dpkg::Options::="--force-overwrite" install /tmp/libvirt-glib_builded.deb
+
+    # make -j"$(nproc)"
+    # ToDo add blacklist
+    # checkinstall --pkgname=libvirt-glib-1.0-0 --default
     # v4 is meson based
     # sudo meson build -D system=true
     cd /tmp || return
@@ -816,7 +808,7 @@ function install_jemalloc() {
 
     # https://zapier.com/engineering/celery-python-jemalloc/
     if ! $(dpkg -l "libjemalloc*" | grep -q "ii  libjemalloc"); then
-        aptitude install -f checkinstall curl build-essential jq autoconf libjemalloc-dev -y
+        aptitude install -f curl build-essential jq autoconf libjemalloc-dev -y
     fi
 }
 
@@ -851,7 +843,7 @@ function install_qemu() {
         aptitude install -f software-properties-common
         add-apt-repository universe
         apt update 2>/dev/null
-        aptitude install -f python3-pip checkinstall openbios-sparc openbios-ppc libssh2-1-dev vde2 liblzo2-dev libghc-gtk3-dev libsnappy-dev libbz2-dev libxml2-dev google-perftools libgoogle-perftools-dev libvde-dev python3-sphinx-rtd-theme  -y
+        aptitude install -f python3-pip openbios-sparc openbios-ppc libssh2-1-dev vde2 liblzo2-dev libghc-gtk3-dev libsnappy-dev libbz2-dev libxml2-dev google-perftools libgoogle-perftools-dev libvde-dev python3-sphinx-rtd-theme  -y
         aptitude install -f debhelper libusb-1.0-0-dev libxen-dev uuid-dev xfslibs-dev libjpeg-dev libusbredirparser-dev device-tree-compiler texinfo libbluetooth-dev libbrlapi-dev libcap-ng-dev libcurl4-gnutls-dev libfdt-dev gnutls-dev libiscsi-dev libncurses5-dev libnuma-dev libcacard-dev librados-dev librbd-dev libsasl2-dev libseccomp-dev libspice-server-dev libaio-dev libcap-dev libattr1-dev libpixman-1-dev libgtk2.0-bin  libxml2-utils systemtap-sdt-dev uml-utilities -y
         # qemu docs required
         PERL_MM_USE_DEFAULT=1 perl -MCPAN -e install "Perl/perl-podlators"
@@ -1322,7 +1314,6 @@ case "$COMMAND" in
     else
         replace_seabios_clues_public
     fi
-    cd - || exit 0
     ;;
 'webvirtmgr')
     install_WebVirtCloud;;
