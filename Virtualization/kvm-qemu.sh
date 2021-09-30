@@ -178,14 +178,13 @@ function _sed_aux(){
 }
 
 function _enable_tcp_bbr() {
-    #ToDo check if already there
     # https://www.cyberciti.biz/cloud-computing/increase-your-linux-server-internet-speed-with-tcp-bbr-congestion-control/
     # grep 'CONFIG_TCP_CONG_BBR' /boot/config-$(uname -r)
     # grep 'CONFIG_NET_SCH_FQ' /boot/config-$(uname -r)
     # egrep 'CONFIG_TCP_CONG_BBR|CONFIG_NET_SCH_FQ' /boot/config-$(uname -r)
-    if ! grep -q -E '^net.core.default_qdisc=fq' /etc/security/limits.conf; then
-        echo "net.core.default_qdisc=fq" >> /etc/security/limits.conf
-        echo "net.ipv4.tcp_congestion_control=bbr" >> /etc/security/limits.conf
+    if ! grep -q -E '^net.core.default_qdisc=fq' /etc/sysctl.conf; then
+        echo "net.core.default_qdisc=fq" >> /etc/sysctl.conf
+        echo "net.ipv4.tcp_congestion_control=bbr" >> /etc/sysctl.conf
     fi
 
     modprobe br_netfilter
@@ -218,6 +217,8 @@ function _check_brew() {
 function install_apparmor() {
     # Kudos to @ditekshen for the apparmor solution with latest libvirt
     # https://gitlab.com/apparmor/apparmor/-/releases
+    # required for BPF
+    apt install linux-generic-hwe-20.04 -y
     APPARMOR_VERSION="2.13.6"
     wget "https://launchpad.net/apparmor/2.13/$APPARMOR_VERSION/+download/apparmor-$APPARMOR_VERSION.tar.gz"
     tar xf "apparmor-$APPARMOR_VERSION.tar.gz"
@@ -804,6 +805,7 @@ function replace_seabios_clues_public() {
     done
 }
 
+
 function install_jemalloc() {
 
     # https://zapier.com/engineering/celery-python-jemalloc/
@@ -1243,6 +1245,7 @@ case "$COMMAND" in
     install_seabios
     if [ "$OS" = "Linux" ]; then
         install_kvm_linux
+        # add check if server or desktop
         install_virt_manager
         install_libguestfs
         # check if all features enabled
