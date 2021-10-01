@@ -232,7 +232,7 @@ function install_apparmor() {
     cd "apparmor-$APPARMOR_VERSION/parser/"
     USE_SYSTEM=1 make -j"$(nproc)" install DESTDIR=/tmp/apparmor-"$APPARMOR_VERSION"_builded
     USE_SYSTEM=1 dpkg-deb --build --root-owner-group /tmp/apparmor-"$APPARMOR_VERSION"_builded
-    apt -y -o Dpkg::Options::="--force-overwrite" install /tmp/apparmor-"$APPARMOR_VERSION"_builded.deb
+    dpkg -i --force-overwrite /tmp/apparmor-"$APPARMOR_VERSION"_builded.deb
     sudo ldconfig
 
 }
