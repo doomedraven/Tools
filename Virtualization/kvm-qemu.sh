@@ -218,7 +218,7 @@ function install_apparmor() {
     # Kudos to @ditekshen for the apparmor solution with latest libvirt
     # https://gitlab.com/apparmor/apparmor/-/releases
     # required for BPF
-    apt install linux-generic-hwe-20.04 -y
+    apt install bison linux-generic-hwe-20.04 -y
     APPARMOR_VERSION="2.13.6"
     wget "https://launchpad.net/apparmor/2.13/$APPARMOR_VERSION/+download/apparmor-$APPARMOR_VERSION.tar.gz"
     tar xf "apparmor-$APPARMOR_VERSION.tar.gz"
