@@ -683,7 +683,7 @@ function dependencies() {
     # pip3 install flare-capa fails for me
     cd /tmp || return
     if [ ! -d /tmp/capa ]; then
-        git clone --recurse-submodules https://github.com/fireeye/capa.git
+        git clone --recurse-submodules https://github.com/mandiant/capa.git
     fi
     cd capa || return
     git pull
@@ -766,7 +766,7 @@ EOF
         echo "net.bridge.bridge-nf-call-iptables = 0";
         echo "net.bridge.bridge-nf-call-arptables = 0";
     } >> /etc/sysctl.conf
-    
+
     sudo modprobe br_netfilter
     sudo sysctl -p
 
