@@ -24,6 +24,9 @@ node_exporter_version=1.0.1
 guacamole_version=1.2.0
 
 TOR_SOCKET_TIMEOUT="60"
+OS="$(uname -s)"
+MAINTAINER="$(whoami)"_"$(hostname)"
+ARCH="$(dpkg --print-architecture)"
 
 function issues() {
 cat << EOI
@@ -543,7 +546,7 @@ function install_yara() {
 
     echo '[+] Installing Yara'
 
-    apt install libtool libjansson-dev libmagic1 libmagic-dev jq autoconf checkinstall -y
+    apt install libtool libjansson-dev libmagic1 libmagic-dev jq autoconf -y
 
     cd /tmp || return
     yara_info=$(curl -s https://api.github.com/repos/VirusTotal/yara/releases/latest)
@@ -555,15 +558,24 @@ function install_yara() {
         #wget "https://github.com/VirusTotal/yara/archive/v$yara_version.zip" && unzip "v$yara_version.zip"
     fi
     directory=$(ls | grep "VirusTotal-yara-*")
+    mkdir -p /tmp/yara_builded/DEBIAN
     cd "$directory" || return
     ./bootstrap.sh
     ./configure --enable-cuckoo --enable-magic --enable-dotnet --enable-profiling
     make -j"$(getconf _NPROCESSORS_ONLN)"
-    checkinstall -D --pkgname="yara-$yara_version" --pkgversion="$yara_version|cut -c 2-" --default
+    yara_version_only="$yara_version|cut -c 2-"
+    echo -e "Package: yara\nVersion: $yara_version_only\nArchitecture: $ARCH\nMaintainer: $MAINTAINER\nDescription: yara-$yara_version" > /tmp/yara_builded/DEBIAN/control
+    make -j"$(nproc)" install DESTDIR=/tmp/yara_builded
+    dpkg-deb --build --root-owner-group /tmp/yara_builded
+    dpkg -i --force-overwrite /tmp/yara_builded.deb
+    #checkinstall -D --pkgname="yara-$yara_version" --pkgversion="$yara_version|cut -c 2-" --default
     ldconfig
 
     cd /tmp || return
     git clone --recursive https://github.com/VirusTotal/yara-python
+    cd yara-python
+    python3 setup.py build --enable-cuckoo --enable-magic --enable-dotnet --enable-profiling
+    cd ..
     pip3 install ./yara-python
 }
 
@@ -639,7 +651,9 @@ function install_postgresql() {
     sudo apt update -y
     sudo apt -y install libpq-dev postgresql postgresql-client
 
-    pip3 install psycopg2-binary
+    # amazing tool for monitoring https://github.com/dalibo/pg_activity
+    # sudo -u postgres pg_activity -U postgres
+    python3 -m pip install pg_activity psycopg2-binary
 }
 
 function install_osslsigncode(){
