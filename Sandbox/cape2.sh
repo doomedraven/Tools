@@ -656,19 +656,6 @@ function install_postgresql() {
     python3 -m pip install pg_activity psycopg2-binary
 }
 
-function install_osslsigncode(){
-    sudo apt-get update && sudo apt-get install build-essential autoconf libtool libssl-dev python3-pkgconfig libcurl4-gnutls-dev -y
-    cd /tmp || return
-    if [ ! -f osslsigncode-2.1.0.tar.gz ]; then
-        wget https://github.com/mtrojnar/osslsigncode/releases/download/2.1/osslsigncode-2.1.0.tar.gz
-        tar xf osslsigncode-2.1.0.tar.gz
-    fi
-    cd osslsigncode-2.1.0
-    ./configure
-    make -j"$(getconf _NPROCESSORS_ONLN)"
-    sudo checkinstall -D --pkgname=osslsigncode --default
-}
-
 function dependencies() {
     echo "[+] Installing dependencies"
 
@@ -796,7 +783,6 @@ EOF
 
     pip3 install unicorn capstone
 
-    install_osslsigncode
 }
 
 function install_clamav() {
@@ -1378,8 +1364,6 @@ case "$COMMAND" in
     install_modsecurity;;
 'crowdsecurity')
     install_crowdsecurity;;
-'osslsigncode')
-    install_osslsigncode;;
 *)
     usage;;
 esac
