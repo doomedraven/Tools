@@ -1272,6 +1272,7 @@ fi
 case "$COMMAND" in
 'base')
     dependencies
+    install_volatility3
     install_mongo
     install_suricata
     install_yara
@@ -1281,9 +1282,9 @@ case "$COMMAND" in
     if ! crontab -l | grep -q './smtp_sinkhole.sh'; then
         crontab -l | { cat; echo "@reboot cd /opt/CAPEv2/utils/ && ./smtp_sinkhole.sh 2>/dev/null"; } | crontab -
     fi
-    # Update FLARE CAPA rules and community every 3 hours
+    # Update FLARE CAPA rules and community every X hours
     if ! crontab -l | grep -q 'community.py -waf -cr'; then
-        crontab -l | { cat; echo "5 */3 * * * cd /opt/CAPEv2/utils/ && python3 community.py -waf -cr && pip3 install -U flare-capa  && systemctl restart cape-processor 2>/dev/null"; } | crontab -
+        crontab -l | { cat; echo "5 0 */1 * * cd /opt/CAPEv2/utils/ && python3 community.py -waf -cr && pip3 install -U flare-capa  && systemctl restart cape-processor 2>/dev/null"; } | crontab -
     fi
     if ! crontab -l | grep -q 'echo signal newnym'; then
         crontab -l | { cat; echo "00 */1 * * * (echo authenticate '""'; echo signal newnym; echo quit) | nc localhost 9051 2>/dev/null"; } | crontab -
@@ -1293,14 +1294,11 @@ case "$COMMAND" in
     ;;
 'all')
     dependencies
+    install_volatility3
     install_mongo
     install_suricata
     install_yara
-    if [ "$sandbox_version" = "upstream" ]; then
-        pip3 install cuckoo
-    else
-        install_CAPE
-    fi
+    install_CAPE
     install_systemd
     install_jemalloc
     install_logrotate
@@ -1312,8 +1310,8 @@ case "$COMMAND" in
         crontab -l | { cat; echo "@reboot cd /opt/CAPEv2/utils/ && ./smtp_sinkhole.sh 2>/dev/null"; } | crontab -
     fi
     # Update FLARE CAPA rules once per day
-    if ! crontab -l | grep -q 'community.py -cr'; then
-        crontab -l | { cat; echo "5 0 */1 * * cd /opt/CAPEv2/utils/ && python3 community.py -cr && systemctl restart cape-processor 2>/dev/null"; } | crontab -
+    if ! crontab -l | grep -q 'community.py -waf -cr'; then
+        crontab -l | { cat; echo "5 0 */1 * * cd /opt/CAPEv2/utils/ && python3 community.py -waf -cr && pip3 install -U flare-capa  && systemctl restart cape-processor 2>/dev/null"; } | crontab -
     fi
     ;;
 'systemd')
