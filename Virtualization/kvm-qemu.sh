@@ -7,7 +7,7 @@
 # https://www.doomedraven.com/2020/04/how-to-create-virtual-machine-with-virt.html
 # Use Ubuntu 20.04 LTS
 
-#Update date: 28.09.2021
+#Update date: 13.11.2021
 
 : '
 Huge thanks to:
@@ -53,11 +53,15 @@ Huge thanks to:
 #      strs[4] = "prl hyperv  "; /* Parallels */
 #      strs[5] = "VBoxVBoxVBox"; /* VirtualBox */
 
+# if you want all arches support in QEMU, just set QTARGETS to empty
+QTARGETS="--target-list=i386-softmmu,x86_64-softmmu,i386-linux-user,x86_64-linux-user"
+
+
 #https://www.qemu.org/download/#source or https://download.qemu.org/
 qemu_version=6.1.0
 # libvirt - https://libvirt.org/sources/
 # changelog - https://libvirt.org/news.html
-libvirt_version=7.7.0
+libvirt_version=7.9.0
 # virt-manager - https://github.com/virt-manager/virt-manager/releases
 # autofilled
 OS=""
@@ -103,9 +107,6 @@ src_bios_table_date2="11\/03\/2018"
 #01\/01\/2011
 src_fw_smbios_date="11\/03\/2018"
 
-# if you want all arches support in QEMU, just set QTARGETS to empty
-QTARGETS="--target-list=i386-softmmu,x86_64-softmmu,i386-linux-user,x86_64-linux-user"
-
 # ToDO add to see if cpu supports VTx
 # egrep '(vmx|svm)' --color=always /proc/cpuinfo
 #* If your CPU is Intel, you need activate in __BIOS__ VT-x
@@ -119,6 +120,7 @@ echo -e "${RED}[!] ONLY for UBUNTU 20.04${NC}"
 echo -e "${RED}\t[!] NEVER install packages from APT that installed by this script${NC}"
 echo -e "${RED}\t[!] NEVER use 'make install' - it poison system and no easy way to upgrade/uninstall/cleanup, use dpkg-deb${NC}"
 echo -e "${RED}\t[!] NEVER run 'python setup.py install' DO USE 'pip intall .' the same as APT poisoning/upgrading${NC}\n"
+echo -e "${RED}\t[!] NEVER FORCE system upgrade, it will ignore blacklist and mess with packages installed by APT and this scritp!${NC}\n"
 
 function usage() {
 cat << EndOfHelp
@@ -435,9 +437,6 @@ Pin-Priority: -1
 Package: qemu
 Pin: release *
 Pin-Priority: -1
-Package: qemu
-Pin: release *
-Pin-Priority: -1
 EOH
     fi
 
@@ -458,6 +457,15 @@ EOH
             fi
         done
     fi
+
+    :"
+    /lib/x86_64-linux-gnu/libvirt.so.0
+    /usr/lib/libnss_libvirt.so.2
+    /usr/lib64/libnss_libvirt.so.2
+    /usr/local/lib/x86_64-linux-gnu/libvirt.so
+    /usr/local/lib/x86_64-linux-gnu/libvirt.so.0
+    /usr/local/lib/x86_64-linux-gnu/libvirt.so.0.7007.0
+    "
 
     cd /tmp || return
     if [ -f  libvirt-$libvirt_version.tar.xz ]; then
@@ -510,9 +518,6 @@ EOH
             echo "${RED}[!] Problem to create symlink, unknown libvirt_so_path path${NC}"
             exit 1
         fi
-
-    #elif [ "$OS" = "Darwin" ]; then
-    #    ./autogen.sh --system --prefix=/usr/local/ --localstatedir=/var --sysconfdir=/etc --with-qemu=yes --with-dtrace --disable-nls --with-openvz=no --with-vmware=no --with-phyp=no --with-xenapi=no --with-libxl=no  --with-vbox=no --with-lxc=no --with-vz=no   --with-esx=no --with-hyperv=no --with-wireshark-dissector=no --with-yajl=yes
     fi
 
     # https://wiki.archlinux.org/index.php/Libvirt#Using_polkit
@@ -646,16 +651,15 @@ function install_virt_manager() {
     aclocal && libtoolize --force
     automake --add-missing
     ./configure
+    # mkdir -p /tmp/libvirt-glib_builded/DEBIAN
+    # echo -e "Package: libvirt-glib-1.0-0\nVersion: 1.0-0\nArchitecture: $ARCH\nMaintainer: $MAINTAINER\nDescription: libvirt-glib-1.0-0" > /tmp/libvirt-glib_builded/DEBIAN/control
+    # make -j"$(nproc)" install DESTDIR=/tmp/libvirt-glib_builded
+    # dpkg-deb --build --root-owner-group /tmp/libvirt-glib_builded
+    # apt -y -o Dpkg::Options::="--force-overwrite" install /tmp/libvirt-glib_builded.deb
 
-    mkdir -p /tmp/libvirt-glib_builded/DEBIAN
-    echo -e "Package: libvirt-glib\nVersion: 1.0-0\nArchitecture: $ARCH\nMaintainer: $MAINTAINER\nDescription: libvirt-glib-1.0-0" > /tmp/libvirt-glib_builded/DEBIAN/control
-    make -j"$(nproc)" install DESTDIR=/tmp/libvirt-glib_builded
-    dpkg-deb --build --root-owner-group /tmp/libvirt-glib_builded
-    apt -y -o Dpkg::Options::="--force-overwrite" install /tmp/libvirt-glib_builded.deb
-
-    # make -j"$(nproc)"
+    make -j"$(nproc)"
     # ToDo add blacklist
-    # checkinstall --pkgname=libvirt-glib-1.0-0 --default
+    checkinstall --pkgname=libvirt-glib-1.0-0 --default
     # v4 is meson based
     # sudo meson build -D system=true
     cd /tmp || return
@@ -805,7 +809,6 @@ function replace_seabios_clues_public() {
     done
 }
 
-
 function install_jemalloc() {
 
     # https://zapier.com/engineering/celery-python-jemalloc/
@@ -859,8 +862,10 @@ function install_qemu() {
     # some checks may be depricated, but keeping them for compatibility with old versions
     #if [ $? -eq 0 ]; then
         if declare -f -F "replace_qemu_clues"; then
+            # Private version
             replace_qemu_clues
         else
+            # Public version
             replace_qemu_clues_public
         fi
         # ToDo reintroduce it?
@@ -1042,7 +1047,7 @@ cat << EndOfHelp
     * Error:
         * If you getting an apparmor error
     * Solution
-        * sed -i 's/#security_driver = "apparmor"/security_driver = ""/g' /etc/libvirt/qemu.conf
+        * sed -i 's/#security_driver = "apparmor"/security_driver = "apparmor"/g' /etc/libvirt/qemu.conf
 
     * Error:
         required by /usr/lib/libvirt/storage-file/libvirt_storage_file_fs.so
@@ -1246,7 +1251,7 @@ case "$COMMAND" in
     if [ "$OS" = "Linux" ]; then
         install_kvm_linux
         # add check if server or desktop
-        install_virt_manager
+        # install_virt_manager
         install_libguestfs
         # check if all features enabled
         virt-host-validate
