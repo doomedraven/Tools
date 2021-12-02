@@ -913,12 +913,6 @@ function install_qemu() {
                 else
                     echo '[-] Install failed'
                 fi
-                if ! grep -q -E "^tss:" /etc/group; then
-                    useradd --system --group tss
-                    echo "[+] Creating Group and User: tss"
-                else
-                    echo "[?] tss Group and User exist, skip"
-                fi
             else
                 echo '[-] Compilling failed'
             fi
