@@ -563,12 +563,12 @@ function install_yara() {
     ./bootstrap.sh
     ./configure --enable-cuckoo --enable-magic --enable-dotnet --enable-profiling
     make -j"$(getconf _NPROCESSORS_ONLN)"
-    yara_version_only="$yara_version|cut -c 2-"
+    yara_version_only=$(echo $yara_version|cut -c 2-)
     echo -e "Package: yara\nVersion: $yara_version_only\nArchitecture: $ARCH\nMaintainer: $MAINTAINER\nDescription: yara-$yara_version" > /tmp/yara_builded/DEBIAN/control
     make -j"$(nproc)" install DESTDIR=/tmp/yara_builded
     dpkg-deb --build --root-owner-group /tmp/yara_builded
     dpkg -i --force-overwrite /tmp/yara_builded.deb
-    #checkinstall -D --pkgname="yara-$yara_version" --pkgversion="$yara_version|cut -c 2-" --default
+    #checkinstall -D --pkgname="yara-$yara_version" --pkgversion="$yara_version_only" --default
     ldconfig
 
     cd /tmp || return
