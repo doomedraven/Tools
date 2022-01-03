@@ -642,6 +642,15 @@ EOF
     echo -n "https://www.percona.com/blog/2016/08/12/tuning-linux-for-mongodb/"
 }
 
+function install_elastic() {
+    # https://www.digitalocean.com/community/tutorials/how-to-install-and-configure-elasticsearch-on-ubuntu-20-04
+    curl -fsSL https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo apt-key add -
+    echo "deb https://artifacts.elastic.co/packages/7.x/apt stable main" | sudo tee -a /etc/apt/sources.list.d/elastic-7.x.list
+    apt update && apt install elasticsearch
+    pip3 install elasticsearch
+    systemctl enable elasticsearch
+}
+
 function install_postgresql() {
     echo "[+] Installing PostgreSQL"
 
@@ -1326,6 +1335,8 @@ case "$COMMAND" in
     install_volatility3;;
 'postgresql')
     install_postgresql;;
+'elastic')
+    install_elastic;;
 'sandbox')
     install_CAPE;;
 'dist')
