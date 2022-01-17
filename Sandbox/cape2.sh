@@ -474,7 +474,11 @@ After=network.target
 After=bind9.service
 [Service]
 PIDFile=/tmp/mongos.pid
-User=root
+User=mongodb
+Group=mongodb
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=mongodb
 ExecStart=/usr/bin/mongos --configdb cape_config/${DIST_MASTER_IP}:27019 --port 27020
 [Install]
 WantedBy=multi-user.target
