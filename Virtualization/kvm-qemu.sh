@@ -282,8 +282,22 @@ function install_libguestfs() {
     autoreconf -i
     ./configure CFLAGS=-fPIC
     make -j"$(nproc)"
-    echo "[+] cd /opt/libguestfs/ && ./run --help"
-    echo "[+] cd /opt/libguestfs/ && ./run ./sparsify/virt-sparsify"
+    
+    # Install virt tools that are in a diff repo since LIBGUESTFS 1.46 split
+    # More Info: https://listman.redhat.com/archives/libguestfs/2021-September/msg00153.html
+    cd /opt || return
+    if [ ! -d guestfs-tools ]; then
+      git clone --recursive https://github.com/rwmjones/guestfs-tools.git
+    fi
+    cd guestfs-tools || return
+    # Following tips to compile the guestfs-tools as depicted in https://www.mail-archive.com/libguestfs@redhat.com/msg22408.html
+    git submodule update --init --force
+    autoreconf -i
+    ../libguestfs/run ./configure CFLAGS=-fPIC
+    ../libguestfs/run make -j $(getconf _NPROCESSORS_ONLN)
+    
+    echo "[+] /opt/libguestfs/run --help"
+    echo "[+] /opt/libguestfs/run /opt/guestfs-tools/sparsify/virt-sparsify -h"
 }
 
 
