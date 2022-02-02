@@ -474,7 +474,11 @@ After=network.target
 After=bind9.service
 [Service]
 PIDFile=/tmp/mongos.pid
-User=root
+User=mongodb
+Group=mongodb
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=mongodb
 ExecStart=/usr/bin/mongos --configdb cape_config/${DIST_MASTER_IP}:27019 --port 27020
 [Install]
 WantedBy=multi-user.target
@@ -563,12 +567,12 @@ function install_yara() {
     ./bootstrap.sh
     ./configure --enable-cuckoo --enable-magic --enable-dotnet --enable-profiling
     make -j"$(getconf _NPROCESSORS_ONLN)"
-    yara_version_only="$yara_version|cut -c 2-"
+    yara_version_only=$(echo $yara_version|cut -c 2-)
     echo -e "Package: yara\nVersion: $yara_version_only\nArchitecture: $ARCH\nMaintainer: $MAINTAINER\nDescription: yara-$yara_version" > /tmp/yara_builded/DEBIAN/control
     make -j"$(nproc)" install DESTDIR=/tmp/yara_builded
     dpkg-deb --build --root-owner-group /tmp/yara_builded
     dpkg -i --force-overwrite /tmp/yara_builded.deb
-    #checkinstall -D --pkgname="yara-$yara_version" --pkgversion="$yara_version|cut -c 2-" --default
+    #checkinstall -D --pkgname="yara-$yara_version" --pkgversion="$yara_version_only" --default
     ldconfig
 
     cd /tmp || return
@@ -640,6 +644,15 @@ EOF
     systemctl restart mongodb.service
 
     echo -n "https://www.percona.com/blog/2016/08/12/tuning-linux-for-mongodb/"
+}
+
+function install_elastic() {
+    # https://www.digitalocean.com/community/tutorials/how-to-install-and-configure-elasticsearch-on-ubuntu-20-04
+    curl -fsSL https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo apt-key add -
+    echo "deb https://artifacts.elastic.co/packages/7.x/apt stable main" | sudo tee -a /etc/apt/sources.list.d/elastic-7.x.list
+    apt update && apt install elasticsearch
+    pip3 install elasticsearch
+    systemctl enable elasticsearch
 }
 
 function install_postgresql() {
@@ -1272,6 +1285,7 @@ fi
 case "$COMMAND" in
 'base')
     dependencies
+    install_volatility3
     install_mongo
     install_suricata
     install_yara
@@ -1281,9 +1295,9 @@ case "$COMMAND" in
     if ! crontab -l | grep -q './smtp_sinkhole.sh'; then
         crontab -l | { cat; echo "@reboot cd /opt/CAPEv2/utils/ && ./smtp_sinkhole.sh 2>/dev/null"; } | crontab -
     fi
-    # Update FLARE CAPA rules and community every 3 hours
+    # Update FLARE CAPA rules and community every X hours
     if ! crontab -l | grep -q 'community.py -waf -cr'; then
-        crontab -l | { cat; echo "5 */3 * * * cd /opt/CAPEv2/utils/ && python3 community.py -waf -cr && pip3 install -U flare-capa  && systemctl restart cape-processor 2>/dev/null"; } | crontab -
+        crontab -l | { cat; echo "5 0 */1 * * cd /opt/CAPEv2/utils/ && python3 community.py -waf -cr && pip3 install -U flare-capa  && systemctl restart cape-processor 2>/dev/null"; } | crontab -
     fi
     if ! crontab -l | grep -q 'echo signal newnym'; then
         crontab -l | { cat; echo "00 */1 * * * (echo authenticate '""'; echo signal newnym; echo quit) | nc localhost 9051 2>/dev/null"; } | crontab -
@@ -1293,14 +1307,11 @@ case "$COMMAND" in
     ;;
 'all')
     dependencies
+    install_volatility3
     install_mongo
     install_suricata
     install_yara
-    if [ "$sandbox_version" = "upstream" ]; then
-        pip3 install cuckoo
-    else
-        install_CAPE
-    fi
+    install_CAPE
     install_systemd
     install_jemalloc
     install_logrotate
@@ -1312,8 +1323,8 @@ case "$COMMAND" in
         crontab -l | { cat; echo "@reboot cd /opt/CAPEv2/utils/ && ./smtp_sinkhole.sh 2>/dev/null"; } | crontab -
     fi
     # Update FLARE CAPA rules once per day
-    if ! crontab -l | grep -q 'community.py -cr'; then
-        crontab -l | { cat; echo "5 0 */1 * * cd /opt/CAPEv2/utils/ && python3 community.py -cr && systemctl restart cape-processor 2>/dev/null"; } | crontab -
+    if ! crontab -l | grep -q 'community.py -waf -cr'; then
+        crontab -l | { cat; echo "5 0 */1 * * cd /opt/CAPEv2/utils/ && python3 community.py -waf -cr && pip3 install -U flare-capa  && systemctl restart cape-processor 2>/dev/null"; } | crontab -
     fi
     ;;
 'systemd')
@@ -1328,6 +1339,8 @@ case "$COMMAND" in
     install_volatility3;;
 'postgresql')
     install_postgresql;;
+'elastic')
+    install_elastic;;
 'sandbox')
     install_CAPE;;
 'dist')

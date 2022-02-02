@@ -162,7 +162,7 @@ def parsed_struct(decoded_config, decoded_magic, zbotversion):
 
 class ZBOTScan(interfaces.plugins.PluginInterface):
     _version = (1, 0, 0)
-    _required_framework_version = (1, 0, 1)
+    _required_framework_version = (2, 0, 0)
 
     """ Locate and Decrypt Configs for: ZeuS v2, Citadel
            * ZeuS 2.0.8.9 (z4 & z5)
