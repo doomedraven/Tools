@@ -939,6 +939,7 @@ function install_CAPE() {
     chown ${USER}:${USER} -R "/opt/CAPEv2/"
 
     CRYPTOGRAPHY_DONT_BUILD_RUST=1 pip3 install -r /opt/CAPEv2/requirements.txt
+    pip3 install -r /opt/CAPEv2/requirements.github.txt
 
     sed -i "/connection =/cconnection = postgresql://${USER}:${PASSWD}@localhost:5432/${USER}" /opt/CAPEv2/conf/cuckoo.conf
     sed -i "/tor/{n;s/enabled = no/enabled = yes/g}" /opt/CAPEv2/conf/routing.conf
