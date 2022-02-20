@@ -1272,8 +1272,7 @@ function install_DIE() {
 
 function install_UnAutoIt() {
     snap install go --classic
-    GOOS="linux" GOARCH="amd64" go build -o ./build/UnAutoIt-linux-amd64.bin
-    mv ./build/UnAutoIt-linux-amd64.bin /opt/CAPEv2/data/UnAutoIt
+    GOOS="linux" GOARCH="amd64" go build -o /opt/CAPEv2/data/UnAutoIt
 }
 
 # Doesn't work ${$1,,}
