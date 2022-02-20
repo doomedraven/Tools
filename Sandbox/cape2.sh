@@ -23,6 +23,9 @@ grafana_version=7.1.5
 node_exporter_version=1.0.1
 guacamole_version=1.2.0
 
+DIE_VERSION="3.04"
+UBUNTU_VERSION=$(lsb_release -rs)
+
 TOR_SOCKET_TIMEOUT="60"
 OS="$(uname -s)"
 MAINTAINER="$(whoami)"_"$(hostname)"
@@ -76,6 +79,8 @@ cat << EndOfHelp
         redsocks2 - install redsocks2
         logrotate - install logrotate config to rotate daily or 10G logs
         prometheus - Install Prometheus and Grafana
+        die - Install Detect It Easy
+        unautoit - Install UnAutoIt
         node_exporter - Install node_exporter to report data to Prometheus+Grafana, only on worker servers
         jemalloc - Install jemalloc, required for CAPE to decrease memory usage
             Details: https://zapier.com/engineering/celery-python-jemalloc/
@@ -1258,6 +1263,19 @@ function install_guacamole() {
     sudo systemctl start guacd
 
 }
+
+function install_DIE() {
+    apt install libqt5opengl5 libqt5script5 libqt5scripttools5 -y
+    wget "https://github.com/horsicq/DIE-engine/releases/download/${DIE_VERSION}/die_${DIE_VERSION}_Ubuntu_${UBUNTU_VERSION}_amd64.deb" -O DIE.deb
+    dpkg -i DIE.deb
+}
+
+function install_UnAutoIt() {
+    snap install go --classic
+    GOOS="linux" GOARCH="amd64" go build -o ./build/UnAutoIt-linux-amd64.bin
+    mv ./build/UnAutoIt-linux-amd64.bin /opt/CAPEv2/data/UnAutoIt
+}
+
 # Doesn't work ${$1,,}
 COMMAND=$(echo "$1"|tr "{A-Z}" "{a-z}")
 
@@ -1378,6 +1396,10 @@ case "$COMMAND" in
     install_modsecurity;;
 'crowdsecurity')
     install_crowdsecurity;;
+'die')
+    install_DIE;;
+'unautoit')
+    install_UnAutoIt;;
 *)
     usage;;
 esac
