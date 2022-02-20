@@ -1271,8 +1271,10 @@ function install_DIE() {
 }
 
 function install_UnAutoIt() {
+    cd /opt/CAPEv2/data/
     snap install go --classic
-    GOOS="linux" GOARCH="amd64" go build -o /opt/CAPEv2/data/UnAutoIt
+    git clone https://github.com/x0r19x91/UnAutoIt && cd UnAutoIt
+    GOOS="linux" GOARCH="amd64" go build -o UnAutoIt
 }
 
 # Doesn't work ${$1,,}
