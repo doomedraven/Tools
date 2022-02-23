@@ -7,7 +7,7 @@
 # https://www.doomedraven.com/2020/04/how-to-create-virtual-machine-with-virt.html
 # Use Ubuntu 20.04 LTS
 
-#Update date: 13.11.2021
+#Update date: 23.02.2022
 
 : '
 Huge thanks to:
@@ -58,10 +58,10 @@ QTARGETS="--target-list=i386-softmmu,x86_64-softmmu,i386-linux-user,x86_64-linux
 
 
 #https://www.qemu.org/download/#source or https://download.qemu.org/
-qemu_version=6.1.0
+qemu_version=6.2.0
 # libvirt - https://libvirt.org/sources/
 # changelog - https://libvirt.org/news.html
-libvirt_version=7.9.0
+libvirt_version=8.0.0
 # virt-manager - https://github.com/virt-manager/virt-manager/releases
 # autofilled
 OS=""
@@ -282,7 +282,7 @@ function install_libguestfs() {
     autoreconf -i
     ./configure CFLAGS=-fPIC
     make -j"$(nproc)"
-    
+
     # Install virt tools that are in a diff repo since LIBGUESTFS 1.46 split
     # More Info: https://listman.redhat.com/archives/libguestfs/2021-September/msg00153.html
     cd /opt || return
@@ -295,7 +295,7 @@ function install_libguestfs() {
     autoreconf -i
     ../libguestfs/run ./configure CFLAGS=-fPIC
     ../libguestfs/run make -j $(getconf _NPROCESSORS_ONLN)
-    
+
     echo "[+] /opt/libguestfs/run --help"
     echo "[+] /opt/libguestfs/run /opt/guestfs-tools/sparsify/virt-sparsify -h"
 }
@@ -472,14 +472,14 @@ EOH
         done
     fi
 
-    :"
+    """
     /lib/x86_64-linux-gnu/libvirt.so.0
     /usr/lib/libnss_libvirt.so.2
     /usr/lib64/libnss_libvirt.so.2
     /usr/local/lib/x86_64-linux-gnu/libvirt.so
     /usr/local/lib/x86_64-linux-gnu/libvirt.so.0
     /usr/local/lib/x86_64-linux-gnu/libvirt.so.0.7007.0
-    "
+    """
 
     cd /tmp || return
     if [ -f  libvirt-$libvirt_version.tar.xz ]; then
@@ -541,13 +541,13 @@ EOH
         path="/usr/local/etc/libvirt/libvirtd.conf"
     fi
 
-    sed -i 's/#unix_sock_group/unix_sock_group/g' "$path"
-    sed -i 's/#unix_sock_ro_perms = "0777"/unix_sock_ro_perms = "0770"/g' "$path"
-    sed -i 's/#unix_sock_rw_perms = "0770"/unix_sock_rw_perms = "0770"/g' "$path"
-    sed -i 's/#auth_unix_ro = "none"/auth_unix_ro = "none"/g' "$path"
-    sed -i 's/#auth_unix_rw = "none"/auth_unix_rw = "none"/g' "$path"
-    sed -i 's/#auth_unix_ro = "polkit"/auth_unix_ro = "none"/g' "$path"
-    sed -i 's/#auth_unix_rw = "polkit"/auth_unix_rw = "none"/g' "$path"
+    sed -i 's/#unix_sock_group/unix_sock_group/g' /etc/libvirt/*.conf
+    sed -i 's/#unix_sock_ro_perms = "0777"/unix_sock_ro_perms = "0770"/g' /etc/libvirt/*.conf
+    sed -i 's/#unix_sock_rw_perms = "0770"/unix_sock_rw_perms = "0770"/g' /etc/libvirt/*.conf
+    sed -i 's/#auth_unix_ro = "none"/auth_unix_ro = "none"/g' /etc/libvirt/*.conf
+    sed -i 's/#auth_unix_rw = "none"/auth_unix_rw = "none"/g' /etc/libvirt/*.conf
+    sed -i 's/#auth_unix_ro = "polkit"/auth_unix_ro = "none"/g' /etc/libvirt/*.conf
+    sed -i 's/#auth_unix_rw = "polkit"/auth_unix_rw = "none"/g' /etc/libvirt/*.conf
 
     #echo "[+] Setting AppArmor for libvirt/kvm/qemu"
     sed -i 's/#security_driver = "selinux"/security_driver = "apparmor"/g' /etc/libvirt/qemu.conf
@@ -598,6 +598,7 @@ EOH
         #check links
         # sudo ln -s /usr/lib64/libvirt-qemu.so /lib/x86_64-linux-gnu/libvirt-qemu.so.0
         # sudo ln -s /usr/lib64/libvirt.so.0 /lib/x86_64-linux-gnu/libvirt.so.0
+        systemctl enable virtqemud.service virtnetworkd.service
         echo "[+] You should logout and login "
     fi
 
@@ -711,6 +712,7 @@ function install_kvm_linux() {
     aptitude install -f gcc make gnutls-bin -y
     # remove old
     apt purge libvirt0 libvirt-bin -y
+    apt-mark hold libvirt0 libvirt-bin
     install_libvirt
 
     systemctl enable libvirtd.service
@@ -1259,7 +1261,7 @@ case "$COMMAND" in
     if [ "$OS" = "Linux" ]; then
         install_kvm_linux
         # add check if server or desktop
-        # install_virt_manager
+        #install_virt_manager
         install_libguestfs
         # check if all features enabled
         virt-host-validate
