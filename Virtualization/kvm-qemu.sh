@@ -598,7 +598,7 @@ EOH
         #check links
         # sudo ln -s /usr/lib64/libvirt-qemu.so /lib/x86_64-linux-gnu/libvirt-qemu.so.0
         # sudo ln -s /usr/lib64/libvirt.so.0 /lib/x86_64-linux-gnu/libvirt.so.0
-        systemctl enable virtqemud.service virtnetworkd.service
+        systemctl enable virtqemud.service virtnetworkd.service virtstoraged.service
         echo "[+] You should logout and login "
     fi
 
