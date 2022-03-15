@@ -645,6 +645,7 @@ WantedBy=multi-user.target
 EOF
     fi
     sudo mkdir -p /data/{config,}db
+    systemctl unmask mongodb.service
     systemctl enable mongodb.service
     systemctl restart mongodb.service
 
