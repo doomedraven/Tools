@@ -596,7 +596,7 @@ function install_mongo(){
     echo "deb [ arch=amd64 ] https://repo.mongodb.org/apt/ubuntu $(lsb_release -cs)/mongodb-org/5.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb.list
 
     apt update 2>/dev/null
-    apt install libpcre3-dev -y
+    apt install libpcre3-dev numactl -y
     apt install -y mongodb-org
     pip3 install pymongo -U
 
