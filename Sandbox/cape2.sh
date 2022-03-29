@@ -519,6 +519,10 @@ function install_suricata() {
         cp "/var/lib/suricata/rules/*" "/etc/suricata/rules/"
     fi
 
+    # ToDo this is not the best solution but i don't have time now to investigate proper one
+    sed -i 's|CapabilityBoundingSet=CAP_NET_ADMIN|#CapabilityBoundingSet=CAP_NET_ADMIN|g' /lib/systemd/system/suricata.service
+    systemctl daemon-reload
+
     #change suricata yaml
     sed -i 's|#default-rule-path: /etc/suricata/rules|default-rule-path: /etc/suricata/rules|g' /etc/default/suricata
     sed -i 's|default-rule-path: /var/lib/suricata/rules|default-rule-path: /etc/suricata/rules|g' /etc/suricata/suricata.yaml
@@ -547,6 +551,7 @@ function install_suricata() {
     python3 -c "pa = '/etc/suricata/suricata.yaml';q=open(pa, 'rb').read().replace(b'file-store:\n  version: 2\n  enabled: no', b'file-store:\n  version: 2\n  enabled: yes');open(pa, 'wb').write(q);"
 
     chown ${USER}:${USER} -R /etc/suricata
+    systemctl restart suricata
 }
 
 function install_yara() {
