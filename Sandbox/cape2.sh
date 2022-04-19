@@ -731,6 +731,7 @@ function dependencies() {
     #exit
 
     apt install apparmor-utils -y
+    aa-complain /usr/sbin/tcpdump
     aa-disable /usr/sbin/tcpdump
     # ToDo check if user exits
 
