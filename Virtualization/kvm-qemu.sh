@@ -6,8 +6,9 @@
 # https://www.doomedraven.com/2016/05/kvm.html
 # https://www.doomedraven.com/2020/04/how-to-create-virtual-machine-with-virt.html
 # Use Ubuntu 20.04 LTS
+# Update date: 20.04.2022
 
-#Update date: 23.02.2022
+# Glory to Ukraine!
 
 : '
 Huge thanks to:
@@ -58,10 +59,10 @@ QTARGETS="--target-list=i386-softmmu,x86_64-softmmu,i386-linux-user,x86_64-linux
 
 
 #https://www.qemu.org/download/#source or https://download.qemu.org/
-qemu_version=6.2.0
+qemu_version=7.0.0
 # libvirt - https://libvirt.org/sources/
 # changelog - https://libvirt.org/news.html
-libvirt_version=8.0.0
+libvirt_version=8.2.0
 # virt-manager - https://github.com/virt-manager/virt-manager/releases
 # autofilled
 OS=""
@@ -451,6 +452,9 @@ Pin-Priority: -1
 Package: qemu
 Pin: release *
 Pin-Priority: -1
+Package: qemu-system-data
+Pin: release *
+Pin-Priority: -1
 EOH
     fi
 
@@ -494,7 +498,7 @@ EOH
     if [ "$OS" = "Linux" ]; then
         aptitude install -f iptables python3-dev unzip numad libglib2.0-dev libsdl1.2-dev lvm2 python3-pip ebtables libosinfo-1.0-dev libnl-3-dev libnl-route-3-dev libyajl-dev xsltproc libdevmapper-dev libpciaccess-dev dnsmasq dmidecode librbd-dev libtirpc-dev -y 2>/dev/null
         aptitude install -f apparmor-profiles apparmor-profiles-extra apparmor-utils libapparmor-dev python3-apparmor libapparmor-perl libapparmor-dev apparmor-utils mlocate -y
-        pip3 install ipaddr ninja "meson==0.57.2" flake8 -U
+        pip3 install ipaddr ninja meson flake8 -U
         # --prefix=/usr --localstatedir=/var --sysconfdir=/etc
         #git init
         #git remote add doomedraven https://github.com/libvirt/libvirt
@@ -700,6 +704,8 @@ function install_virt_manager() {
         echo "export LIBVIRT_DEFAULT_URI=qemu:///system" >> "$HOME/.bashrc"
     fi
     sudo glib-compile-schemas --strict /usr/share/glib-2.0/schemas/
+    systemctl enable virtstoraged.service
+    systemctl start virtstoraged.service
 }
 
 function install_kvm_linux() {
@@ -715,10 +721,8 @@ function install_kvm_linux() {
     apt-mark hold libvirt0 libvirt-bin
     install_libvirt
 
-    systemctl enable libvirtd.service
-    systemctl restart libvirtd.service
-    systemctl enable virtlogd.socket
-    systemctl restart virtlogd.socket
+    systemctl enable libvirtd.service virtlogd.socket
+    systemctl restart libvirtd.service virtlogd.socket
 
     kvm-ok
 
@@ -861,8 +865,8 @@ function install_qemu() {
     fi
 
     if [ "$OS" = "Linux" ]; then
-        aptitude install -f software-properties-common
-        add-apt-repository universe
+        aptitude install -f software-properties-common -y
+        add-apt-repository universe -y
         apt update 2>/dev/null
         aptitude install -f python3-pip openbios-sparc openbios-ppc libssh2-1-dev vde2 liblzo2-dev libghc-gtk3-dev libsnappy-dev libbz2-dev libxml2-dev google-perftools libgoogle-perftools-dev libvde-dev python3-sphinx-rtd-theme  -y
         aptitude install -f debhelper libusb-1.0-0-dev libxen-dev uuid-dev xfslibs-dev libjpeg-dev libusbredirparser-dev device-tree-compiler texinfo libbluetooth-dev libbrlapi-dev libcap-ng-dev libcurl4-gnutls-dev libfdt-dev gnutls-dev libiscsi-dev libncurses5-dev libnuma-dev libcacard-dev librados-dev librbd-dev libsasl2-dev libseccomp-dev libspice-server-dev libaio-dev libcap-dev libattr1-dev libpixman-1-dev libgtk2.0-bin  libxml2-utils systemtap-sdt-dev uml-utilities -y
@@ -898,7 +902,7 @@ function install_qemu() {
                 ./configure $QTARGETS --prefix=/usr --libexecdir=/usr/lib/qemu --localstatedir=/var --bindir=/usr/bin/ --enable-gnutls --enable-docs --enable-gtk --enable-vnc --enable-vnc-sasl --enable-vnc-png --enable-vnc-jpeg --enable-curl --enable-kvm  --enable-linux-aio --enable-cap-ng --enable-vhost-net --enable-vhost-crypto --enable-spice --enable-usb-redir --enable-lzo --enable-snappy --enable-bzip2 --enable-coroutine-pool --enable-libxml2 --enable-jemalloc --enable-replication --enable-tools --enable-capstone
             elif [ "$OS" = "Darwin" ]; then
                 # --enable-vhost-net --enable-vhost-crypto
-                ./configure --prefix=/usr --libexecdir=/usr/lib/qemu --localstatedir=/var --bindir=/usr/bin/ --enable-gnutls --enable-docs  --enable-vnc --enable-vnc-sasl --enable-vnc-png --enable-vnc-jpeg --enable-curl --enable-hax --enable-usb-redir --enable-lzo --enable-snappy --enable-bzip2 --enable-coroutine-pool  --enable-libxml2 --enable-jemalloc --enable-replication --enable-tools --enable-capstone
+                ./configure --prefix=/usr --libexecdir=/usr/lib/qemu --localstatedir=/var --bindir=/usr/bin/ --enable-gnutls --enable-docs  --enable-vnc --enable-vnc-sasl --enable-vnc-png --enable-vnc-jpeg --enable-curl --enable-hax --enable-usb-redir --enable-lzo --enable-snappy --enable-bzip2 --enable-coroutine-pool --enable-jemalloc --enable-replication --enable-tools --enable-capstone
             fi
             if  [ $? -eq 0 ]; then
                 echo '[+] Starting Install it'
