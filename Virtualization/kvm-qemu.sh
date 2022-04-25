@@ -5,8 +5,8 @@
 # See the file 'LICENSE.md' for copying permission.
 # https://www.doomedraven.com/2016/05/kvm.html
 # https://www.doomedraven.com/2020/04/how-to-create-virtual-machine-with-virt.html
-# Use Ubuntu 20.04 LTS
-# Update date: 20.04.2022
+# Use Ubuntu 20-22.04 LTS
+# Update date: 25.04.2022
 
 # Glory to Ukraine!
 
@@ -218,10 +218,16 @@ function _check_brew() {
 }
 
 function install_apparmor() {
+
+    # ubuntu 22.04 comes with latest apparmor
+    aptitude install -f bison linux-generic-hwe-22.04
+    aptitude install -f apparmor apparmor-profiles apparmor-profiles-extra apparmor-utils libapparmor-dev libapparmor1  python3-apparmor python3-libapparmor libapparmor-perl
+
     # Kudos to @ditekshen for the apparmor solution with latest libvirt
     # https://gitlab.com/apparmor/apparmor/-/releases
     # required for BPF
-    apt install bison linux-generic-hwe-20.04 -y
+
+    :'
     APPARMOR_VERSION="2.13.6"
     wget "https://launchpad.net/apparmor/2.13/$APPARMOR_VERSION/+download/apparmor-$APPARMOR_VERSION.tar.gz"
     tar xf "apparmor-$APPARMOR_VERSION.tar.gz"
@@ -237,7 +243,7 @@ function install_apparmor() {
     USE_SYSTEM=1 dpkg-deb --build --root-owner-group /tmp/apparmor-"$APPARMOR_VERSION"_builded
     dpkg -i --force-overwrite /tmp/apparmor-"$APPARMOR_VERSION"_builded.deb
     sudo ldconfig
-
+    '
 }
 
 function install_haxm_mac() {
@@ -264,7 +270,7 @@ function install_libguestfs() {
     sudo dpkg --purge --force-all "libguestfs-*" 2>/dev/null
 
     wget -O- https://packages.erlang-solutions.com/ubuntu/erlang_solutions.asc | sudo apt-key add -
-    sudo add-apt-repository "deb https://packages.erlang-solutions.com/ubuntu $(lsb_release -sc) contrib"
+    sudo add-apt-repository -y "deb https://packages.erlang-solutions.com/ubuntu $(lsb_release -sc) contrib"
     sudo aptitude install -f parted libyara3 erlang-dev gperf flex bison libaugeas-dev libhivex-dev supermin ocaml-nox libhivex-ocaml genisoimage libhivex-ocaml-dev libmagic-dev libjansson-dev gnulib jq ocaml-findlib -y 2>/dev/null
     sudo apt update
     sudo aptitude install -f erlang -y
@@ -452,7 +458,16 @@ Pin-Priority: -1
 Package: qemu
 Pin: release *
 Pin-Priority: -1
-Package: qemu-system-data
+Package: qemu
+Pin: release *
+Pin-Priority: -1
+Package: gir1.2-libvirt-glib-1.0
+Pin: release *
+Pin-Priority: -1
+Package: libvirt-glib-1.0-0
+Pin: release *
+Pin-Priority: -1
+Package: libvirt-glib-1.0-data
 Pin: release *
 Pin-Priority: -1
 EOH
@@ -496,8 +511,11 @@ EOH
     tar xf libvirt-$libvirt_version.tar.xz
     cd libvirt-$libvirt_version || return
     if [ "$OS" = "Linux" ]; then
-        aptitude install -f iptables python3-dev unzip numad libglib2.0-dev libsdl1.2-dev lvm2 python3-pip ebtables libosinfo-1.0-dev libnl-3-dev libnl-route-3-dev libyajl-dev xsltproc libdevmapper-dev libpciaccess-dev dnsmasq dmidecode librbd-dev libtirpc-dev -y 2>/dev/null
-        aptitude install -f apparmor-profiles apparmor-profiles-extra apparmor-utils libapparmor-dev python3-apparmor libapparmor-perl libapparmor-dev apparmor-utils mlocate -y
+        aptitude install -f mlocate iptables python3-dev unzip numad libglib2.0-dev libsdl1.2-dev lvm2 python3-pip ebtables libosinfo-1.0-dev libnl-3-dev libnl-route-3-dev libyajl-dev xsltproc libdevmapper-dev libpciaccess-dev dnsmasq dmidecode librbd-dev libtirpc-dev -y 2>/dev/null
+
+         # see https://github.com/doomedraven/Tools/issues/100
+        install_apparmor
+
         pip3 install ipaddr ninja meson flake8 -U
         # --prefix=/usr --localstatedir=/var --sysconfdir=/etc
         #git init
@@ -596,9 +614,6 @@ EOH
             usermod -G $groupname -a "$username"
         fi
 
-        # see https://github.com/doomedraven/Tools/issues/100
-        install_apparmor
-
         #check links
         # sudo ln -s /usr/lib64/libvirt-qemu.so /lib/x86_64-linux-gnu/libvirt-qemu.so.0
         # sudo ln -s /usr/lib64/libvirt.so.0 /lib/x86_64-linux-gnu/libvirt.so.0
@@ -642,7 +657,7 @@ function install_virt_manager() {
     gstreamer1.0-x adwaita-icon-theme at-spi2-core augeas-lenses cpu-checker dconf-gsettings-backend dconf-service \
     fontconfig fontconfig-config fonts-dejavu-core genisoimage gir1.2-appindicator3-0.1 gir1.2-secret-1 \
     gobject-introspection intltool pkg-config libxml2-dev libxslt-dev python3-dev gir1.2-gtk-vnc-2.0 gir1.2-spiceclientgtk-3.0 libgtk-3-dev \
-    mlocate gir1.2-gtksource-4 libgtksourceview-4-0 libgtksourceview-4-common checkinstall -y
+    mlocate gir1.2-gtksource-4 libgtksourceview-4-0 libgtksourceview-4-common checkinstall python3-libxml2 -y
     # should be installed first
     # moved out as some 20.04 doesn't have this libs %)
     aptitude install -f -y python3-ntlm-auth libpython3-stdlib libbrlapi-dev libgirepository1.0-dev python3-testresources
@@ -894,16 +909,7 @@ function install_qemu() {
             cd qemu-$qemu_version || return
             # add in future --enable-netmap https://sgros-students.blogspot.com/2016/05/installing-and-testing-netmap.html
             # remove --target-list=i386-softmmu,x86_64-softmmu,i386-linux-user,x86_64-linux-user  if you want all targets
-            if [ "$OS" = "Linux" ]; then
-            #    # --enable-sparse
-                #if [[ -n "$QEMU_TARGERS" ]]; then
-                #    QTARGETS=""
-                #fi
                 ./configure $QTARGETS --prefix=/usr --libexecdir=/usr/lib/qemu --localstatedir=/var --bindir=/usr/bin/ --enable-gnutls --enable-docs --enable-gtk --enable-vnc --enable-vnc-sasl --enable-vnc-png --enable-vnc-jpeg --enable-curl --enable-kvm  --enable-linux-aio --enable-cap-ng --enable-vhost-net --enable-vhost-crypto --enable-spice --enable-usb-redir --enable-lzo --enable-snappy --enable-bzip2 --enable-coroutine-pool --enable-jemalloc --enable-replication --enable-tools --enable-capstone
-            elif [ "$OS" = "Darwin" ]; then
-                # --enable-vhost-net --enable-vhost-crypto
-                ./configure --prefix=/usr --libexecdir=/usr/lib/qemu --localstatedir=/var --bindir=/usr/bin/ --enable-gnutls --enable-docs  --enable-vnc --enable-vnc-sasl --enable-vnc-png --enable-vnc-jpeg --enable-curl --enable-hax --enable-usb-redir --enable-lzo --enable-snappy --enable-bzip2 --enable-coroutine-pool --enable-jemalloc --enable-replication --enable-tools --enable-capstone
-            fi
             if  [ $? -eq 0 ]; then
                 echo '[+] Starting Install it'
                 if [ -f /usr/share/qemu/qemu_logo_no_text.svg ]; then
