@@ -705,15 +705,8 @@ function dependencies() {
     # if __name__ == '__main__':
     #     sys.exit(__main__._main())
 
-    # pip3 install flare-capa fails for me
-    cd /tmp || return
-    if [ ! -d /tmp/capa ]; then
-        git clone --recurse-submodules https://github.com/mandiant/capa.git
-    fi
-    cd capa || return
-    git pull
-    git submodule update --init rules
-    pip3 install .
+    # https://github.com/mandiant/capa
+    pip3 install flare-capa
 
     # re2
     apt install libre2-dev -y
