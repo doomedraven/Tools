@@ -708,7 +708,8 @@ function dependencies() {
     # pip3 install flare-capa fails for me
     cd /tmp || return
     if [ ! -d /tmp/capa ]; then
-        git clone --recurse-submodules https://github.com/mandiant/capa.git
+        # problem with test files of dotnet as it goes over ssh insted of https --recurse-submodules
+        git clone https://github.com/mandiant/capa.git
     fi
     cd capa || return
     git pull
