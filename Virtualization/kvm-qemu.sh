@@ -6,7 +6,7 @@
 # https://www.doomedraven.com/2016/05/kvm.html
 # https://www.doomedraven.com/2020/04/how-to-create-virtual-machine-with-virt.html
 # Use Ubuntu 20-22.04 LTS
-# Update date: 25.04.2022
+# Update date: 06.05.2022
 
 # Glory to Ukraine!
 
@@ -117,7 +117,7 @@ sudo apt install aptitude -y 2>/dev/null
 
 NC='\033[0m'
 RED='\033[0;31m'
-echo -e "${RED}[!] ONLY for UBUNTU 20.04${NC}"
+echo -e "${RED}[!] ONLY for UBUNTU 20.04 and 22.04${NC}"
 echo -e "${RED}\t[!] NEVER install packages from APT that installed by this script${NC}"
 echo -e "${RED}\t[!] NEVER use 'make install' - it poison system and no easy way to upgrade/uninstall/cleanup, use dpkg-deb${NC}"
 echo -e "${RED}\t[!] NEVER run 'python setup.py install' DO USE 'pip intall .' the same as APT poisoning/upgrading${NC}\n"
@@ -219,31 +219,32 @@ function _check_brew() {
 
 function install_apparmor() {
 
-    # ubuntu 22.04 comes with latest apparmor
-    aptitude install -f bison linux-generic-hwe-22.04
-    aptitude install -f apparmor apparmor-profiles apparmor-profiles-extra apparmor-utils libapparmor-dev libapparmor1  python3-apparmor python3-libapparmor libapparmor-perl
+    if [ $(lsb_release -sc) == "jammy" ]; then
+    	# ubuntu 22.04 comes with latest apparmor
+    	aptitude install -f bison linux-generic-hwe-22.04 -y
+    	aptitude install -f apparmor apparmor-profiles apparmor-profiles-extra apparmor-utils libapparmor-dev libapparmor1  python3-apparmor python3-libapparmor libapparmor-perl -y
+    else
+    	aptitude install -f apparmor-profiles apparmor-profiles-extra apparmor-utils libapparmor-dev python3-apparmor libapparmor-perl libapparmor-dev apparmor-utils -y
+    	# Kudos to @ditekshen for the apparmor solution with latest libvirt
+    	# https://gitlab.com/apparmor/apparmor/-/releases
+    	# required for BPF
+    	apt install bison linux-generic-hwe-20.04 -y
+    	APPARMOR_VERSION="2.13.6"
+    	wget "https://launchpad.net/apparmor/2.13/$APPARMOR_VERSION/+download/apparmor-$APPARMOR_VERSION.tar.gz"
+    	tar xf "apparmor-$APPARMOR_VERSION.tar.gz"
+    	sudo apt-get -y install swig
+    	export PYTHON=/usr/bin/python3
+    	export PYTHON_VERSION=3
+    	export PYTHON_VERSIONS=python3
 
-    # Kudos to @ditekshen for the apparmor solution with latest libvirt
-    # https://gitlab.com/apparmor/apparmor/-/releases
-    # required for BPF
-
-    :'
-    APPARMOR_VERSION="2.13.6"
-    wget "https://launchpad.net/apparmor/2.13/$APPARMOR_VERSION/+download/apparmor-$APPARMOR_VERSION.tar.gz"
-    tar xf "apparmor-$APPARMOR_VERSION.tar.gz"
-    sudo apt-get -y install swig
-    export PYTHON=/usr/bin/python3
-    export PYTHON_VERSION=3
-    export PYTHON_VERSIONS=python3
-
-    mkdir -p /tmp/apparmor-"$APPARMOR_VERSION"_builded/DEBIAN
-    echo -e "Package: apparmor-parser\nVersion: $APPARMOR_VERSION\nArchitecture: $ARCH\nMaintainer: $MAINTAINER\nDescription: Custom antivm qemu" > /tmp/apparmor-"$APPARMOR_VERSION"_builded/DEBIAN/control
-    cd "apparmor-$APPARMOR_VERSION/parser/"
-    USE_SYSTEM=1 make -j"$(nproc)" install DESTDIR=/tmp/apparmor-"$APPARMOR_VERSION"_builded
-    USE_SYSTEM=1 dpkg-deb --build --root-owner-group /tmp/apparmor-"$APPARMOR_VERSION"_builded
-    dpkg -i --force-overwrite /tmp/apparmor-"$APPARMOR_VERSION"_builded.deb
-    sudo ldconfig
-    '
+    	mkdir -p /tmp/apparmor-"$APPARMOR_VERSION"_builded/DEBIAN
+    	echo -e "Package: apparmor-parser\nVersion: $APPARMOR_VERSION\nArchitecture: $ARCH\nMaintainer: $MAINTAINER\nDescription: Custom antivm qemu" > /tmp/apparmor-"$APPARMOR_VERSION"_builded/DEBIAN/control
+    	cd "apparmor-$APPARMOR_VERSION/parser/"
+    	USE_SYSTEM=1 make -j"$(nproc)" install DESTDIR=/tmp/apparmor-"$APPARMOR_VERSION"_builded
+    	USE_SYSTEM=1 dpkg-deb --build --root-owner-group /tmp/apparmor-"$APPARMOR_VERSION"_builded
+    	dpkg -i --force-overwrite /tmp/apparmor-"$APPARMOR_VERSION"_builded.deb
+    	sudo ldconfig
+    fi
 }
 
 function install_haxm_mac() {
@@ -473,6 +474,8 @@ Pin-Priority: -1
 EOH
     fi
 
+    # preferences.d doesnt work for me with qemu 7.0.0 and Ubuntu 22.04, to be sure, handle via dpkg
+    echo "qemu hold" | sudo dpkg --set-selections 2>/dev/null
     echo "[+] Checking/deleting old versions of Libvirt"
     apt purge libvirt0 libvirt-bin libvirt-$libvirt_version 2>/dev/null
     dpkg -l|grep "libvirt-[0-9]\{1,2\}\.[0-9]\{1,2\}\.[0-9]\{1,2\}"|cut -d " " -f 3|sudo xargs dpkg --purge --force-all 2>/dev/null
@@ -522,6 +525,7 @@ EOH
         #git remote add doomedraven https://github.com/libvirt/libvirt
         # To see whole config sudo meson configure
         # true now is enabled
+        cd /tmp/libvirt-$libvirt_version || return
         sudo meson build -D system=true -D driver_remote=enabled -D driver_qemu=enabled -D driver_libvirtd=enabled -D qemu_group=libvirt -D qemu_user=root -D secdriver_apparmor=enabled -D apparmor_profiles=enabled -D bash_completion=auto
 
         sudo ninja -C build
@@ -630,11 +634,11 @@ function install_virt_manager() {
     libgovirt-common libgovirt2 gir1.2-rest-0.7 unzip intltool augeas-doc ifupdown wodim cdrkit-doc indicator-application \
     augeas-tools radvd auditd systemtap nfs-common zfsutils python-openssl-doc samba \
     debootstrap sharutils-doc ssh-askpass gnome-keyring\
-    sharutils spice-client-glib-usb-acl-helper ubuntu-mono x11-common python-enum34 python3-gi \
+    sharutils spice-client-glib-usb-acl-helper ubuntu-mono x11-common python3-gi \
     python3-gi-cairo python3-pkg-resources \
     python3-libxml2 libxml2-utils libxrandr2 libxrender1 libxshmfence1 libxtst6 libxv1 libyajl2 msr-tools osinfo-db \
     python3-cairo python3-cffi-backend libxcb-present0 libxcb-render0 libxcb-shm0 libxcb-sync1 \
-    libxcb-xfixes0 libxcomposite1 libxcursor1 libxdamage1 libxenstore3.0 libxfixes3 libxft2 libxi6 libxinerama1 \
+    libxcb-xfixes0 libxcomposite1 libxcursor1 libxdamage1 libxfixes3 libxft2 libxi6 libxinerama1 \
     libxkbcommon0 libusbredirhost1 libusbredirparser1 libv4l-0 libv4lconvert0 libvisual-0.4-0 libvorbis0a libvorbisenc2 \
     libvte-2.91-0 libvte-2.91-common libwavpack1 libwayland-client0 libwayland-cursor0 libwayland-egl1-mesa libwayland-server0 \
     libx11-xcb1 libxcb-dri2-0 libxcb-dri3-0 libsoup-gnome2.4-1 libsoup2.4-1 libspeex1 libspice-client-glib-2.0-8 \
@@ -644,8 +648,8 @@ function install_virt_manager() {
     libpangoft2-1.0-0 libpangoxft-1.0-0 libpciaccess0 libphodav-2.0-0 libphodav-2.0-common libpixman-1-0 libproxy1v5 \
     libpulse-mainloop-glib0 libpulse0 libgstreamer1.0-0 libgtk-3-0 libgtk-3-bin libgtk-3-common libgtk-vnc-2.0-0 \
     libgudev-1.0-0 libgvnc-1.0-0 libharfbuzz0b libibverbs1 libiec61883-0 libindicator3-7 libiscsi7 libjack-jackd2-0 libjbig0 \
-    libjpeg-turbo8 libjpeg8 libjson-glib-1.0-0 libjson-glib-1.0-common liblcms2-2 libmp3lame0 libmpg123-0 libnetcf1 libnl-route-3-200 \
-    libnspr4 libnss3 libogg0 libopus0 liborc-0.4-0 libosinfo-1.0-0 libcairo-gobject2 libcairo2 libcdparanoia0 libcolord2 libcroco3 \
+    libjpeg-turbo8 libjpeg8 libjson-glib-1.0-0 libjson-glib-1.0-common liblcms2-2 libmp3lame0 libmpg123-0 libnl-route-3-200 \
+    libnspr4 libnss3 libogg0 libopus0 liborc-0.4-0 libosinfo-1.0-0 libcairo-gobject2 libcairo2 libcdparanoia0 libcolord2 \
     libcups2 libdatrie1 libdbusmenu-glib4 libdbusmenu-gtk3-4 libdconf1 libdv4 libegl-mesa0 libegl1 libepoxy0 libfdt1 libflac8 \
     libfontconfig1 libgbm1 libgdk-pixbuf2.0-0 libgdk-pixbuf2.0-bin libgdk-pixbuf2.0-common libglapi-mesa libglvnd0  libgraphite2-3 \
     libgstreamer-plugins-base1.0-0 libgstreamer-plugins-good1.0-0 gtk-update-icon-cache hicolor-icon-theme humanity-icon-theme \
@@ -657,12 +661,17 @@ function install_virt_manager() {
     gstreamer1.0-x adwaita-icon-theme at-spi2-core augeas-lenses cpu-checker dconf-gsettings-backend dconf-service \
     fontconfig fontconfig-config fonts-dejavu-core genisoimage gir1.2-appindicator3-0.1 gir1.2-secret-1 \
     gobject-introspection intltool pkg-config libxml2-dev libxslt-dev python3-dev gir1.2-gtk-vnc-2.0 gir1.2-spiceclientgtk-3.0 libgtk-3-dev \
-    mlocate gir1.2-gtksource-4 libgtksourceview-4-0 libgtksourceview-4-common checkinstall python3-libxml2 -y
+    mlocate gir1.2-gtksource-4 libgtksourceview-4-0 libgtksourceview-4-common checkinstall -y
     # should be installed first
     # moved out as some 20.04 doesn't have this libs %)
     aptitude install -f -y python3-ntlm-auth libpython3-stdlib libbrlapi-dev libgirepository1.0-dev python3-testresources
     apt-get -y -o Dpkg::Options::="--force-overwrite" install ovmf
     pip3 install tqdm requests six urllib3 ipaddr ipaddress idna dbus-python certifi lxml cryptography pyOpenSSL chardet asn1crypto pycairo PySocks PyGObject -U
+
+    # not available in 22.04
+    if [ $(lsb_release -sc) != "jammy" ]; then
+    	aptitude -f install python-enum34 libxenstore3.0 libnetcf1 libcroco3 -y
+    fi
 
     updatedb
 
@@ -721,6 +730,12 @@ function install_virt_manager() {
     sudo glib-compile-schemas --strict /usr/share/glib-2.0/schemas/
     systemctl enable virtstoraged.service
     systemctl start virtstoraged.service
+
+    # i440FX-Issue Win7: Unable to complete install: 'XML error: The PCI controller with index='0' must be model='pci-root' for this machine type, but model='pcie-root' was found instead'
+    # Workaround: Edit Overiew in XML view and delet all controller entires with type="pci"
+    # Example:
+    # <controller type="pci" model="pcie-root"/>
+    # <controller type="pci" model="pcie-root-port"/>
 }
 
 function install_kvm_linux() {
@@ -883,7 +898,7 @@ function install_qemu() {
         aptitude install -f software-properties-common -y
         add-apt-repository universe -y
         apt update 2>/dev/null
-        aptitude install -f python3-pip openbios-sparc openbios-ppc libssh2-1-dev vde2 liblzo2-dev libghc-gtk3-dev libsnappy-dev libbz2-dev libxml2-dev google-perftools libgoogle-perftools-dev libvde-dev python3-sphinx-rtd-theme  -y
+        aptitude install -f python3-pip openbios-sparc openbios-ppc libssh2-1-dev vde2 liblzo2-dev libghc-gtk3-dev libsnappy-dev libbz2-dev libxml2-dev google-perftools libgoogle-perftools-dev libvde-dev python3-sphinx-rtd-theme -y
         aptitude install -f debhelper libusb-1.0-0-dev libxen-dev uuid-dev xfslibs-dev libjpeg-dev libusbredirparser-dev device-tree-compiler texinfo libbluetooth-dev libbrlapi-dev libcap-ng-dev libcurl4-gnutls-dev libfdt-dev gnutls-dev libiscsi-dev libncurses5-dev libnuma-dev libcacard-dev librados-dev librbd-dev libsasl2-dev libseccomp-dev libspice-server-dev libaio-dev libcap-dev libattr1-dev libpixman-1-dev libgtk2.0-bin  libxml2-utils systemtap-sdt-dev uml-utilities -y
         # qemu docs required
         PERL_MM_USE_DEFAULT=1 perl -MCPAN -e install "Perl/perl-podlators"
