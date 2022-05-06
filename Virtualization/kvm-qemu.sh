@@ -666,7 +666,7 @@ function install_virt_manager() {
     # moved out as some 20.04 doesn't have this libs %)
     aptitude install -f -y python3-ntlm-auth libpython3-stdlib libbrlapi-dev libgirepository1.0-dev python3-testresources
     apt-get -y -o Dpkg::Options::="--force-overwrite" install ovmf
-    pip3 install tqdm requests six urllib3 ipaddr ipaddress idna dbus-python certifi lxml cryptography pyOpenSSL chardet asn1crypto pycairo PySocks PyGObject -U
+    pip3 install tqdm requests six urllib3 ipaddr ipaddress idna dbus-python certifi lxml cryptography pyOpenSSL chardet asn1crypto pycairo PySocks PyGObject
 
     # not available in 22.04
     if [ $(lsb_release -sc) != "jammy" ]; then
@@ -1039,7 +1039,7 @@ function install_seabios() {
     fi
 }
 
-function enable_sysreq(){
+function enable_sysrq(){
     if ! grep -q -E '^kernel.sysrq=1' /etc/sysctl.conf; then
         echo "kernel.sysrq=1" >> /etc/sysctl.conf
     fi
@@ -1294,7 +1294,7 @@ case "$COMMAND" in
         systemctl restart libvirtd libvirt-guests.service
         _enable_tcp_bbr
         grub_iommu
-        enable_sysreq
+        enable_sysrq
     elif [ "$OS" = "Darwin" ]; then
         install_haxm_mac
     fi
@@ -1320,8 +1320,8 @@ case "$COMMAND" in
         replace_qemu_clues_public
     fi
     ;;
-'sysreq')
-    enable_sysreq;;
+'sysrq')
+    enable_sysrq;;
 'libvirt')
     install_libvirt;;
 'libvmi')
