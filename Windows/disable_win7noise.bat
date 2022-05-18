@@ -72,6 +72,10 @@ echo "" > C:\ProgramData\Microsoft\Diagnosis\ETLLogs\AutoLogger\AutoLogger-Diagt
 reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\DataCollection" /v AllowTelemetry /t REG_DWORD /d 0 /f
 reg add "HKEY_LOCAL_MACHINE\SYSTEM\ControlSet001\Control\WMI\AutoLogger" /v AutoLogger-Diagtrack-Listener /t DWORD /d 0 /f
 
+REM Win10/11 telemetry
+sc config DiagTrack start= disabled
+sc config dmwappushservice start= disabled
+
 REM schtasks
 schtasks.exe /Change /TN "\Microsoft\Office\Office Automatic Updates 2.0" /Disable /ru ""
 schtasks.exe /Change /TN "\Microsoft\Office\Office ClickToRun Service Monitor" /Disable /ru ""
