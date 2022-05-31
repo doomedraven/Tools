@@ -597,15 +597,15 @@ function install_mongo(){
     echo "[+] Installing MongoDB"
     # Mongo 5 requires CPU AVX instruction support https://www.mongodb.com/docs/manual/administration/production-notes/#x86_64
     # $(lsb_release -cs) on 20.04 they uses 18.04 repo
-    if grep -q 'avx' /etc/sysfs.conf; then
+    if grep -q ' avx ' /proc/cpuinfo; then
         MONGO_VERSION = "5.0"
     else
         echo "[-] Mongo 5 is not supported"
         MONGO_VERSION = "4.4"
     fi
 
-    wget -qO - https://www.mongodb.org/static/pgp/server-$(MONGO_VERSION).asc | sudo apt-key add -
-    echo "deb [ arch=amd64 ] https://repo.mongodb.org/apt/ubuntu $(lsb_release -cs)/mongodb-org/$(MONGO_VERSION) multiverse" | sudo tee /etc/apt/sources.list.d/mongodb.list
+    wget -qO - https://www.mongodb.org/static/pgp/server-${MONGO_VERSION}.asc | sudo apt-key add -
+    echo "deb [ arch=amd64 ] https://repo.mongodb.org/apt/ubuntu $(lsb_release -cs)/mongodb-org/${MONGO_VERSION} multiverse" | sudo tee /etc/apt/sources.list.d/mongodb.list
 
     apt update 2>/dev/null
     apt install libpcre3-dev numactl -y
