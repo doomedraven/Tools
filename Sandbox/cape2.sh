@@ -958,8 +958,9 @@ function install_CAPE() {
     # Adapting owner permissions to the ${USER} path folder
     chown ${USER}:${USER} -R "/opt/CAPEv2/"
 
-    CRYPTOGRAPHY_DONT_BUILD_RUST=1 pip3 install -r /opt/CAPEv2/requirements.txt
-    pip3 install -r /opt/CAPEv2/requirements.github.txt
+    cd CAPEv2 || return
+    pip3 install poetry
+    CRYPTOGRAPHY_DONT_BUILD_RUST=1 poetry install
 
     sed -i "/connection =/cconnection = postgresql://${USER}:${PASSWD}@localhost:5432/${USER}" /opt/CAPEv2/conf/cuckoo.conf
     sed -i "/tor/{n;s/enabled = no/enabled = yes/g}" /opt/CAPEv2/conf/routing.conf
@@ -967,7 +968,6 @@ function install_CAPE() {
     #sed -i "/machinery =/cmachinery = kvm" /opt/CAPEv2/conf/cuckoo.conf
     sed -i "/interface =/cinterface = ${NETWORK_IFACE}" /opt/CAPEv2/conf/auxiliary.conf
 
-    cd CAPEv2 || return
     python3 utils/community.py -waf -cr
 }
 
