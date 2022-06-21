@@ -973,11 +973,11 @@ function install_CAPE() {
 
 function install_systemd() {
 
-    cp  /opt/CAPEv2/systemd/cape.service /lib/systemd/system/cape.service
-    cp  /opt/CAPEv2/systemd/cape.service /lib/systemd/system/cape-processor.service
-    cp  /opt/CAPEv2/systemd/cape-web.service /lib/systemd/system/cape-web.service
-    cp  /opt/CAPEv2/systemd/cape-rooter.service /lib/systemd/system/cape-rooter.service
-    cp  /opt/CAPEv2/systemd/suricata.service /lib/systemd/system/suricata.service
+    cp /opt/CAPEv2/systemd/cape.service /lib/systemd/system/cape.service
+    cp /opt/CAPEv2/systemd/cape-processor.service /lib/systemd/system/cape-processor.service
+    cp /opt/CAPEv2/systemd/cape-web.service /lib/systemd/system/cape-web.service
+    cp /opt/CAPEv2/systemd/cape-rooter.service /lib/systemd/system/cape-rooter.service
+    cp /opt/CAPEv2/systemd/suricata.service /lib/systemd/system/suricata.service
     systemctl daemon-reload
     systemctl enable cape cape-rooter cape-processor cape-web suricata
     systemctl restart cape cape-rooter cape-processor cape-web suricata
