@@ -973,136 +973,14 @@ function install_CAPE() {
 
 function install_systemd() {
 
-    if [ ! -f /lib/systemd/system/cape-processor.service ]; then
-        cat >> /lib/systemd/system/cape-processor.service << EOL
-[Unit]
-Description=CAPEv2 report processor
-Documentation=https://github.com/kevoreilly/CAPEv2
-Wants=cape.service
-After=cape-rooter.service
-
-[Service]
-WorkingDirectory=/opt/CAPEv2/utils/
-ExecStart=/usr/bin/python3 process.py -p7 auto -pt 900
-User=${USER}
-Group=${USER}
-Restart=always
-RestartSec=5m
-LimitNOFILE=100000
-
-[Install]
-WantedBy=multi-user.target
-EOL
-fi
-
-    if [ ! -f /lib/systemd/system/cape-rooter.service ]; then
-        cat >> /lib/systemd/system/cape-rooter.service << EOL
-[Unit]
-Description=CAPE rooter
-Documentation=https://github.com/kevoreilly/CAPEv2
-Wants=network-online.target
-After=syslog.target network.target
-
-[Service]
-WorkingDirectory=/opt/CAPEv2/utils/
-ExecStart=/usr/bin/python3 rooter.py --iptables /usr/sbin/iptables --iptables-restore /usr/sbin/iptables-restore --iptables-save /usr/sbin/iptables-save -g ${USER}
-User=root
-Group=root
-Restart=always
-RestartSec=5m
-
-[Install]
-WantedBy=multi-user.target
-EOL
-fi
-
-    if [ ! -f /lib/systemd/system/cape-web.service ]; then
-        cat >> /lib/systemd/system/cape-web.service << EOL
-[Unit]
-Description=CAPE WSGI app
-Documentation=https://github.com/kevoreilly/CAPEv2
-Wants=cape.service
-After=cape.service
-
-[Service]
-WorkingDirectory=/opt/CAPEv2/web
-ExecStart=/usr/bin/python3 manage.py runserver 0.0.0.0:8000
-#ExecStart=/opt/CAPEv2/venv/bin/gunicorn -b 127.0.0.1:8000 web.wsgi
-User=${USER}
-Group=${USER}
-Restart=always
-RestartSec=5m
-
-[Install]
-WantedBy=multi-user.target
-EOL
-fi
-
-    if [ ! -f /lib/systemd/system/cape.service ]; then
-        cat >> /lib/systemd/system/cape.service << EOL
-[Unit]
-Description=CAPE
-Documentation=https://github.com/kevoreilly/CAPEv2
-
-[Service]
-Environment=LD_PRELOAD=libjemalloc.so
-WorkingDirectory=/opt/CAPEv2/
-ExecStart=/usr/bin/python3 cuckoo.py
-User=${USER}
-Group=${USER}
-Restart=always
-RestartSec=5m
-LimitNOFILE=100000
-[Install]
-WantedBy=multi-user.target
-EOL
-fi
-
-    if [ ! -f /lib/systemd/system/suricata.service ]; then
-        cat >> /lib/systemd/system/suricata.service << EOL
-[Unit]
-Description=Suricata IDS/IDP daemon
-After=network.target
-Requires=network.target
-Documentation=man:suricata(8) man:suricatasc(8)
-Documentation=https://redmine.openinfosecfoundation.org/projects/suricata/wiki
-
-[Service]
-Type=forking
-#Environment=LD_PREDLOAD=/usr/lib/libtcmalloc_minimal.so.4
-#Environment=CFG=/etc/suricata/suricata.yaml
-#CapabilityBoundingSet=CAP_NET_ADMIN
-ExecStartPre=/bin/rm -f /tmp/suricata.pid
-ExecStart=/usr/bin/suricata -D -c /etc/suricata/suricata.yaml --unix-socket
-ExecReload=/bin/kill -HUP $MAINPID
-ExecStop=/bin/kill $MAINPID
-PrivateTmp=no
-InaccessibleDirectories=/home /root
-ReadOnlyDirectories=/boot /usr /etc
-User=root
-
-[Install]
-WantedBy=multi-user.target
-EOL
-fi
-
-
+    cp  /opt/CAPEv2/systemd/cape.service /lib/systemd/system/cape.service
+    cp  /opt/CAPEv2/systemd/cape.service /lib/systemd/system/cape-processor.service
+    cp  /opt/CAPEv2/systemd/cape-web.service /lib/systemd/system/cape-web.service
+    cp  /opt/CAPEv2/systemd/cape-rooter.service /lib/systemd/system/cape-rooter.service
+    cp  /opt/CAPEv2/systemd/suricata.service /lib/systemd/system/suricata.service
     systemctl daemon-reload
-    systemctl enable cape-rooter
-    systemctl start cape-rooter
-
-    systemctl enable cape
-    systemctl start cape
-
-    systemctl enable cape-processor
-    systemctl start cape-processor
-
-    systemctl enable cape-web
-    systemctl start cape-web
-
-    systemctl enable suricata
-    systemctl start suricata
-
+    systemctl enable cape cape-rooter cape-processor cape-web suricata
+    systemctl restart cape cape-rooter cape-processor cape-web suricata
 }
 
 function supervisor() {
