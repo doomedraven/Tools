@@ -23,7 +23,7 @@ grafana_version=7.1.5
 node_exporter_version=1.0.1
 guacamole_version=1.2.0
 
-DIE_VERSION="3.04"
+DIE_VERSION="3.05"
 UBUNTU_VERSION=$(lsb_release -rs)
 
 TOR_SOCKET_TIMEOUT="60"
@@ -1280,7 +1280,7 @@ function install_guacamole() {
 }
 
 function install_DIE() {
-    apt install libqt5opengl5 libqt5script5 libqt5scripttools5 -y
+    apt install libqt5opengl5 libqt5script5 libqt5scripttools5 libqt5sql5 -y
     wget "https://github.com/horsicq/DIE-engine/releases/download/${DIE_VERSION}/die_${DIE_VERSION}_Ubuntu_${UBUNTU_VERSION}_amd64.deb" -O DIE.deb
     dpkg -i DIE.deb
 }
