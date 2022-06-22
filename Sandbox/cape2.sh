@@ -961,6 +961,7 @@ function install_CAPE() {
     cd CAPEv2 || return
     pip3 install poetry
     CRYPTOGRAPHY_DONT_BUILD_RUST=1 sudo -u ${USER} poetry install
+    sudo -u ${USER} poetry install run extra/poetry_libvirt_installer.sh
 
     sed -i "/connection =/cconnection = postgresql://${USER}:${PASSWD}@localhost:5432/${USER}" /opt/CAPEv2/conf/cuckoo.conf
     sed -i "/tor/{n;s/enabled = no/enabled = yes/g}" /opt/CAPEv2/conf/routing.conf
