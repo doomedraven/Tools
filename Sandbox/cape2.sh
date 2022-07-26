@@ -598,9 +598,9 @@ function install_mongo(){
     # Mongo 5 requires CPU AVX instruction support https://www.mongodb.com/docs/manual/administration/production-notes/#x86_64
     # $(lsb_release -cs) on 20.04 they uses 18.04 repo
     if grep -q ' avx ' /proc/cpuinfo; then
-        MONGO_VERSION="5.0"
+        MONGO_VERSION="6.0"
     else
-        echo "[-] Mongo 5 is not supported"
+        echo "[-] Mongo >= 5 is not supported"
         MONGO_VERSION="4.4"
     fi
 
