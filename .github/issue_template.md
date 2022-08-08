@@ -1,3 +1,6 @@
+## If you ignoring to read and fill this template, why I should care about your issues?
+* Somethinng doesn't work without proper logs is also invalid issue!
+
 ## This is opensource and you getting __free__ support so be friendly! 
 * Wants to say thanks -> [buy me a beer](https://opencollective.com/virustotalapi)
 
