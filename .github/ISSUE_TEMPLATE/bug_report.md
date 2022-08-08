@@ -1,8 +1,11 @@
-## If you ignoring to read and fill this template, why I should care about your issues?
-* Somethinng doesn't work without proper logs is also invalid issue!
+---
+name: Bug report
+about: Create a report to help us improve
 
-## This is opensource and you getting __free__ support so be friendly! 
-* Wants to say thanks -> [buy me a beer](https://opencollective.com/virustotalapi)
+---
+
+## This is opensource and you getting __free__ support so be friendly!
+* Wants to say thank you -> [buy me a beer](https://opencollective.com/virustotalapi)
 
 # Prerequisites
 
@@ -24,7 +27,7 @@ What is the current behavior?
 
 # Failure Information (for bugs)
 
-Please help provide information about the failure if this is a bug. If it is not a bug, please remove the rest of this template.
+Please help provide information about the failure if this is a bug. If it is not a bug.
 
 ## Steps to Reproduce
 
