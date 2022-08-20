@@ -219,32 +219,9 @@ function _check_brew() {
 
 function install_apparmor() {
 
-    if [ $(lsb_release -sc) == "jammy" ]; then
-    	# ubuntu 22.04 comes with latest apparmor
-    	aptitude install -f bison linux-generic-hwe-22.04 -y
-    	aptitude install -f apparmor apparmor-profiles apparmor-profiles-extra apparmor-utils libapparmor-dev libapparmor1  python3-apparmor python3-libapparmor libapparmor-perl -y
-    else
-    	aptitude install -f apparmor-profiles apparmor-profiles-extra apparmor-utils libapparmor-dev python3-apparmor libapparmor-perl libapparmor-dev apparmor-utils -y
-    	# Kudos to @ditekshen for the apparmor solution with latest libvirt
-    	# https://gitlab.com/apparmor/apparmor/-/releases
-    	# required for BPF
-    	apt install bison linux-generic-hwe-20.04 -y
-    	APPARMOR_VERSION="2.13.6"
-    	wget "https://launchpad.net/apparmor/2.13/$APPARMOR_VERSION/+download/apparmor-$APPARMOR_VERSION.tar.gz"
-    	tar xf "apparmor-$APPARMOR_VERSION.tar.gz"
-    	sudo apt-get -y install swig
-    	export PYTHON=/usr/bin/python3
-    	export PYTHON_VERSION=3
-    	export PYTHON_VERSIONS=python3
-
-    	mkdir -p /tmp/apparmor-"$APPARMOR_VERSION"_builded/DEBIAN
-    	echo -e "Package: apparmor-parser\nVersion: $APPARMOR_VERSION\nArchitecture: $ARCH\nMaintainer: $MAINTAINER\nDescription: Custom antivm qemu" > /tmp/apparmor-"$APPARMOR_VERSION"_builded/DEBIAN/control
-    	cd "apparmor-$APPARMOR_VERSION/parser/"
-    	USE_SYSTEM=1 make -j"$(nproc)" install DESTDIR=/tmp/apparmor-"$APPARMOR_VERSION"_builded
-    	USE_SYSTEM=1 dpkg-deb --build --root-owner-group /tmp/apparmor-"$APPARMOR_VERSION"_builded
-    	dpkg -i --force-overwrite /tmp/apparmor-"$APPARMOR_VERSION"_builded.deb
-    	sudo ldconfig
-    fi
+    # ubuntu 22.04 comes with latest apparmor
+    aptitude install -f bison linux-generic-hwe-22.04 -y
+    aptitude install -f apparmor apparmor-profiles apparmor-profiles-extra apparmor-utils libapparmor-dev libapparmor1  python3-apparmor python3-libapparmor libapparmor-perl -y
 }
 
 function install_haxm_mac() {
