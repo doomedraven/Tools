@@ -12,5 +12,5 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v2
     - run: |
-    chmod a+x "${GITHUB_WORKSPACE}/Virtualization/kvm-qemu.sh"
-    "${GITHUB_WORKSPACE}/Virtualization/kvm-qemu.sh all"
+      chmod a+x "${GITHUB_WORKSPACE}/Virtualization/kvm-qemu.sh"
+      "${GITHUB_WORKSPACE}/Virtualization/kvm-qemu.sh all"
