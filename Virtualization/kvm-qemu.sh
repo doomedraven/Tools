@@ -118,7 +118,7 @@ sudo apt install aptitude -y 2>/dev/null
 NC='\033[0m'
 RED='\033[0;31m'
 echo -e "${RED}[!] ONLY for UBUNTU 20.04 and 22.04${NC}"
-echo -e "${RED}\t[!] NEVER install packages from APT that installed by this script${NC}"
+echo -e "${RED}\t[!] NEVER install packages from APT that installed by this script.${NC}"
 echo -e "${RED}\t[!] NEVER use 'make install' - it poison system and no easy way to upgrade/uninstall/cleanup, use dpkg-deb${NC}"
 echo -e "${RED}\t[!] NEVER run 'python setup.py install' DO USE 'pip intall .' the same as APT poisoning/upgrading${NC}\n"
 echo -e "${RED}\t[!] NEVER FORCE system upgrade, it will ignore blacklist and mess with packages installed by APT and this scritp!${NC}\n"
@@ -1263,8 +1263,8 @@ esac
 #    fi
 #fi
 
-#check if start with root
-if [ "$EUID" -ne 0 ]; then
+# check if start with root
+if [ "$EUID" -ne 0 ] && [[ ! -z "{BUILD_ENV}" ]]; then
    echo 'This script must be run as root'
    exit 1
 fi

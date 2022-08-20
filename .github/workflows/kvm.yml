@@ -13,6 +13,5 @@ jobs:
     - name: Run script file
       run: |
          chmod a+x "${GITHUB_WORKSPACE}/Virtualization/kvm-qemu.sh"
-         ls -lah *
-         "${GITHUB_WORKSPACE}/Virtualization/kvm-qemu.sh" all
+         BUILD_ENV=1 "${GITHUB_WORKSPACE}/Virtualization/kvm-qemu.sh" all
       shell: bash
