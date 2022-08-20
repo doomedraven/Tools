@@ -9,8 +9,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout
-      uses: actions/checkout@v2
-    - run: |
-      :chmod a+x "${GITHUB_WORKSPACE}/Virtualization/kvm-qemu.sh"
-      :"${GITHUB_WORKSPACE}/Virtualization/kvm-qemu.sh all"
+    - uses: actions/checkout@v2
+    - name: Run script file
+      run: |
+         chmod a+x "${GITHUB_WORKSPACE}/Virtualization/kvm-qemu.sh"
+         "${GITHUB_WORKSPACE}/Virtualization/kvm-qemu.sh all"
+      shell: bash
