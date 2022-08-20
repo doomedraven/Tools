@@ -113,7 +113,7 @@ src_fw_smbios_date="11\/03\/2018"
 #* If your CPU is Intel, you need activate in __BIOS__ VT-x
 #    * (last letter can change, you can activate [TxT ](https://software.intel.com/en-us/blogs/2012/09/25/how-to-enable-an-intel-trusted-execution-technology-capable-server) too, and any other feature, but VT-* is very important)
 
-sudo apt install aptitude -y 2>/dev/null
+apt install aptitude -y 2>/dev/null
 
 NC='\033[0m'
 RED='\033[0;31m'
@@ -169,7 +169,7 @@ function grub_iommu(){
         echo "[-] GRUB patching failed, add intel_iommu=on manually"
         return 1
     fi
-    sudo update-grub
+    update-grub
     echo "[+] Please reboot"
 }
 
@@ -206,9 +206,9 @@ function _enable_tcp_bbr() {
         echo "vm.swappiness = 1" ;
         echo "vm.dirty_ratio = 15";
     } >> /etc/sysctl.conf
-    sudo sysctl -p
+    sysctl -p
 
-    sudo sysctl --system
+    sysctl --system
 }
 
 function _check_brew() {
@@ -232,7 +232,7 @@ function install_apparmor() {
     	APPARMOR_VERSION="2.13.6"
     	wget "https://launchpad.net/apparmor/2.13/$APPARMOR_VERSION/+download/apparmor-$APPARMOR_VERSION.tar.gz"
     	tar xf "apparmor-$APPARMOR_VERSION.tar.gz"
-    	sudo apt-get -y install swig
+    	apt-get -y install swig
     	export PYTHON=/usr/bin/python3
     	export PYTHON_VERSION=3
     	export PYTHON_VERSIONS=python3
@@ -243,7 +243,7 @@ function install_apparmor() {
     	USE_SYSTEM=1 make -j"$(nproc)" install DESTDIR=/tmp/apparmor-"$APPARMOR_VERSION"_builded
     	USE_SYSTEM=1 dpkg-deb --build --root-owner-group /tmp/apparmor-"$APPARMOR_VERSION"_builded
     	dpkg -i --force-overwrite /tmp/apparmor-"$APPARMOR_VERSION"_builded.deb
-    	sudo ldconfig
+    	ldconfig
     fi
 }
 
@@ -268,13 +268,13 @@ function install_libguestfs() {
     # https://libguestfs.org/guestfs-building.1.html
     cd /opt || return
     echo "[+] Check for previous version of LibGuestFS"
-    sudo dpkg --purge --force-all "libguestfs-*" 2>/dev/null
+    dpkg --purge --force-all "libguestfs-*" 2>/dev/null
 
-    wget -O- https://packages.erlang-solutions.com/ubuntu/erlang_solutions.asc | sudo apt-key add -
-    sudo add-apt-repository -y "deb https://packages.erlang-solutions.com/ubuntu $(lsb_release -sc) contrib"
-    sudo aptitude install -f parted libyara3 erlang-dev gperf flex bison libaugeas-dev libhivex-dev supermin ocaml-nox libhivex-ocaml genisoimage libhivex-ocaml-dev libmagic-dev libjansson-dev gnulib jq ocaml-findlib -y 2>/dev/null
-    sudo apt update
-    sudo aptitude install -f erlang -y
+    wget -O- https://packages.erlang-solutions.com/ubuntu/erlang_solutions.asc | apt-key add -
+    add-apt-repository -y "deb https://packages.erlang-solutions.com/ubuntu $(lsb_release -sc) contrib"
+    aptitude install -f parted libyara3 erlang-dev gperf flex bison libaugeas-dev libhivex-dev supermin ocaml-nox libhivex-ocaml genisoimage libhivex-ocaml-dev libmagic-dev libjansson-dev gnulib jq ocaml-findlib -y 2>/dev/null
+    apt update
+    aptitude install -f erlang -y
 
     if [ ! -d libguestfs ]; then
         #ToDo move to latest release not latest code
@@ -436,7 +436,7 @@ function install_pyvmidbg() {
     # python3 setup.py build
     # pip3 install .
 
-    # sudo python3 -m vmidbg 5000 <vm_name> --address 0.0.0.0 cmd -d
+    # python3 -m vmidbg 5000 <vm_name> --address 0.0.0.0 cmd -d
 
     # git clone https://github.com/radare/radare2.git
     # sys/install.sh
@@ -475,11 +475,11 @@ EOH
     fi
 
     # preferences.d doesnt work for me with qemu 7.0.0 and Ubuntu 22.04, to be sure, handle via dpkg
-    echo "qemu hold" | sudo dpkg --set-selections 2>/dev/null
+    echo "qemu hold" | dpkg --set-selections 2>/dev/null
     echo "[+] Checking/deleting old versions of Libvirt"
     apt purge libvirt0 libvirt-bin libvirt-$libvirt_version 2>/dev/null
-    dpkg -l|grep "libvirt-[0-9]\{1,2\}\.[0-9]\{1,2\}\.[0-9]\{1,2\}"|cut -d " " -f 3|sudo xargs dpkg --purge --force-all 2>/dev/null
-    sudo apt install mlocate libxml2-utils gnutls-bin  gnutls-dev libxml2-dev bash-completion libreadline-dev numactl libnuma-dev python3-docutils flex -y
+    dpkg -l|grep "libvirt-[0-9]\{1,2\}\.[0-9]\{1,2\}\.[0-9]\{1,2\}"|cut -d " " -f 3|xargs dpkg --purge --force-all 2>/dev/null
+    apt install mlocate libxml2-utils gnutls-bin  gnutls-dev libxml2-dev bash-completion libreadline-dev numactl libnuma-dev python3-docutils flex -y
     # Remove old links
     updatedb
     temp_libvirt_so_path=$(locate libvirt-qemu.so | head -n1 | awk '{print $1;}')
@@ -523,13 +523,13 @@ EOH
         # --prefix=/usr --localstatedir=/var --sysconfdir=/etc
         #git init
         #git remote add doomedraven https://github.com/libvirt/libvirt
-        # To see whole config sudo meson configure
+        # To see whole config meson configure
         # true now is enabled
         cd /tmp/libvirt-$libvirt_version || return
-        sudo meson build -D system=true -D driver_remote=enabled -D driver_qemu=enabled -D driver_libvirtd=enabled -D qemu_group=libvirt -D qemu_user=root -D secdriver_apparmor=enabled -D apparmor_profiles=enabled -D bash_completion=auto
+        meson build -D system=true -D driver_remote=enabled -D driver_qemu=enabled -D driver_libvirtd=enabled -D qemu_group=libvirt -D qemu_user=root -D secdriver_apparmor=enabled -D apparmor_profiles=enabled -D bash_completion=auto
 
-        sudo ninja -C build
-        sudo ninja -C build install
+        ninja -C build
+        ninja -C build install
         if  [ $? -ne 0 ]; then
             echo "${RED}Failed. Read the instalation log for details${NC}"
             exit 1
@@ -585,7 +585,7 @@ EOH
     )
     for file in "${FILES[@]}"; do
         if [ -f "$file" ]; then
-            sudo aa-complain "$file"
+            aa-complain "$file"
         fi
     done
 
@@ -619,8 +619,8 @@ EOH
         fi
 
         #check links
-        # sudo ln -s /usr/lib64/libvirt-qemu.so /lib/x86_64-linux-gnu/libvirt-qemu.so.0
-        # sudo ln -s /usr/lib64/libvirt.so.0 /lib/x86_64-linux-gnu/libvirt.so.0
+        # ln -s /usr/lib64/libvirt-qemu.so /lib/x86_64-linux-gnu/libvirt-qemu.so.0
+        # ln -s /usr/lib64/libvirt.so.0 /lib/x86_64-linux-gnu/libvirt.so.0
         systemctl enable virtqemud.service virtnetworkd.service virtstoraged.service
         echo "[+] You should logout and login "
     fi
@@ -704,7 +704,7 @@ function install_virt_manager() {
     # ToDo add blacklist
     checkinstall --pkgname=libvirt-glib-1.0-0 --default
     # v4 is meson based
-    # sudo meson build -D system=true
+    # meson build -D system=true
     cd /tmp || return
     if [ ! -f gir1.2-libvirt-glib-1.0_1.0.0-1_amd64.deb ]; then
         wget http://launchpadlibrarian.net/297448356/gir1.2-libvirt-glib-1.0_1.0.0-1_amd64.deb
@@ -727,7 +727,7 @@ function install_virt_manager() {
     else
         echo "export LIBVIRT_DEFAULT_URI=qemu:///system" >> "$HOME/.bashrc"
     fi
-    sudo glib-compile-schemas --strict /usr/share/glib-2.0/schemas/
+    glib-compile-schemas --strict /usr/share/glib-2.0/schemas/
     systemctl enable virtstoraged.service
     systemctl start virtstoraged.service
 
@@ -1061,7 +1061,7 @@ cat << EndOfHelp
     * Error:
         * GLib-GIO-ERROR **: 09:05:35.162: Settings schema 'org.virt-manager.virt-manager' is not installed
     * Solution:
-        * sudo glib-compile-schemas --strict /usr/share/glib-2.0/schemas/
+        * glib-compile-schemas --strict /usr/share/glib-2.0/schemas/
 
     * Error:
         * error: internal error: cannot load AppArmor profile
@@ -1145,8 +1145,8 @@ cat << EndOfHelp
     Solution 1:
         aptitude install -f libyara3
     Solution 2:
-        sudo echo "/usr/local/lib" >> /etc/ld.so.conf
-        sudo ldconfig
+        echo "/usr/local/lib" >> /etc/ld.so.conf
+        ldconfig
 
     # Fixes from http://ask.xmodulo.com/compile-virt-manager-debian-ubuntu.html
     1. ImportError: No module named libvirt
@@ -1174,7 +1174,7 @@ cat << EndOfHelp
     8 ValueError: Namespace GtkSource not available
     $ aptitude install -f gir1.2-gtksource-4 libgtksourceview-4-0 libgtksourceview-4-common
     * Error will specify version, example gi.require_version("GtkSource", "4"), if that version is not available for your distro
-    * you will need downgrade your virt-manager with $ sudo rm -r /usr/share/virt-manager and install older version
+    * you will need downgrade your virt-manager with $ rm -r /usr/share/virt-manager and install older version
 
     9. ImportError: cannot import name Vte
     $ aptitude install -f gir1.2-vte-2.90
@@ -1187,27 +1187,27 @@ EndOfHelp
 }
 
 function install_WebVirtCloud(){
-    sudo apt -y install git virtualenv python-virtualenv python-dev python-lxml libvirt-dev zlib1g-dev libxslt1-dev nginx libsasl2-modules gcc pkg-config python-guestfs
+    apt -y install git virtualenv python-virtualenv python-dev python-lxml libvirt-dev zlib1g-dev libxslt1-dev nginx libsasl2-modules gcc pkg-config python-guestfs
     pip install supervisor
     git clone https://github.com/retspen/webvirtcloud
     cd webvirtcloud || return
     cp webvirtcloud/settings.py.template webvirtcloud/settings.py
     # now put secret key to webvirtcloud/settings.py
-    sudo cp conf/supervisor/webvirtcloud.conf /etc/supervisor/conf.d
-    sudo cp conf/nginx/webvirtcloud.conf /etc/nginx/conf.d
+    cp conf/supervisor/webvirtcloud.conf /etc/supervisor/conf.d
+    cp conf/nginx/webvirtcloud.conf /etc/nginx/conf.d
     cd ..
-    sudo mv webvirtcloud /srv
-    sudo chown -R www-data:www-data /srv/webvirtcloud
+    mv webvirtcloud /srv
+    chown -R www-data:www-data /srv/webvirtcloud
     cd /srv/webvirtcloud || return
     virtualenv venv
     source venv/bin/activate
     sed -i 's/libvirt-python//g' conf/requirements.txt
     pip install -r conf/requirements.txt
     python manage.py migrate
-    sudo chown -R www-data:www-data /srv/webvirtcloud
-    sudo rm /etc/nginx/sites-enabled/default
-    sudo service nginx restart
-    sudo service supervisor restart
+    chown -R www-data:www-data /srv/webvirtcloud
+    rm /etc/nginx/sites-enabled/default
+    service nginx restart
+    service supervisor restart
 }
 
 function cloning() {
@@ -1371,7 +1371,7 @@ case "$COMMAND" in
     install_jemalloc;;
 'mosh')
     if [ "$OS" = "Linux" ]; then
-        sudo aptitude install -f mosh -y
+        aptitude install -f mosh -y
     elif [ "$OS" = "Darwin" ]; then
         _check_brew
         brew install mosh
