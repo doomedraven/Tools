@@ -507,8 +507,8 @@ EOH
     if [ -f  libvirt-$libvirt_version.tar.xz ]; then
         rm -r libvirt-$libvirt_version
     else
-        wget https://libvirt.org/sources/libvirt-$libvirt_version.tar.xz
-        wget https://libvirt.org/sources/libvirt-$libvirt_version.tar.xz.asc
+        wget -q --show-progress https://libvirt.org/sources/libvirt-$libvirt_version.tar.xz
+        wget -q --show-progress https://libvirt.org/sources/libvirt-$libvirt_version.tar.xz.asc
         gpg --verify "libvirt-$libvirt_version.tar.xz.asc"
     fi
     tar xf libvirt-$libvirt_version.tar.xz
@@ -879,8 +879,8 @@ function install_qemu() {
 
     echo '[+] Downloading QEMU source code'
     if [ ! -f qemu-$qemu_version.tar.xz ]; then
-        wget "https://download.qemu.org/qemu-$qemu_version.tar.xz"
-        wget "https://download.qemu.org/qemu-$qemu_version.tar.xz.sig"
+        wget -q --show-progress "https://download.qemu.org/qemu-$qemu_version.tar.xz"
+        wget -q --show-progress "https://download.qemu.org/qemu-$qemu_version.tar.xz.sig"
         gpg --verify "qemu-$qemu_version.tar.xz.sig"
     fi
 
@@ -898,7 +898,7 @@ function install_qemu() {
         aptitude install -f software-properties-common -y
         add-apt-repository universe -y
         apt update 2>/dev/null
-        aptitude install -f libaio-dev python3-pip openbios-sparc openbios-ppc libssh2-1-dev vde2 liblzo2-dev libghc-gtk3-dev libsnappy-dev libbz2-dev libxml2-dev google-perftools libgoogle-perftools-dev libvde-dev python3-sphinx-rtd-theme -y
+        aptitude install -f python3-pip openbios-sparc openbios-ppc libssh2-1-dev vde2 liblzo2-dev libghc-gtk3-dev libsnappy-dev libbz2-dev libxml2-dev google-perftools libgoogle-perftools-dev libvde-dev python3-sphinx-rtd-theme -y
         aptitude install -f debhelper libusb-1.0-0-dev libxen-dev uuid-dev xfslibs-dev libjpeg-dev libusbredirparser-dev device-tree-compiler texinfo libbluetooth-dev libbrlapi-dev libcap-ng-dev libcurl4-gnutls-dev libfdt-dev gnutls-dev libiscsi-dev libncurses5-dev libnuma-dev libcacard-dev librados-dev librbd-dev libsasl2-dev libseccomp-dev libspice-server-dev libaio-dev libcap-dev libattr1-dev libpixman-1-dev libgtk2.0-bin  libxml2-utils systemtap-sdt-dev uml-utilities -y
         # qemu docs required
         PERL_MM_USE_DEFAULT=1 perl -MCPAN -e install "Perl/perl-podlators"
@@ -1267,6 +1267,11 @@ esac
 if [ "$EUID" -ne 0 ] && [[ -z "${BUILD_ENV}" ]]; then
    echo 'This script must be run as root'
    exit 1
+fi
+
+# Dependencies for github actions
+if [[ -z "${BUILD_ENV}" ]]; then
+    apt install libaio-dev -y
 fi
 
 OS="$(uname -s)"
