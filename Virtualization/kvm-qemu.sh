@@ -1264,7 +1264,7 @@ esac
 #fi
 
 # check if start with root
-if [ "$EUID" -ne 0 ] && [[ ! -z "{BUILD_ENV}" ]]; then
+if [ "$EUID" -ne 0 ] && [[ -z "${BUILD_ENV}" ]]; then
    echo 'This script must be run as root'
    exit 1
 fi
