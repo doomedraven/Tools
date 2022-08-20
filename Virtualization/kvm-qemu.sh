@@ -1269,11 +1269,6 @@ if [ "$EUID" -ne 0 ] && [[ -z "${BUILD_ENV}" ]]; then
    exit 1
 fi
 
-# Dependencies for github actions
-if [[ -z "${BUILD_ENV}" ]]; then
-    apt install libaio-dev -y
-fi
-
 OS="$(uname -s)"
 MAINTAINER="$(whoami)"_"$(hostname)"
 ARCH="$(dpkg --print-architecture)"

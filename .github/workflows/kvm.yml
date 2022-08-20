@@ -12,6 +12,8 @@ jobs:
     - uses: actions/checkout@v2
     - name: Run script file
       run: |
+         apt install apt install libaio-dev libaio1 -y
          chmod a+x "${GITHUB_WORKSPACE}/Virtualization/kvm-qemu.sh"
          BUILD_ENV=1 "${GITHUB_WORKSPACE}/Virtualization/kvm-qemu.sh" all
+
       shell: bash
