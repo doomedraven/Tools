@@ -57,12 +57,19 @@ Huge thanks to:
 # if you want all arches support in QEMU, just set QTARGETS to empty
 QTARGETS="--target-list=i386-softmmu,x86_64-softmmu,i386-linux-user,x86_64-linux-user"
 
-
-#https://www.qemu.org/download/#source or https://download.qemu.org/
+# 
+# qemu - https://www.qemu.org/download/#source or https://download.qemu.org/
 qemu_version=7.1.0
+# 
 # libvirt - https://libvirt.org/sources/
 # changelog - https://libvirt.org/news.html
 libvirt_version=8.2.0
+# 
+# libguest - https://libguestfs.org
+# download - https://download.libguestfs.org
+libguestfs_version_major=1.48
+libguestfs_version_minor=4
+#
 # virt-manager - https://github.com/virt-manager/virt-manager/releases
 # autofilled
 OS=""
@@ -247,25 +254,22 @@ function install_libguestfs() {
     echo "[+] Check for previous version of LibGuestFS"
     sudo dpkg --purge --force-all "libguestfs-*" 2>/dev/null
 
-    wget -O- https://packages.erlang-solutions.com/ubuntu/erlang_solutions.asc | sudo apt-key add -
-    sudo add-apt-repository -y "deb https://packages.erlang-solutions.com/ubuntu $(lsb_release -sc) contrib"
-    sudo aptitude install -f parted libyara3 erlang-dev gperf flex bison libaugeas-dev libhivex-dev supermin ocaml-nox libhivex-ocaml genisoimage libhivex-ocaml-dev libmagic-dev libjansson-dev gnulib jq ocaml-findlib -y 2>/dev/null
+    curl -fsSL https://packages.erlang-solutions.com/ubuntu/erlang_solutions.asc | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/erlang.gpg
+    echo "deb https://packages.erlang-solutions.com/ubuntu focal contrib" | sudo tee /etc/apt/sources.list.d/erlang.list
     sudo apt update
-    sudo aptitude install -f erlang -y
+    sudo apt build-dep libguestfs
+
+    sudo aptitude install -f parted libyara-dev gperf flex bison libaugeas-dev libhivex-dev supermin ocaml-nox libhivex-ocaml genisoimage libhivex-ocaml-dev libmagic-dev libjansson-dev gnulib jq ocaml-findlib -y 2>/dev/null
+    sudo aptitude install -f erlang erlang-dev
+    sudo aptitude install -f autoconf automake libtool-bin gettext
 
     if [ ! -d libguestfs ]; then
-        #ToDo move to latest release not latest code
-        #_info=$(curl -s https://api.github.com/repos/libguestfs/libguestfs/releases/latest)
-        #_version=$(echo $_info |jq .tag_name|sed "s/\"//g")
-        #_repo_url=$(echo $_info | jq ".zipball_url" | sed "s/\"//g")
-        #wget -q $_repo_url
-        #unzip $_version
-        git clone --recursive https://github.com/libguestfs/libguestfs
+        wget -q https://download.libguestfs.org/${libguestfs_version_major}-stable/libguestfs-${libguestfs_version_major}.${libguestfs_version_minor}.tar.gz -O libguestfs.tar.gz
+        tar -zxvf libguestfs.tar.gz
+        mv libguestfs-${libguestfs_version_major}.${libguestfs_version_minor} libguestfs
     fi
     cd libguestfs || return
-    git submodule update --init
-    autoreconf -i
-    ./configure CFLAGS=-fPIC
+    ./configure
     make -j"$(nproc)"
 
     # Install virt tools that are in a diff repo since LIBGUESTFS 1.46 split
