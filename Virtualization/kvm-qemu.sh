@@ -5,8 +5,8 @@
 # See the file 'LICENSE.md' for copying permission.
 # https://www.doomedraven.com/2016/05/kvm.html
 # https://www.doomedraven.com/2020/04/how-to-create-virtual-machine-with-virt.html
-# Use Ubuntu 20-22.04 LTS
-# Update date: 06.05.2022
+# Use Ubuntu 22.04 LTS
+# Update date: 14.012.2022
 
 # Glory to Ukraine!
 
@@ -62,13 +62,14 @@ QTARGETS="--target-list=i386-softmmu,x86_64-softmmu,i386-linux-user,x86_64-linux
 qemu_version=7.1.0
 # libvirt - https://libvirt.org/sources/
 # changelog - https://libvirt.org/news.html
-libvirt_version=8.2.0
+libvirt_version=8.10.0
 # virt-manager - https://github.com/virt-manager/virt-manager/releases
 # autofilled
 OS=""
 username=$SUDO_USER
 MAINTAINER=""
-
+# Skip last octet it will be auto populated
+VM_NETWORK_RANGE="192.168.1."
 systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target
 
 #replace all occurances of CPU's in qemu with our fake one
@@ -1209,6 +1210,9 @@ function cloning() {
                     fi
                 fi
                 #2>/dev/null
+                # Add VM static IP so you don't need to set it inside of the VM
+                # https://tqdev.com/2020-kvm-network-static-ip-addresses
+                virsh net-update hostonly add-last ip-dhcp-host "<host mac='${macaddr}' name='${$1_$i.qcow2}' ip='${VM_NETWORK_RANGE}${$i}'/>" --live --config
                 sed -i "s|<domain type='kvm'>|<domain type='kvm' xmlns:qemu='http://libvirt.org/schemas/domain/qemu/1.0'>|g" "$5/$1_$i.xml"
                 virsh define "$5/$1_$i.xml"
                 worked=0
@@ -1355,4 +1359,3 @@ case "$COMMAND" in
 *)
     usage;;
 esac
-
