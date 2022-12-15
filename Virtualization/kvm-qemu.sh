@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# Copyright (C) 2011-2021 DoomedRaven.
+# Copyright (C) 2011-2023 DoomedRaven.
 # This file is part of Tools - https://github.com/doomedraven/Tools
 # See the file 'LICENSE.md' for copying permission.
 # https://www.doomedraven.com/2016/05/kvm.html
 # https://www.doomedraven.com/2020/04/how-to-create-virtual-machine-with-virt.html
 # Use Ubuntu 22.04 LTS
-# Update date: 14.012.2022
+# Update date: 12.12.2022
 
 # Glory to Ukraine!
 
@@ -69,7 +69,10 @@ OS=""
 username=$SUDO_USER
 MAINTAINER=""
 # Skip last octet it will be auto populated
-VM_NETWORK_RANGE="192.168.1."
+VM_NETWORK_RANGE="192.168.1"
+DNS_PRIMARY="8.8.8.8"
+DNS_SECONDARY="8.8.4.4"
+
 systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target
 
 #replace all occurances of CPU's in qemu with our fake one
@@ -119,7 +122,7 @@ sudo apt install aptitude -y 2>/dev/null
 NC='\033[0m'
 RED='\033[0;31m'
 echo -e "${RED}[!] ONLY for UBUNTU 20.04 and 22.04${NC}"
-echo -e "${RED}\t[!] NEVER install packages from APT that installed by this script.${NC}"
+echo -e "${RED}\t[!] NEVER install packages from APT that installed by this script${NC}"
 echo -e "${RED}\t[!] NEVER use 'make install' - it poison system and no easy way to upgrade/uninstall/cleanup, use dpkg-deb${NC}"
 echo -e "${RED}\t[!] NEVER run 'python setup.py install' DO USE 'pip intall .' the same as APT poisoning/upgrading${NC}\n"
 echo -e "${RED}\t[!] NEVER FORCE system upgrade, it will ignore blacklist and mess with packages installed by APT and this scritp!${NC}\n"
@@ -219,8 +222,6 @@ function _check_brew() {
 }
 
 function install_apparmor() {
-
-    # ubuntu 22.04 comes with latest apparmor
     aptitude install -f bison linux-generic-hwe-22.04 -y
     aptitude install -f apparmor apparmor-profiles apparmor-profiles-extra apparmor-utils libapparmor-dev libapparmor1  python3-apparmor python3-libapparmor libapparmor-perl -y
 }
@@ -232,8 +233,8 @@ function install_haxm_mac() {
     brew cask install xquartz
     brew install virt-manager virt-viewer
     mkdir -p $("brew --prefix libosinfo")/share/libosinfo
-    wget https://pci-ids.ucw.cz/v2.2/pci.ids -O $("brew --prefix libosinfo")/share/libosinfo/pci.ids
-    wget http://www.linux-usb.org/usb.ids -O $("brew --prefix libosinfo")/share/libosinfo/usb.ids
+    wget -q https://pci-ids.ucw.cz/v2.2/pci.ids -O $("brew --prefix libosinfo")/share/libosinfo/pci.ids
+    wget -q http://www.linux-usb.org/usb.ids -O $("brew --prefix libosinfo")/share/libosinfo/usb.ids
 
     if [ "$SHELL" = "/bin/zsh" ] || [ "$SHELL" = "/usr/bin/zsh" ] ; then
         echo "export LIBVIRT_DEFAULT_URI=qemu:///system" >> "$HOME/.zsh"
@@ -311,7 +312,7 @@ function install_libvmi() {
 
     if [ ! -d "libvmi" ]; then
         # git clone https://github.com/libvmi/libvmi.git
-        wget https://github.com/libvmi/libvmi/archive/refs/tags/v0.14.0.zip -O libvmi-v0.14.0.zip
+        wget -q https://github.com/libvmi/libvmi/archive/refs/tags/v0.14.0.zip -O libvmi-v0.14.0.zip
         unzip libvmi-v0.14.0.zip
         echo "[+] Cloned LibVMI repo"
     fi
@@ -472,15 +473,6 @@ EOH
         done
     fi
 
-    """
-    /lib/x86_64-linux-gnu/libvirt.so.0
-    /usr/lib/libnss_libvirt.so.2
-    /usr/lib64/libnss_libvirt.so.2
-    /usr/local/lib/x86_64-linux-gnu/libvirt.so
-    /usr/local/lib/x86_64-linux-gnu/libvirt.so.0
-    /usr/local/lib/x86_64-linux-gnu/libvirt.so.0.7007.0
-    """
-
     cd /tmp || return
     if [ -f  libvirt-$libvirt_version.tar.xz ]; then
         rm -r libvirt-$libvirt_version
@@ -570,7 +562,7 @@ EOH
     cd /tmp || return
 
     if [ ! -f v$libvirt_version.zip ]; then
-        wget https://github.com/libvirt/libvirt-python/archive/v$libvirt_version.zip
+        wget -q https://github.com/libvirt/libvirt-python/archive/v$libvirt_version.zip
     fi
     if [ -d "libvirt-python-$libvirt_version" ]; then
         rm -r "libvirt-python-$libvirt_version"
@@ -599,7 +591,7 @@ EOH
         #check links
         # sudo ln -s /usr/lib64/libvirt-qemu.so /lib/x86_64-linux-gnu/libvirt-qemu.so.0
         # sudo ln -s /usr/lib64/libvirt.so.0 /lib/x86_64-linux-gnu/libvirt.so.0
-        systemctl enable virtqemud.service virtnetworkd.service virtstoraged.service
+        systemctl enable virtqemud.service virtnetworkd.service virtstoraged.service virtqemud-sock
         echo "[+] You should logout and login "
     fi
 
@@ -662,8 +654,8 @@ function install_virt_manager() {
 
     cd /tmp || return
     if [ ! -f libvirt-glib-3.0.0.tar.gz ]; then
-        wget https://libvirt.org/sources/glib/libvirt-glib-3.0.0.tar.gz
-        wget https://libvirt.org/sources/glib/libvirt-glib-3.0.0.tar.gz.asc
+        wget -q https://libvirt.org/sources/glib/libvirt-glib-3.0.0.tar.gz
+        wget -q https://libvirt.org/sources/glib/libvirt-glib-3.0.0.tar.gz.asc
         gpg --verify "libvirt-glib-3.0.0.tar.gz.asc"
 
     fi
@@ -685,7 +677,7 @@ function install_virt_manager() {
     # sudo meson build -D system=true
     cd /tmp || return
     if [ ! -f gir1.2-libvirt-glib-1.0_1.0.0-1_amd64.deb ]; then
-        wget http://launchpadlibrarian.net/297448356/gir1.2-libvirt-glib-1.0_1.0.0-1_amd64.deb
+        wget -q http://launchpadlibrarian.net/297448356/gir1.2-libvirt-glib-1.0_1.0.0-1_amd64.deb
     fi
     dpkg --force-confold -i gir1.2-libvirt-glib-1.0_1.0.0-1_amd64.deb
 
@@ -902,7 +894,7 @@ function install_qemu() {
             cd qemu-$qemu_version || return
             # add in future --enable-netmap https://sgros-students.blogspot.com/2016/05/installing-and-testing-netmap.html
             # remove --target-list=i386-softmmu,x86_64-softmmu,i386-linux-user,x86_64-linux-user  if you want all targets
-                ./configure $QTARGETS --prefix=/usr --libexecdir=/usr/lib/qemu --localstatedir=/var --bindir=/usr/bin/ --enable-gnutls --enable-docs --enable-gtk --enable-vnc --enable-vnc-sasl --enable-vnc-jpeg --enable-curl --enable-kvm  --enable-linux-aio --enable-cap-ng --enable-vhost-net --enable-vhost-crypto --enable-spice --enable-usb-redir --enable-lzo --enable-snappy --enable-bzip2 --enable-coroutine-pool --enable-jemalloc --enable-replication --enable-tools 
+                ./configure $QTARGETS --prefix=/usr --libexecdir=/usr/lib/qemu --localstatedir=/var --bindir=/usr/bin/ --enable-gnutls --enable-docs --enable-gtk --enable-vnc --enable-vnc-sasl --enable-curl --enable-kvm  --enable-linux-aio --enable-cap-ng --enable-vhost-net --enable-vhost-crypto --enable-spice --enable-usb-redir --enable-lzo --enable-snappy --enable-bzip2 --enable-coroutine-pool --enable-jemalloc --enable-replication --enable-tools
                 # --enable-capstone
             if  [ $? -eq 0 ]; then
                 echo '[+] Starting Install it'
@@ -947,7 +939,7 @@ function install_qemu() {
     if [ "$OS" = "linux" ]; then
         dpkg --get-selections | grep "qemu" | xargs apt-mark hold
         dpkg --get-selections | grep "libvirt" | xargs apt-mark hold
-        # apt-mark unhold qemu
+        apt-mark unhold qemu libvirt
     fi
 
 }
@@ -1194,6 +1186,43 @@ function cloning() {
         echo '[-] You must provide <VM_NAME> <path_to_hdd> <start_from_number> <#vm_to_create> <path_where_to_store> <network_base> <full/linked hdd>'
         exit 1
     fi
+
+    virsh net-list --all|grep hostonly
+    if [ $? -eq 1 ]; then
+        cat > /tmp/hostonly.xml << EOF
+<network xmlns:dnsmasq='http://libvirt.org/schemas/network/dnsmasq/1.0'>
+  <name>hostonly</name>
+  <uuid>9385b182-075b-429e-a089-4b05374e87c2</uuid>
+  <bridge name='virbr1' stp='on' delay='0'/>
+  <mac address='11:22:33:44:55:66'/>
+  <domain name='hostonly'/>
+  <dns>
+    <forwarder addr='${DNS_PRIMARY}'/>
+    <forwarder addr='${DNS_SECONDARY}'/>
+  </dns>
+  <ip address='${VM_NETWORK_RANGE}.1' netmask='255.255.255.0'>
+    <dhcp>
+      <range start='${VM_NETWORK_RANGE}.2' end='${VM_NETWORK_RANGE}.254'/>
+    </dhcp>
+  </ip>
+  <route address='0.0.0.0' prefix='24' gateway='${VM_NETWORK_RANGE}.1'/>
+  <dnsmasq:options>
+    <!--set netbios-over-TCP/IP nameserver(s) aka WINS server(s)-->
+    <dnsmasq:option value='dhcp-option=44,0.0.0.0'/>
+    <!--netbios datagram distribution server-->
+    <dnsmasq:option value='dhcp-option=45,0.0.0.0'/>
+    <!--netbios node type-->
+    <dnsmasq:option value='dhcp-option=46,8'/>
+    <!--Send an empty WPAD option. This may be REQUIRED to get windows 7 to behave.-->
+    <dnsmasq:option value='dhcp-option=252,"\n"'/>
+  </dnsmasq:options>
+</network>
+EOF
+
+    virsh net-define /tmp/hostonly.xml
+    virsh net-autostart hostonly
+    virhs net-start hostonly
+    fi
     for i in $(seq "$3" "$4"); do
         worked=1
         # bad macaddress can be generated
@@ -1210,9 +1239,7 @@ function cloning() {
                     fi
                 fi
                 #2>/dev/null
-                # Add VM static IP so you don't need to set it inside of the VM
-                # https://tqdev.com/2020-kvm-network-static-ip-addresses
-                virsh net-update hostonly add-last ip-dhcp-host "<host mac='${macaddr}' name='${$1_$i.qcow2}' ip='${VM_NETWORK_RANGE}${$i}'/>" --live --config
+                virsh net-update hostonly add-last ip-dhcp-host "<host mac='${macaddr}' name='${$1_$i.qcow2}' ip='${VM_NETWORK_RANGE}.${$i}'/>" --live --config
                 sed -i "s|<domain type='kvm'>|<domain type='kvm' xmlns:qemu='http://libvirt.org/schemas/domain/qemu/1.0'>|g" "$5/$1_$i.xml"
                 virsh define "$5/$1_$i.xml"
                 worked=0
@@ -1245,8 +1272,8 @@ esac
 #    fi
 #fi
 
-# check if start with root
-if [ "$EUID" -ne 0 ] && [[ -z "${BUILD_ENV}" ]]; then
+#check if start with root
+if [ "$EUID" -ne 0 ]; then
    echo 'This script must be run as root'
    exit 1
 fi
@@ -1271,7 +1298,7 @@ case "$COMMAND" in
         #install_virt_manager
         install_libguestfs
         # check if all features enabled
-        virt-host-validate
+        virt-host-validate qemu
         systemctl daemon-reload
         systemctl restart libvirtd libvirt-guests.service
         _enable_tcp_bbr
@@ -1316,7 +1343,7 @@ case "$COMMAND" in
     if [ "$OS" = "Linux" ]; then
         cd /tmp || return
         if [ ! -f noip-duc-linux.tar.gz ]; then
-            wget http://www.no-ip.com/client/linux/noip-duc-linux.tar.gz
+            wget -q http://www.no-ip.com/client/linux/noip-duc-linux.tar.gz
         fi
         tar xf noip-duc-linux.tar.gz
         rm noip-duc-linux.tar.gz
