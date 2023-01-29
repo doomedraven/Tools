@@ -6,7 +6,7 @@
 # https://www.doomedraven.com/2016/05/kvm.html
 # https://www.doomedraven.com/2020/04/how-to-create-virtual-machine-with-virt.html
 # Use Ubuntu 22.04 LTS
-# Update date: 12.12.2022
+# Update date: 29.01.2023
 
 # Glory to Ukraine!
 
@@ -137,8 +137,7 @@ cat << EndOfHelp
         SeaBios - Install SeaBios and repalce QEMU bios file
         Libvirt <username_optional> - install libvirt, username is optional
         Apparmor - Install apparmor parsers
-        KVM - this will install intel-HAXM if you on Mac
-        HAXM - Mac Hardware Accelerated Execution Manager
+        KVM - KVM Hypervisor
         GRUB - add IOMMU to grub command line
         tcp_bbr - Enable TCP BBR congestion control
             * https://www.cyberciti.biz/cloud-computing/increase-your-linux-server-internet-speed-with-tcp-bbr-congestion-control/
@@ -224,23 +223,6 @@ function _check_brew() {
 function install_apparmor() {
     aptitude install -f bison linux-generic-hwe-22.04 -y
     aptitude install -f apparmor apparmor-profiles apparmor-profiles-extra apparmor-utils libapparmor-dev libapparmor1  python3-apparmor python3-libapparmor libapparmor-perl -y
-}
-
-function install_haxm_mac() {
-    _check_brew
-    brew cask install intel-haxm
-    brew tap jeffreywildman/homebrew-virt-manager
-    brew cask install xquartz
-    brew install virt-manager virt-viewer
-    mkdir -p $("brew --prefix libosinfo")/share/libosinfo
-    wget -q https://pci-ids.ucw.cz/v2.2/pci.ids -O $("brew --prefix libosinfo")/share/libosinfo/pci.ids
-    wget -q http://www.linux-usb.org/usb.ids -O $("brew --prefix libosinfo")/share/libosinfo/usb.ids
-
-    if [ "$SHELL" = "/bin/zsh" ] || [ "$SHELL" = "/usr/bin/zsh" ] ; then
-        echo "export LIBVIRT_DEFAULT_URI=qemu:///system" >> "$HOME/.zsh"
-    else
-        echo "export LIBVIRT_DEFAULT_URI=qemu:///system" >> "$HOME/.bashrc"
-    fi
 }
 
 function install_libguestfs() {
@@ -1304,8 +1286,6 @@ case "$COMMAND" in
         _enable_tcp_bbr
         grub_iommu
         enable_sysrq
-    elif [ "$OS" = "Darwin" ]; then
-        install_haxm_mac
     fi
     ;;
 'apparmor')
@@ -1316,8 +1296,6 @@ case "$COMMAND" in
     install_seabios;;
 'kvm')
     install_kvm_linux;;
-'haxm')
-    install_haxm_mac;;
 'libguestfs')
     install_libguestfs;;
 'tcp_bbr')
