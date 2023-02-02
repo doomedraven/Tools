@@ -6,7 +6,7 @@
 # https://www.doomedraven.com/2016/05/kvm.html
 # https://www.doomedraven.com/2020/04/how-to-create-virtual-machine-with-virt.html
 # Use Ubuntu 22.04 LTS
-# Update date: 29.01.2023
+# Update date: 02.02.2022
 
 # Glory to Ukraine!
 
@@ -47,22 +47,15 @@ Huge thanks to:
 # Decompile: iasl -d dsdt.dat
 # Recompile: iasl -tc dsdt.dsl
 
-#      strs[0] = "KVMKVMKVM\0\0\0"; /* KVM */
-#      strs[1] = "Microsoft Hv"; /* Microsoft Hyper-V or Windows Virtual PC */
-#      strs[2] = "VMwareVMware"; /* VMware */
-#      strs[3] = "XenVMMXenVMM"; /* Xen */
-#      strs[4] = "prl hyperv  "; /* Parallels */
-#      strs[5] = "VBoxVBoxVBox"; /* VirtualBox */
-
 # if you want all arches support in QEMU, just set QTARGETS to empty
 QTARGETS="--target-list=i386-softmmu,x86_64-softmmu,i386-linux-user,x86_64-linux-user"
 
 
 #https://www.qemu.org/download/#source or https://download.qemu.org/
-qemu_version=7.1.0
+qemu_version=7.2.0
 # libvirt - https://libvirt.org/sources/
 # changelog - https://libvirt.org/news.html
-libvirt_version=8.10.0
+libvirt_version=9.0.0
 # virt-manager - https://github.com/virt-manager/virt-manager/releases
 # autofilled
 OS=""
@@ -137,12 +130,11 @@ cat << EndOfHelp
         SeaBios - Install SeaBios and repalce QEMU bios file
         Libvirt <username_optional> - install libvirt, username is optional
         Apparmor - Install apparmor parsers
-        KVM - KVM Hypervisor
+        KVM - <3
         GRUB - add IOMMU to grub command line
         tcp_bbr - Enable TCP BBR congestion control
             * https://www.cyberciti.biz/cloud-computing/increase-your-linux-server-internet-speed-with-tcp-bbr-congestion-control/
         Mosh - mobile shell - https://mosh.org/
-        WebVirtMgr - Install WebManager for KVM
         Clone - <VM_NAME> <path_to_hdd> <start_from_number> <#vm_to_create> <path_where_to_store> <network_range_base> <full/linked hdd>
                 * Example Win7x64 /VMs/Win7x64.qcow2 0 5 /var/lib/libvirt/images/ 192.168.1 linked
                 https://wiki.qemu.org/Documentation/CreateSnapshot
@@ -214,16 +206,11 @@ function _enable_tcp_bbr() {
     sudo sysctl --system
 }
 
-function _check_brew() {
-    if [ ! -f /usr/local/bin/brew ]; then
-        /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
-    fi
-}
-
 function install_apparmor() {
     aptitude install -f bison linux-generic-hwe-22.04 -y
     aptitude install -f apparmor apparmor-profiles apparmor-profiles-extra apparmor-utils libapparmor-dev libapparmor1  python3-apparmor python3-libapparmor libapparmor-perl -y
 }
+
 
 function install_libguestfs() {
     # https://libguestfs.org/guestfs-building.1.html
@@ -855,10 +842,6 @@ function install_qemu() {
         # qemu docs required
         PERL_MM_USE_DEFAULT=1 perl -MCPAN -e install "Perl/perl-podlators"
         pip3 install sphinx ninja
-
-    elif [ "$OS" = "Darwin" ]; then
-        _check_brew
-        brew install pkg-config libtool jpeg gnutls glib ncurses pixman libpng vde gtk+3 libssh2 libssh2 libvirt snappy libcapn gperftools glib -y
     fi
     # WOOT
     # some checks may be depricated, but keeping them for compatibility with old versions
@@ -877,7 +860,7 @@ function install_qemu() {
             # add in future --enable-netmap https://sgros-students.blogspot.com/2016/05/installing-and-testing-netmap.html
             # remove --target-list=i386-softmmu,x86_64-softmmu,i386-linux-user,x86_64-linux-user  if you want all targets
                 ./configure $QTARGETS --prefix=/usr --libexecdir=/usr/lib/qemu --localstatedir=/var --bindir=/usr/bin/ --enable-gnutls --enable-docs --enable-gtk --enable-vnc --enable-vnc-sasl --enable-curl --enable-kvm  --enable-linux-aio --enable-cap-ng --enable-vhost-net --enable-vhost-crypto --enable-spice --enable-usb-redir --enable-lzo --enable-snappy --enable-bzip2 --enable-coroutine-pool --enable-jemalloc --enable-replication --enable-tools
-                # --enable-capstone
+                #  --enable-capstone
             if  [ $? -eq 0 ]; then
                 echo '[+] Starting Install it'
                 if [ -f /usr/share/qemu/qemu_logo_no_text.svg ]; then
@@ -1139,29 +1122,6 @@ cat << EndOfHelp
 EndOfHelp
 }
 
-function install_WebVirtCloud(){
-    sudo apt -y install git virtualenv python-virtualenv python-dev python-lxml libvirt-dev zlib1g-dev libxslt1-dev nginx libsasl2-modules gcc pkg-config python-guestfs
-    pip install supervisor
-    git clone https://github.com/retspen/webvirtcloud
-    cd webvirtcloud || return
-    cp webvirtcloud/settings.py.template webvirtcloud/settings.py
-    # now put secret key to webvirtcloud/settings.py
-    sudo cp conf/supervisor/webvirtcloud.conf /etc/supervisor/conf.d
-    sudo cp conf/nginx/webvirtcloud.conf /etc/nginx/conf.d
-    cd ..
-    sudo mv webvirtcloud /srv
-    sudo chown -R www-data:www-data /srv/webvirtcloud
-    cd /srv/webvirtcloud || return
-    virtualenv venv
-    source venv/bin/activate
-    sed -i 's/libvirt-python//g' conf/requirements.txt
-    pip install -r conf/requirements.txt
-    python manage.py migrate
-    sudo chown -R www-data:www-data /srv/webvirtcloud
-    sudo rm /etc/nginx/sites-enabled/default
-    sudo service nginx restart
-    sudo service supervisor restart
-}
 
 function cloning() {
     if [ $# -lt 6 ]; then
@@ -1328,9 +1288,6 @@ case "$COMMAND" in
         cd "noip-*" || return
         make install
         crontab -l | { cat; echo "@reboot sleep 10 && /usr/local/bin/noip2 -c /usr/local/etc/no-ip2.conf"; } | crontab -
-    elif [ "$OS" = "Darwin" ]; then
-        _check_brew
-        brew cask install no-ip-duc
     fi
     ;;
 'replace_seabios')
@@ -1345,8 +1302,6 @@ case "$COMMAND" in
         replace_seabios_clues_public
     fi
     ;;
-'webvirtmgr')
-    install_WebVirtCloud;;
 'grub')
     grub_iommu;;
 'jemalloc')
@@ -1354,9 +1309,6 @@ case "$COMMAND" in
 'mosh')
     if [ "$OS" = "Linux" ]; then
         sudo aptitude install -f mosh -y
-    elif [ "$OS" = "Darwin" ]; then
-        _check_brew
-        brew install mosh
     else
         echo "https://mosh.org/#getting"
     fi
