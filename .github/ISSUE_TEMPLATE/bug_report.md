@@ -16,6 +16,7 @@ Please answer the following questions for yourself before submitting an issue.
 - [ ] I'm reporting the issue to the correct repository (for multi-repository projects)
 - [ ] I read my log of instalation, all issues will be closed if you don't do your part of work
 - [ ] I understand that reporting issue related to any instalation script without instalation log is useless and will be closed
+- [ ] Without proper details and remove template your issue will be IGNORED!
 
 # Expected Behavior
 
