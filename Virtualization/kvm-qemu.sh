@@ -6,7 +6,7 @@
 # https://www.doomedraven.com/2016/05/kvm.html
 # https://www.doomedraven.com/2020/04/how-to-create-virtual-machine-with-virt.html
 # Use Ubuntu 22.04 LTS
-# Update date: 02.02.2022
+# Update date: 22.02.2023
 
 # Glory to Ukraine!
 
@@ -110,6 +110,8 @@ src_fw_smbios_date="11\/03\/2018"
 #* If your CPU is Intel, you need activate in __BIOS__ VT-x
 #    * (last letter can change, you can activate [TxT ](https://software.intel.com/en-us/blogs/2012/09/25/how-to-enable-an-intel-trusted-execution-technology-capable-server) too, and any other feature, but VT-* is very important)
 
+# ToDo check if aptitude is installed if no refresh and install
+sudo apt update 2>/dev/null
 sudo apt install aptitude -y 2>/dev/null
 
 NC='\033[0m'
@@ -560,7 +562,7 @@ EOH
         #check links
         # sudo ln -s /usr/lib64/libvirt-qemu.so /lib/x86_64-linux-gnu/libvirt-qemu.so.0
         # sudo ln -s /usr/lib64/libvirt.so.0 /lib/x86_64-linux-gnu/libvirt.so.0
-        systemctl enable virtqemud.service virtnetworkd.service virtstoraged.service virtqemud-sock
+        systemctl enable virtqemud.service virtnetworkd.service virtstoraged.service virtqemud.socket
         echo "[+] You should logout and login "
     fi
 
@@ -1129,6 +1131,12 @@ function cloning() {
         exit 1
     fi
 
+    which virt-manager
+    if [ $? -eq 1 ]; then
+        echo "You need to install virt-manager. Run sudo $0 virtmanager"
+        exit 1
+    fi
+
     virsh net-list --all|grep hostonly
     if [ $? -eq 1 ]; then
         cat > /tmp/hostonly.xml << EOF
@@ -1136,7 +1144,7 @@ function cloning() {
   <name>hostonly</name>
   <uuid>9385b182-075b-429e-a089-4b05374e87c2</uuid>
   <bridge name='virbr1' stp='on' delay='0'/>
-  <mac address='11:22:33:44:55:66'/>
+  <mac address='12:22:34:44:56:66'/>
   <domain name='hostonly'/>
   <dns>
     <forwarder addr='${DNS_PRIMARY}'/>
@@ -1163,7 +1171,7 @@ EOF
 
     virsh net-define /tmp/hostonly.xml
     virsh net-autostart hostonly
-    virhs net-start hostonly
+    virsh net-start hostonly
     fi
     for i in $(seq "$3" "$4"); do
         worked=1
@@ -1181,7 +1189,7 @@ EOF
                     fi
                 fi
                 #2>/dev/null
-                virsh net-update hostonly add-last ip-dhcp-host "<host mac='${macaddr}' name='${$1_$i.qcow2}' ip='${VM_NETWORK_RANGE}.${$i}'/>" --live --config
+                virsh net-update hostonly add-last ip-dhcp-host "<host mac='${macaddr}' name='${1}_${i}' ip='${VM_NETWORK_RANGE}.${i}'/>" --live --config
                 sed -i "s|<domain type='kvm'>|<domain type='kvm' xmlns:qemu='http://libvirt.org/schemas/domain/qemu/1.0'>|g" "$5/$1_$i.xml"
                 virsh define "$5/$1_$i.xml"
                 worked=0
@@ -1231,22 +1239,20 @@ case "$COMMAND" in
 'issues')
     issues;;
 'all')
-    aptitude install -f language-pack-UTF-8
+    aptitude install -f language-pack-UTF-8 -y
     install_qemu
     install_seabios
-    if [ "$OS" = "Linux" ]; then
-        install_kvm_linux
-        # add check if server or desktop
-        #install_virt_manager
-        install_libguestfs
-        # check if all features enabled
-        virt-host-validate qemu
-        systemctl daemon-reload
-        systemctl restart libvirtd libvirt-guests.service
-        _enable_tcp_bbr
-        grub_iommu
-        enable_sysrq
-    fi
+    install_kvm_linux
+    # add check if server or desktop
+    # install_virt_manager
+    # install_libguestfs
+    # check if all features enabled
+    virt-host-validate qemu
+    systemctl daemon-reload
+    systemctl restart libvirtd libvirt-guests.service
+    _enable_tcp_bbr
+    grub_iommu
+    enable_sysrq
     ;;
 'apparmor')
     install_apparmor;;
@@ -1276,7 +1282,7 @@ case "$COMMAND" in
 'virtmanager')
     install_virt_manager;;
 'clone')
-    cloning "$2" "$3" "$4" "$5" "$6" "$7";;
+    cloning "$2" "$3" "$4" "$5" "$6" "$7" "$8";;
 'noip')
     if [ "$OS" = "Linux" ]; then
         cd /tmp || return
