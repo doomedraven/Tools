@@ -10,6 +10,7 @@
 
 # Running
 # sudo docker run -it --rm --privileged -v /opt/VMs:/mnt/vm-disks guest-fs-tools
+# docker exec -it $(docker container ls  | grep 'guest-fs-tools' | awk '{print $1}') /usr/bin/virt-sparsify path_to_vm path_to_out_vm --tmp /mnt/vm-disks
 
 FROM ubuntu:22.04
 ARG username=tracker
