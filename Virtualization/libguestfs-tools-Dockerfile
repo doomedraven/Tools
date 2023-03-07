@@ -1,6 +1,9 @@
 # Based on https://anthony-f-tannous.medium.com/use-docker-and-libguestfs-tools-to-shrink-virtual-machine-disks-vmdks-cae0aae17da6
 # https://lucascavalare.github.io/2020-03-15-AppArmor_Docker/
 
+# DO NOT INSTALL Docker from SNAP, it will give problems with permissions on mounting folders, as readonly blablabla
+# sudo apt install docker-ce
+
 # To enable internet
 # echo 'DOCKER_OPTS="--dns 8.8.8.8 --dns 8.8.4.4"' >> /etc/default/docker
 # sudo docker build --network=host  -t guest-fs-tools .
