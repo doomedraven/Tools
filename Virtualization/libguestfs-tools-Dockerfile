@@ -1,0 +1,17 @@
+# Based on https://anthony-f-tannous.medium.com/use-docker-and-libguestfs-tools-to-shrink-virtual-machine-disks-vmdks-cae0aae17da6
+# https://lucascavalare.github.io/2020-03-15-AppArmor_Docker/
+
+# To enable internet
+# echo 'DOCKER_OPTS="--dns 8.8.8.8 --dns 8.8.4.4"' >> /etc/default/docker
+# sudo docker build --network=host  -t guest-fs-tools .
+
+# Running
+# sudo docker run -it --rm --privileged -v /opt/VMs:/mnt/vm-disks guest-fs-tools
+
+FROM ubuntu:22.04
+ARG username=tracker
+RUN echo "deb http://us.archive.ubuntu.com/ubuntu/ jammy universe" >> /etc/apt/sources.list && \
+ apt-get update && apt-get install -y --no-install-recommends libguestfs-tools  software-properties-common sudo apt-utils
+RUN useradd -ms /bin/bash -d /home/${username} ${username} && usermod -aG sudo $username && echo "$username ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+ENV HOME=/home/${username}
+USER ${username}
