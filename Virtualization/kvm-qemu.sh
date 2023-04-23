@@ -52,10 +52,10 @@ QTARGETS="--target-list=i386-softmmu,x86_64-softmmu,i386-linux-user,x86_64-linux
 
 
 #https://www.qemu.org/download/#source or https://download.qemu.org/
-qemu_version=7.2.0
+qemu_version=8.0.0
 # libvirt - https://libvirt.org/sources/
 # changelog - https://libvirt.org/news.html
-libvirt_version=9.0.0
+libvirt_version=9.2.0
 # virt-manager - https://github.com/virt-manager/virt-manager/releases
 # autofilled
 OS=""
@@ -148,7 +148,6 @@ cat << EndOfHelp
         Issues - will give you error - solution list
         noip - Install No-ip deamon and enable on boot
         SysRQ - enable SysRQ - https://sites.google.com/site/syscookbook/rhel/rhel-sysrq-key
-        jemalloc - install Jemalloc google if you need details ;)
 
     Tips:
         * Latest kernels having some KVM features :)
@@ -800,17 +799,7 @@ function replace_seabios_clues_public() {
     done
 }
 
-function install_jemalloc() {
-
-    # https://zapier.com/engineering/celery-python-jemalloc/
-    if ! $(dpkg -l "libjemalloc*" | grep -q "ii  libjemalloc"); then
-        aptitude install -f curl build-essential jq autoconf libjemalloc-dev -y
-    fi
-}
-
 function install_qemu() {
-    cd /tmp || return
-    install_jemalloc
     cd /tmp || return
 
     echo '[+] Cleaning QEMU old install if exists'
@@ -861,7 +850,7 @@ function install_qemu() {
             cd qemu-$qemu_version || return
             # add in future --enable-netmap https://sgros-students.blogspot.com/2016/05/installing-and-testing-netmap.html
             # remove --target-list=i386-softmmu,x86_64-softmmu,i386-linux-user,x86_64-linux-user  if you want all targets
-                ./configure $QTARGETS --prefix=/usr --libexecdir=/usr/lib/qemu --localstatedir=/var --bindir=/usr/bin/ --enable-gnutls --enable-docs --enable-gtk --enable-vnc --enable-vnc-sasl --enable-curl --enable-kvm  --enable-linux-aio --enable-cap-ng --enable-vhost-net --enable-vhost-crypto --enable-spice --enable-usb-redir --enable-lzo --enable-snappy --enable-bzip2 --enable-coroutine-pool --enable-jemalloc --enable-replication --enable-tools
+                ./configure $QTARGETS --prefix=/usr --libexecdir=/usr/lib/qemu --localstatedir=/var --bindir=/usr/bin/ --enable-gnutls --enable-docs --enable-gtk --enable-vnc --enable-vnc-sasl --enable-curl --enable-kvm  --enable-linux-aio --enable-cap-ng --enable-vhost-net --enable-vhost-crypto --enable-spice --enable-usb-redir --enable-lzo --enable-snappy --enable-bzip2 --enable-coroutine-pool --enable-replication --enable-tools
                 #  --enable-capstone
             if  [ $? -eq 0 ]; then
                 echo '[+] Starting Install it'
@@ -1310,8 +1299,6 @@ case "$COMMAND" in
     ;;
 'grub')
     grub_iommu;;
-'jemalloc')
-    install_jemalloc;;
 'mosh')
     if [ "$OS" = "Linux" ]; then
         sudo aptitude install -f mosh -y
