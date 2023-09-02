@@ -10,12 +10,14 @@
 
 # Running
 # sudo docker run -it --rm --privileged -v /opt/VMs:/mnt/vm-disks guest-fs-tools
-# docker exec -it $(docker container ls  | grep 'guest-fs-tools' | awk '{print $1}') /usr/bin/virt-sparsify path_to_vm path_to_out_vm --tmp /mnt/vm-disks
+# docker exec -it $(docker container ls  | grep 'guest-fs-tools' | awk '{print $1}') sudo /usr/bin/virt-sparsify path_to_vm path_to_out_vm --tmp /mnt/vm-disks
+# Might need another volume mount which contains more space
+# last command inside docker might require sudo
 
 FROM ubuntu:22.04
-ARG username=tracker
 RUN echo "deb http://us.archive.ubuntu.com/ubuntu/ jammy universe" >> /etc/apt/sources.list && \
- apt-get update && apt-get install -y --no-install-recommends libguestfs-tools  software-properties-common sudo apt-utils
-RUN useradd -ms /bin/bash -d /home/${username} ${username} && usermod -aG sudo $username && echo "$username ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
-ENV HOME=/home/${username}
-USER ${username}
+ apt-get update && apt-get install -y --no-install-recommends libguestfs-tools  software-properties-common sudo apt-utils linux-image-generic
+RUN useradd -ms /bin/bash -d /home/docker docker && usermod -aG sudo docker && echo "docker ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+ENV HOME=/home/docker
+USER docker
+
