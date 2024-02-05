@@ -2,7 +2,18 @@
 # https://lucascavalare.github.io/2020-03-15-AppArmor_Docker/
 
 # DO NOT INSTALL Docker from SNAP, it will give problems with permissions on mounting folders, as readonly blablabla
-# sudo apt install docker-ce
+# https://docs.docker.com/engine/install/ubuntu/
+
+# sudo apt-get update
+# sudo apt-get install ca-certificates curl
+# sudo install -m 0755 -d /etc/apt/keyrings
+# sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+# sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+# Add the repository to Apt sources:
+# echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+# sudo apt-get update
+# sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
 # To enable internet
 # echo 'DOCKER_OPTS="--dns 8.8.8.8 --dns 8.8.4.4"' >> /etc/default/docker
